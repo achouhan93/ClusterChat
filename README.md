@@ -45,3 +45,4 @@ Conference: 6th-10th April 2025
 - [ ] How to tackle questions like What is this cluster about? Provide topics present in this cluster.
 - [ ] Provide questions that one can ask for the respective selected cluster.
 - [ ] :thinking: How can we make it more intuitive?
+- [ ] Chatbot at the side to interact with the cluster
