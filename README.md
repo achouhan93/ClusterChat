@@ -63,7 +63,7 @@ Conference: 6th-10th April 2025
     - Active Assistant: Pose Heuristic questions, guiding users to clarify queries for capturing their intent.
     - Conversational Interaction: Engage in deep discussions through conversational follow-up questions.
     - Query Tools:
-        1. :check_mark: Active Query: Enhancing a query by adding extra content and context. Ask users to specify their interest aread or discipline. Thhus, ensuring generated answers are highly relevant by covering nuances not initially mentioned.
+        1. :check_mark_button: Active Query: Enhancing a query by adding extra content and context. Ask users to specify their interest aread or discipline. Thhus, ensuring generated answers are highly relevant by covering nuances not initially mentioned.
         2. Query Rewriting: Rewrite the queries for better clarity and effectiveness.
         3. Query Decomposition: Decomposes the complex query into a series of subqueries, improving precision and efficiency for satisfying responses. Process each subquery.
     - Retrieval Tools:
@@ -73,9 +73,9 @@ Conference: 6th-10th April 2025
     - Data Routing Strategy:
         - Stratify the data based on both temporal and domain-specific information found in the metadata of the documents present in corpus.
     - Post-processing Tools:
-        1. :cross_mark: Reranking
-        2. :check_mark: Fusion
-        3. :check_mark: Filtering (Filter out redundant and noisy content to preserve the most relevant information)
+        1. :cross_mark_button: Reranking
+        2. :check_mark_button: Fusion
+        3. :check_mark_button: Filtering (Filter out redundant and noisy content to preserve the most relevant information)
     - Generation:
         1. Generation utilizing retrieved information
-        2. :check_mark: Citation: Using BM25 to cite the retrieved information
+        2. :check_mark_button: Citation: Using BM25 to cite the retrieved information
