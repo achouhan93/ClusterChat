@@ -46,3 +46,9 @@ Conference: 6th-10th April 2025
 - [ ] Provide questions that one can ask for the respective selected cluster.
 - [ ] :thinking: How can we make it more intuitive?
 - [ ] Chatbot at the side to interact with the cluster
+
+## :bulb: Brainstorming Points
+- [ ] Self-Querying LangChain: https://python.langchain.com/v0.1/docs/modules/data_connection/retrievers/self_query/
+    - Based on the metadata information get information from the user query, if there is no output or there are multiple values for the value then query is not sufficient and more information is required as an input. This is the follow-up question for the user
+- [ ] Try to integrate as much functionality from the OpenResearcher Paper - https://arxiv.org/pdf/2408.06941
+    - Citation
