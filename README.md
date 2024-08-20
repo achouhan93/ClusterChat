@@ -6,12 +6,16 @@ Submission Date: 23rd October 2024
 Notificatioin Date: 16th December 2024
 Conference: 6th-10th April 2025
 
-## Related Softwares and Applications
-- PubMed Landscape:
-    - PubMed Landscape Application: https://static.nomic.ai/pubmed.html
-    - PubMed Landscape Github: https://github.com/berenslab/pubmed-landscape
-- Carrot2: https://search.carrot2.org
-- SciSpace Application: https://typeset.io
+## Related Softwares/Applications/Publications:
+- Publications: 
+    - PubMed Landscape:
+        - PubMed Landscape Application: https://static.nomic.ai/pubmed.html
+        - PubMed Landscape Github: https://github.com/berenslab/pubmed-landscape
+    - OpenResearcher: https://arxiv.org/pdf/2408.06941
+
+- Application/Softwares:
+    - Carrot2: https://search.carrot2.org
+    - SciSpace Application: https://typeset.io
 
 ## Reference Project and Application
 - Reference: https://git-dbs.ifi.uni-heidelberg.de/practicals/2024-arjan-sujit-siddhpura
@@ -52,3 +56,26 @@ Conference: 6th-10th April 2025
     - Based on the metadata information get information from the user query, if there is no output or there are multiple values for the value then query is not sufficient and more information is required as an input. This is the follow-up question for the user
 - [ ] Try to integrate as much functionality from the OpenResearcher Paper - https://arxiv.org/pdf/2408.06941
     - Citation
+    - Question types: 
+        1. Question Answering which seeks detailed information or clarification within a specific domain.
+        2. Text Summarization aimed at condensing the latest findings and developments into comprehensive overviews.
+        3. Recommendation which involves suggesting relevant literature and studies based on the user interests or current inquiries. :exclamation: User engagement in active communications :exclamation:
+    - Active Assistant: Pose Heuristic questions, guiding users to clarify queries for capturing their intent.
+    - Conversational Interaction: Engage in deep discussions through conversational follow-up questions.
+    - Query Tools:
+        1. :check_mark: Active Query: Enhancing a query by adding extra content and context. Ask users to specify their interest aread or discipline. Thhus, ensuring generated answers are highly relevant by covering nuances not initially mentioned.
+        2. Query Rewriting: Rewrite the queries for better clarity and effectiveness.
+        3. Query Decomposition: Decomposes the complex query into a series of subqueries, improving precision and efficiency for satisfying responses. Process each subquery.
+    - Retrieval Tools:
+        1. Hybrid Search
+        2. Sparse Search
+        3. Dense Search
+    - Data Routing Strategy:
+        - Stratify the data based on both temporal and domain-specific information found in the metadata of the documents present in corpus.
+    - Post-processing Tools:
+        1. :cross_mark: Reranking
+        2. :check_mark: Fusion
+        3. :check_mark: Filtering (Filter out redundant and noisy content to preserve the most relevant information)
+    - Generation:
+        1. Generation utilizing retrieved information
+        2. :check_mark: Citation: Using BM25 to cite the retrieved information
