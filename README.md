@@ -1,4 +1,4 @@
-# 2024-ECIR-Corpus-Explorer
+# 2025-ECIR-Corpus-Explorer
 
 ## Target conference information
 ECIR Demo Paper: https://ecir2025.eu/call-for-demo-papers/
@@ -9,7 +9,9 @@ Conference: 6th-10th April 2025
 ## Related Softwares/Applications/Publications:
 - Publications: 
     - PubMed Landscape:
-        - PubMed Landscape Application: https://static.nomic.ai/pubmed.html
+        - PubMed Landscape Application: 
+            - https://static.nomic.ai/pubmed.html
+            - https://atlas.nomic.ai/map/pubmed-monthly
         - PubMed Landscape Github: https://github.com/berenslab/pubmed-landscape
     - OpenResearcher: https://arxiv.org/pdf/2408.06941
 
