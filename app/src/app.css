@@ -1,0 +1,104 @@
+html,
+body {
+	/* dark */
+	--brand-dark: var(--orange-3);
+	--text-1-dark: var(--gray-3);
+	--text-2-dark: var(--gray-5);
+	--surface-1-dark: var(--gray-9);
+	--surface-2-dark: var(--gray-10);
+	--surface-3-dark: var(--gray-11);
+	--surface-4-dark: var(--gray-12);
+	--background-dark: var(--gray-8);
+
+	/* light */
+	--brand-light: var(--orange-10);
+	--text-1-light: var(--gray-8);
+	--text-2-light: var(--gray-7);
+	--surface-1-light: var(--green-0);
+	--surface-2-light: var(--green-1);
+	--surface-3-light: var(--green-2);
+	--surface-4-light: var(--green-3);
+	--background-light: var(--gradient-8);
+	--border-light: var(--green-4);
+}
+
+html,
+body {
+	height: 100%;
+}
+
+.cosmograph-search {
+	--cosmograph-search-list-background: var(--surface-dark-3);
+	--cosmograph-search-font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+		'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+	--cosmograph-search-input-background: var(--surface-dark-3);
+	--cosmograph-search-mark-background: #2463eb;
+	--cosmograph-search-accessor-background: #2463eb;
+	--cosmograph-search-interactive-background: #1d4dd6;
+	--cosmograph-search-hover-color: #2463eb;
+}
+
+.cosmograph-node-label,
+.cosmograph-hovered-node-label {
+	background-color: var(--surface-4-dark);
+	cursor: pointer !important;
+	font-size: var(--font-size-2) !important;
+	font-weight: var(--font-weight-200);
+	border-size: var(--border-size-4);
+	max-width: 30ch;
+	opacity: 0.9;
+	text-align: center;
+	border-radius: var(--radius-drawn-1);
+}
+
+.cosmograph-timeline {
+	--cosmograph-timeline-background: var(--background-dark);
+	--cosmograph-timeline-selection-color: #2463eb;
+	--cosmograph-timeline-bar-color: #4a5c79;
+	--cosmograph-timeline-selection-opacity: 0.5;
+	opacity: 0.9;
+}
+
+body {
+	font-family: sans-serif;
+	margin: 0px;
+}
+
+.app {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
+
+.actions {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	color: #ccc;
+}
+
+.actions-header {
+	font-weight: bold;
+	margin-bottom: 2px;
+}
+
+.action {
+	margin-left: 2p0;
+	font-size: 10pt;
+	text-decoration: underline;
+	cursor: pointer;
+	user-select: none;
+}
+
+.selection-box {
+	position: absolute;
+	border: 1px dashed blue;
+	background-color: rgba(173, 216, 230, 0.3);
+	pointer-events: none;
+}
+.item {
+	position: absolute;
+	width: 50px;
+	height: 50px;
+	background-color: lightblue;
+}
