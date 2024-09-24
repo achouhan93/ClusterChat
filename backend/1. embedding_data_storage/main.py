@@ -93,7 +93,7 @@ class Processor:
         # Execute the initial search request
         response = self.os_connection.search(
             index=self.source_os_index_name,
-            scroll="10s",
+            scroll="10m",
             size=self.scroll_size,
             body=search_params,
         )
@@ -139,7 +139,7 @@ class Processor:
                     pbar.update(self.scroll_size - len(hits))
 
                 # Paginate through the search results using the scroll parameter
-                response = self.os_connection.scroll(scroll_id=scroll_id, scroll="10s")
+                response = self.os_connection.scroll(scroll_id=scroll_id, scroll="10m")
                 hits = response["hits"]["hits"]
                 scroll_id = response["_scroll_id"]
 
@@ -190,7 +190,7 @@ class Processor:
             # Execute the initial search request
             response = self.os_connection.search(
                 index=self.source_os_index_name,
-                scroll="30s",
+                scroll="10m",
                 size=self.scroll_size,
                 body=search_params,
             )
@@ -255,7 +255,7 @@ class Processor:
 
                     # Paginate through the search results using the scroll parameter
                     response = self.os_connection.scroll(
-                        scroll_id=scroll_id, scroll="30s"
+                        scroll_id=scroll_id, scroll="10m"
                     )
                     hits = response["hits"]["hits"]
                     scroll_id = response["_scroll_id"]
@@ -536,4 +536,5 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    mp.set_start_method('spawn', force=True)
     main()
