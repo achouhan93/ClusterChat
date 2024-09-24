@@ -8,7 +8,6 @@ from torch import cuda
 from datetime import datetime, timedelta, date
 import sys
 import spacy
-import multiprocessing as mp
 
 CONST_EUTILS_DEFAULT_MINDATE = "1800-01-01"
 CONST_EUTILS_DEFAULT_MAXDATE = date.today().strftime("%Y-%m-%d")
@@ -16,7 +15,14 @@ CONFIG = loadConfigFromEnv()
 
 
 class Processor:
-    def __init__(self, opensearch_connection, source_os_index, target_os_index, chunking_strategy, *args):
+    def __init__(
+        self,
+        opensearch_connection,
+        source_os_index,
+        target_os_index,
+        chunking_strategy,
+        *args,
+    ):
         self.nlp = spacy.load("en_core_sci_sm")  # Load the SciSpacy model
 
         self.os_connection = opensearch_connection
@@ -35,10 +41,8 @@ class Processor:
             trust_remote_code=True,
             device=self.device,
         )
-        
-        self.splitter = SentenceTransformersTokenTextSplitter(
-            model_name = embed_model_id
-            )
+
+        self.splitter = SentenceTransformersTokenTextSplitter(model_name=embed_model_id)
 
         if len(args[0]) != 0:
             # Convert start and end dates to datetime objects
@@ -54,7 +58,6 @@ class Processor:
         self.current_date = self.end_date
         self.scroll_size = 500
         self.chunking_strategy = chunking_strategy
-
 
     def insert_article_by_id(self, json_file_path):
         # Read PubMed IDs from the specified JSON file
@@ -93,7 +96,7 @@ class Processor:
         # Execute the initial search request
         response = self.os_connection.search(
             index=self.source_os_index_name,
-            scroll="10m",
+            scroll="10s",
             size=self.scroll_size,
             body=search_params,
         )
@@ -109,8 +112,7 @@ class Processor:
             while hits:
                 try:
                     logging.info(f"considered {len(hits)} documents for processing")
-                    #TODO: Change the parameters to call get_document_information function
-                    document_vector_information = get_document_information(hits)
+                    document_vector_information = self.get_document_information(hits)
 
                     if document_vector_information:
                         loadSuccess = opensearch_insert(
@@ -139,7 +141,7 @@ class Processor:
                     pbar.update(self.scroll_size - len(hits))
 
                 # Paginate through the search results using the scroll parameter
-                response = self.os_connection.scroll(scroll_id=scroll_id, scroll="10m")
+                response = self.os_connection.scroll(scroll_id=scroll_id, scroll="10s")
                 hits = response["hits"]["hits"]
                 scroll_id = response["_scroll_id"]
 
@@ -148,7 +150,6 @@ class Processor:
         pbar.close()
         logging.info(f"Processing completed for all documents.")
         logging.info(f"Total Number of documents: {total_docs}")
-
 
     def process_articles_in_batches(self):
         fields_to_include = [
@@ -190,7 +191,7 @@ class Processor:
             # Execute the initial search request
             response = self.os_connection.search(
                 index=self.source_os_index_name,
-                scroll="10m",
+                scroll="30s",
                 size=self.scroll_size,
                 body=search_params,
             )
@@ -202,30 +203,13 @@ class Processor:
                 "value"
             ]  # Get the total number of documents
 
-            with tqdm(total=total_docs) as pbar, mp.Manager() as manager:
-                document_vector_information = manager.list()
-
+            with tqdm(total=total_docs) as pbar:
                 while hits:
                     try:
                         logging.info(f"considered {len(hits)} documents for processing")
-
-                        # Split the hits into chunks for multiprocessing
-                        num_workers = min(mp.cpu_count(), len(hits))
-                        chunk_size = max(1, len(hits) // num_workers)
-                        chunks = [hits[i:i + chunk_size] for i in range(0, len(hits), chunk_size)]
-
-                        # Create a pool of processes to process chunks in parallel
-                        with mp.Pool(processes=num_workers) as pool:
-                            pool.starmap(
-                                get_document_information,
-                                [(chunk, document_vector_information, 
-                                  self.embed_model, self.nlp, self.chunking_strategy,
-                                  self.splitter, self.source_os_index_name) for chunk in chunks]
-                            )
-
-                        # document_vector_information = self.get_document_information(
-                        #     hits
-                        # )
+                        document_vector_information = self.get_document_information(
+                            hits
+                        )
 
                         if document_vector_information:
                             loadSuccess = opensearch_insert(
@@ -255,7 +239,7 @@ class Processor:
 
                     # Paginate through the search results using the scroll parameter
                     response = self.os_connection.scroll(
-                        scroll_id=scroll_id, scroll="10m"
+                        scroll_id=scroll_id, scroll="30s"
                     )
                     hits = response["hits"]["hits"]
                     scroll_id = response["_scroll_id"]
@@ -273,127 +257,125 @@ class Processor:
         )
         logging.info(f"Total Number of documents: {total_docs}")
 
-def get_document_information(data, shared_list, embed_model, nlp_model, chunking_strategy, splitter, source_os_index_name):
-    vector_data = []
+    def get_document_information(self, data):
+        vector_data = []
 
-    for doc in tqdm(data):
-        logging.info(f"Started data creation for pubmed id: {doc['_id']}")
-        if doc["_source"].get("journalInformation") is not None:
-            doc["_source"]["journalInformation"]["journalTitle"] = (
-                "no journal information"
-                if doc["_source"]["journalInformation"]["journalTitle"] is None
-                else doc["_source"]["journalInformation"]["journalTitle"]
-            )
-        else:
-            doc["_source"]["journalInformation"][
-                "journalTitle"
-            ] = "no journal information"
-
-        if doc["_source"].get("keywords") is not None:
-            doc["_source"]["keywords"] = (
-                ["no keywords"]
-                if doc["_source"]["keywords"] is None
-                else list(
-                    {term["name"].lower() for term in doc["_source"]["keywords"]}
+        for doc in tqdm(data):
+            logging.info(f"Started data creation for pubmed id: {doc['_id']}")
+            if doc["_source"].get("journalInformation") is not None:
+                doc["_source"]["journalInformation"]["journalTitle"] = (
+                    "no journal information"
+                    if doc["_source"]["journalInformation"]["journalTitle"] is None
+                    else doc["_source"]["journalInformation"]["journalTitle"]
                 )
-            )
-        else:
-            doc["_source"]["keywords"] = ["no keywords"]
+            else:
+                doc["_source"]["journalInformation"][
+                    "journalTitle"
+                ] = "no journal information"
 
-        if doc["_source"].get("meshTerms") is not None:
-            doc["_source"]["meshNames"] = (
-                ["no mesh names"]
-                if doc["_source"]["meshTerms"] is None
-                else list(
-                    {term["name"].lower() for term in doc["_source"]["meshTerms"]}
+            if doc["_source"].get("keywords") is not None:
+                doc["_source"]["keywords"] = (
+                    ["no keywords"]
+                    if doc["_source"]["keywords"] is None
+                    else list(
+                        {term["name"].lower() for term in doc["_source"]["keywords"]}
+                    )
                 )
-            )
-            doc["_source"]["meshIds"] = (
-                ["no mesh ids"]
-                if doc["_source"]["meshTerms"] is None
-                else list({term["meshID"] for term in doc["_source"]["meshTerms"]})
-            )
-        else:
-            doc["_source"]["meshNames"] = ["no mesh names"]
-            doc["_source"]["meshIds"] = ["no mesh ids"]
+            else:
+                doc["_source"]["keywords"] = ["no keywords"]
 
-        if doc["_source"].get("chemicals") is not None:
-            doc["_source"]["chemicals"] = (
-                ["no chemicals"]
-                if doc["_source"]["chemicals"] is None
-                else list(
-                    {term["name"].lower() for term in doc["_source"]["chemicals"]}
+            if doc["_source"].get("meshTerms") is not None:
+                doc["_source"]["meshNames"] = (
+                    ["no mesh names"]
+                    if doc["_source"]["meshTerms"] is None
+                    else list(
+                        {term["name"].lower() for term in doc["_source"]["meshTerms"]}
+                    )
                 )
-            )
-        else:
-            doc["_source"]["chemicals"] = ["no chemicals"]
+                doc["_source"]["meshIds"] = (
+                    ["no mesh ids"]
+                    if doc["_source"]["meshTerms"] is None
+                    else list({term["meshID"] for term in doc["_source"]["meshTerms"]})
+                )
+            else:
+                doc["_source"]["meshNames"] = ["no mesh names"]
+                doc["_source"]["meshIds"] = ["no mesh ids"]
 
-        if doc["_source"].get("authors") is not None:
-            doc["_source"]["authorNames"] = (
-                ["no author names"]
-                if doc["_source"]["authors"] is None
-                else list(
+            if doc["_source"].get("chemicals") is not None:
+                doc["_source"]["chemicals"] = (
+                    ["no chemicals"]
+                    if doc["_source"]["chemicals"] is None
+                    else list(
+                        {term["name"].lower() for term in doc["_source"]["chemicals"]}
+                    )
+                )
+            else:
+                doc["_source"]["chemicals"] = ["no chemicals"]
+
+            if doc["_source"].get("authors") is not None:
+                doc["_source"]["authorNames"] = (
+                    ["no author names"]
+                    if doc["_source"]["authors"] is None
+                    else list(
+                        {
+                            f"{author['firstName']} {author['lastName']}"
+                            for author in doc["_source"]["authors"]
+                        }
+                    )
+                )
+                doc["_source"]["authorAffiliations"] = list(
                     {
-                        f"{author['firstName']} {author['lastName']}"
+                        affiliation["institute"] if affiliation else "no affiliation"
                         for author in doc["_source"]["authors"]
+                        for affiliation in author["affiliations"]
                     }
                 )
-            )
-            doc["_source"]["authorAffiliations"] = list(
-                {
-                    affiliation["institute"] if affiliation else "no affiliation"
-                    for author in doc["_source"]["authors"]
-                    for affiliation in author["affiliations"]
+            else:
+                doc["_source"]["authorNames"] = ["no author names"]
+                doc["_source"]["authorAffiliations"] = ["no affiliation"]
+
+            if self.chunking_strategy == "complete":
+                # Chunks created based on the transformer
+                chunks = self.splitter.split_text(text=doc["_source"]["abstract"])
+            elif self.chunking_strategy == "sentence":
+                abstract_text = doc["_source"]["abstract"]
+                doc_spacy = self.nlp(abstract_text)  # Process the text with SciSpacy
+                chunks = [
+                    sent.text.strip() for sent in doc_spacy.sents
+                ]  # Extract sentences
+
+            for j, chunk in enumerate(chunks):
+                # Add metadata for article ID and chunk ID
+                metadata = {
+                    "pubmed_id": doc["_id"],
+                    "articleDate": doc["_source"]["articleDate"],
+                    "title": (
+                        "no title"
+                        if doc["_source"]["title"] is None
+                        else doc["_source"]["title"]
+                    ),
+                    "journalTitle": doc["_source"]["journalInformation"][
+                        "journalTitle"
+                    ],
+                    "keywords": doc["_source"]["keywords"],
+                    "meshTerms": doc["_source"]["meshNames"],
+                    "meshIds": doc["_source"]["meshIds"],
+                    "chemicals": doc["_source"]["chemicals"],
+                    "authorNames": doc["_source"]["authorNames"],
+                    "authorAffiliations": doc["_source"]["authorAffiliations"],
+                    "text_chunk_id": j,
+                    "pubmed_text": chunk,
+                    "document_source": self.source_os_index_name,
                 }
-            )
-        else:
-            doc["_source"]["authorNames"] = ["no author names"]
-            doc["_source"]["authorAffiliations"] = ["no affiliation"]
 
-        if chunking_strategy == "complete":
-            # Chunks created based on the transformer
-            chunks = splitter.split_text(text=doc['_source']['abstract'])
-        elif chunking_strategy == "sentence":
-            abstract_text = doc["_source"]["abstract"]
-            doc_spacy = nlp_model(abstract_text)  # Process the text with SciSpacy
-            chunks = [
-                sent.text.strip() for sent in doc_spacy.sents
-            ]  # Extract sentences
+                #  Embed the chunk using huggingface embedding method
+                embedding = self.embed_model.encode(chunk).tolist()
+                ids = f"{doc['_id']}_{j}"
+                vector_data.append((ids, embedding, metadata))
 
-        for j, chunk in enumerate(chunks):
-            # Add metadata for article ID and chunk ID
-            metadata = {
-                "pubmed_id": doc["_id"],
-                "articleDate": doc["_source"]["articleDate"],
-                "title": (
-                    "no title"
-                    if doc["_source"]["title"] is None
-                    else doc["_source"]["title"]
-                ),
-                "journalTitle": doc["_source"]["journalInformation"][
-                    "journalTitle"
-                ],
-                "keywords": doc["_source"]["keywords"],
-                "meshTerms": doc["_source"]["meshNames"],
-                "meshIds": doc["_source"]["meshIds"],
-                "chemicals": doc["_source"]["chemicals"],
-                "authorNames": doc["_source"]["authorNames"],
-                "authorAffiliations": doc["_source"]["authorAffiliations"],
-                "text_chunk_id": j,
-                "pubmed_text": chunk,
-                "document_source": source_os_index_name,
-            }
+            logging.info(f"Completed data creation for pubmed id: {doc['_id']}")
 
-            #  Embed the chunk using huggingface embedding method
-            embedding = embed_model.encode(chunk).tolist()
-            ids = f"{doc['_id']}_{j}"
-            vector_data.append((ids, embedding, metadata))
-
-        logging.info(f"Completed data creation for pubmed id: {doc['_id']}")
-
-    # return vector_data
-    # Append the processed vector data to the shared list (thread-safe)
-    shared_list.extend(vector_data)
+        return vector_data
 
 
 def secondsToText(secs):
@@ -455,11 +437,11 @@ def main(argv=None):
         )
         parser.add_argument(
             "-c",
-            "--chunking", 
-            type=str, 
-            choices=["complete", "sentence"], 
-            default="complete", 
-            help="Chunking strategy for text processing."
+            "--chunking",
+            type=str,
+            choices=["complete", "sentence"],
+            default="complete",
+            help="Chunking strategy for text processing.",
         )
 
         args = parser.parse_args()
@@ -524,7 +506,11 @@ def main(argv=None):
                 f"Vector storage for pubmed records started at {secondsToText(start_time)}"
             )
             document_processor = Processor(
-                os_connection, source_os_index, target_os_index, args.chunking, args.json_file
+                os_connection,
+                source_os_index,
+                target_os_index,
+                args.chunking,
+                args.json_file,
             )
             document_processor.insert_article_by_id(json_path)
             logging.info(
@@ -536,5 +522,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    mp.set_start_method('spawn', force=True)
     main()

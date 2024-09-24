@@ -1,4 +1,3 @@
-
 def opensearch_create(os_connection, index_name, os_mapping):
     # """"""""""
     # Functionality: Creation of the Index if not present in the cluster
