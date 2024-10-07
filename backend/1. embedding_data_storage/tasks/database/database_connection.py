@@ -17,7 +17,7 @@ def opensearch_connection():
     user_name = CONFIG["OPENSEARCH_USERNAME"]
     password = CONFIG["OPENSEARCH_PASSWORD"]
     os = OpenSearch(
-        hosts=[{"host": CONFIG["OPENSEARCH_HOST"], "port": CONFIG["OPENSEARCH_PORT"]}],
+        hosts=[{"host": CONFIG["CLUSTER_TALK_OPENSEARCH_HOST"], "port": CONFIG["OPENSEARCH_PORT"]}],
         http_auth=(user_name, password),
         use_ssl=True,
         verify_certs=True,
