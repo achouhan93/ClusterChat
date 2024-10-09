@@ -86,6 +86,11 @@ class Processor:
                             "match_phrase": {
                                 "abstract": "no abstract available on pubmed"
                             }
+                        },
+                        {
+                            "match_phrase": {
+                                "abstract": "ABSTRACT TRUNCATED"
+                            }
                         }
                     ],
                 }
@@ -180,6 +185,11 @@ class Processor:
                             {
                                 "match_phrase": {
                                     "abstract": "no abstract available on pubmed"
+                                }
+                            },
+                            {
+                                "match_phrase": {
+                                    "abstract": "ABSTRACT TRUNCATED AT"
                                 }
                             }
                         ],
