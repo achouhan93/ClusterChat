@@ -1,5 +1,4 @@
 from .database.database_connection import opensearch_connection as opensearch_connection
-from .database.database_create import opensearch_create as opensearch_create
 from .database.database_read import DataFetcher as DataFetcher
 from .database.database_storage import StorageManager as StorageManager
 

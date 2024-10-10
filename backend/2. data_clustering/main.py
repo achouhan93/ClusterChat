@@ -11,9 +11,11 @@ This script performs the following steps:
 Usage:
     python main.py -c <start_date> <end_date>
 """
+
 import os
 import argparse
 import logging
+import sys
 
 from tasks.database.database_connection import opensearch_connection
 from tasks.database.database_read import DataFetcher
@@ -23,8 +25,11 @@ from tasks.clustering import ClusteringModel
 from utils import log_time_memory, load_config_from_env
 import config
 
+sys.setrecursionlimit(100000)  # Adjust the limit as needed
+
 # Load configuration
 CONFIG = load_config_from_env()
+
 
 def main(argv=None):
     """Main function to run the clustering pipeline."""
@@ -51,7 +56,7 @@ def main(argv=None):
         parser.add_argument(
             "-c",
             "--clustering",
-            metavar=("START_DATE","END_DATE"),
+            metavar=("START_DATE", "END_DATE"),
             type=str,
             nargs=2,
             help=(
@@ -80,40 +85,55 @@ def main(argv=None):
             clusterer = ClusteringModel(method=config.CLUSTERING_METHOD)
 
             # Step 1: Dimensionality Reduction
-            logging.info(
-                f"Starting dimensionality reduction using "
-                f"{config.DIMENSIONALITY_REDUCTION_METHOD} method."
+            reducer_path = os.path.join(
+                storage_manager.intermediate_path, "reducer.joblib"
             )
-            reducer.fit(data_fetcher.fetch_embeddings)
+            if os.path.exists(reducer_path):
+                logging.info("Found existing reducer.joblib, loading the reducer.")
+                reducer.reducer = storage_manager.load_intermediate("reducer.joblib")
+            else:
+                logging.info(
+                    f"Starting dimensionality reduction using "
+                    f"{config.DIMENSIONALITY_REDUCTION_METHOD} method."
+                )
+                reducer.fit(data_fetcher.fetch_embeddings)
 
-            # Save the fitted reducer
-            storage_manager.save_intermediate('reducer.joblib', reducer.reducer)
-            
-            logging.info(
-                f"Finished dimensionality reduction using "
-                f"{config.DIMENSIONALITY_REDUCTION_METHOD} method "
-                f"and stored in reducer.joblib."
-            )
+                # Save the fitted reducer
+                storage_manager.save_intermediate("reducer.joblib", reducer.reducer)
+
+                logging.info(
+                    f"Finished dimensionality reduction using "
+                    f"{config.DIMENSIONALITY_REDUCTION_METHOD} method "
+                    f"and stored in reducer.joblib."
+                )
 
             # Step 2: Clustering
-            logging.info(
-                f"Starting clustering using {config.CLUSTERING_METHOD} algorithm."
+            clusterer_path = os.path.join(
+                storage_manager.intermediate_path, "clusterer.joblib"
             )
 
-            @log_time_memory
-            def data_generator():
-                """Generator function to yield reduced embeddings and IDs."""
-                for embeddings_batch, ids_batch in data_fetcher.fetch_embeddings():
-                    reduced_embeddings = reducer.transform(embeddings_batch)
-                    yield reduced_embeddings, ids_batch
+            if os.path.exists(clusterer_path):
+                logging.info("Found existing clusterer.joblib, loading the clusterer.")
+                clusterer.model = storage_manager.load_intermediate("clusterer.joblib")
+            else:
+                logging.info(
+                    f"Starting clustering using {config.CLUSTERING_METHOD} algorithm."
+                )
 
-            clusterer.fit(data_generator)
-            storage_manager.save_intermediate("clusterer.joblib", clusterer.model)
+                def data_generator():
+                    """Generator function to yield reduced embeddings and IDs."""
+                    for embeddings_batch, ids_batch in data_fetcher.fetch_embeddings():
+                        reduced_embeddings = reducer.transform(embeddings_batch)
+                        yield reduced_embeddings, ids_batch
+                
+                #TODO: After sometime the processing of clustering was getting slower
+                clusterer.fit(data_generator)
+                storage_manager.save_intermediate("clusterer.joblib", clusterer.model)
 
-            logging.info(
-                f"Finished clustering using {config.CLUSTERING_METHOD} algorithm "
-                f"and stored in clusterer.joblib."
-            )
+                logging.info(
+                    f"Finished clustering using {config.CLUSTERING_METHOD} algorithm "
+                    f"and stored in clusterer.joblib."
+                )
 
             # Step 2.1: Store Cluster Information
             logging.info("Storing cluster information.")
@@ -124,22 +144,30 @@ def main(argv=None):
             # Step 3: Reduction to 2D and storing results
             logging.info("Reducing embeddings to 2D for visualization.")
 
+            # Initialize 2D reducer
+            reducer_2d = DimensionalityReducer(method="IncrementalPCA", n_components=2)
+
+            # Fit the 2D reducer incrementally
+            for embeddings_batch, _ in data_fetcher.fetch_embeddings():
+                reduced_embeddings = reducer.transform(embeddings_batch)
+                reducer_2d.fit_partial(reduced_embeddings)
+
+            # TODO: Store intermediate results of IncrementalPCA for 2D
+
+            # Now, transform and store results
             for embeddings_batch, ids_batch in data_fetcher.fetch_embeddings():
                 reduced_embeddings = reducer.transform(embeddings_batch)
                 labels = clusterer.predict(reduced_embeddings)
-
-                # Reduce to 2D using UMAP
-                reducer_2d = DimensionalityReducer(method="UMAP", n_components=2)
-                embeddings_2d = reducer_2d.fit_transform(reduced_embeddings)
-
+                embeddings_2d = reducer_2d.transform(reduced_embeddings)
                 # Store results
                 storage_manager.store_results(embeddings_2d, ids_batch, labels)
 
             logging.info("Clustering pipeline completed successfully.")
-    
+
     finally:
         # Close OpenSearch connection
         os_connection.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

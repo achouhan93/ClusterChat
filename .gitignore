@@ -27,4 +27,4 @@ logs/
 .vscode
 __pycache__/
 *.lock
-intermediate_results/
+

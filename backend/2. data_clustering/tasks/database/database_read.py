@@ -10,6 +10,7 @@ from datetime import timedelta, datetime, date
 CONST_EUTILS_DEFAULT_MINDATE = "1800-01-01"
 CONST_EUTILS_DEFAULT_MAXDATE = date.today().strftime("%Y-%m-%d")
 
+
 class DataFetcher:
     """Class to fetch embeddings from OpenSearch in batches."""
 
@@ -31,13 +32,15 @@ class DataFetcher:
         """
         self.client = opensearch_connection
         self.os_index_name = index_name
-        
+
         # Parse dates
         if start_date and end_date:
             self.start_date = datetime.strptime(start_date, "%Y-%m-%d")
             self.end_date = datetime.strptime(end_date, "%Y-%m-%d")
         else:
-            self.start_date = datetime.strptime(CONST_EUTILS_DEFAULT_MINDATE, "%Y-%m-%d")
+            self.start_date = datetime.strptime(
+                CONST_EUTILS_DEFAULT_MINDATE, "%Y-%m-%d"
+            )
             self.end_date = datetime.strptime(CONST_EUTILS_DEFAULT_MAXDATE, "%Y-%m-%d")
 
         # Initialize current_date for iteration
@@ -51,46 +54,40 @@ class DataFetcher:
             tuple: A tuple containing a batch of embeddings and their corresponding IDs.
         """
         fields_to_include = [
-            "documentID", 
+            "documentID",
             "articleDate",
-            "title", 
+            "title",
             "journal:title",
             "meshTerms",
             "chemicals",
             "authors.name",
             "authors.affiliation",
             "abstract_chunk",
-            "pubmed_bert_vector"
+            "pubmed_bert_vector",
         ]
 
         while self.current_date >= self.start_date:
             max_date = self.current_date.strftime("%Y-%m-%d")
             date_offset = self.current_date - timedelta(days=0)
             min_date = date_offset.strftime("%Y-%m-%d")
-        
+
             search_params = {
-                "sort": [
-                    {
-                        "articleDate": {
-                            "order": "desc"
-                            }
-                    }
-                ],
+                "sort": [{"articleDate": {"order": "desc"}}],
                 "query": {
                     "bool": {
                         "must": [
                             {
                                 "range": {
                                     "articleDate": {
-                                        "gte": min_date, 
+                                        "gte": min_date,
                                         "lte": max_date,
-                                        }
                                     }
+                                }
                             }
-                            ]
+                        ]
                     }
                 },
-                "_source": fields_to_include
+                "_source": fields_to_include,
             }
 
             # Execute the initial search request
@@ -120,7 +117,9 @@ class DataFetcher:
                                 ids_batch.append(
                                     {
                                         "documentID": doc["_source"].get("documentID"),
-                                        "articleDate": doc["_source"].get("articleDate"),
+                                        "articleDate": doc["_source"].get(
+                                            "articleDate"
+                                        ),
                                         "title": doc["_source"].get("title"),
                                         "journal:title": doc["_source"].get(
                                             "journal:title"
@@ -140,10 +139,12 @@ class DataFetcher:
                                 )
 
                         if embeddings_batch:
-                            yield np.array(embeddings_batch, dtype=np.float32), ids_batch
+                            yield np.array(
+                                embeddings_batch, dtype=np.float32
+                            ), ids_batch
                         else:
                             logging.warning("No embeddings found in the current batch.")
-                    
+
                     except Exception as e:
                         logging.error(
                             f"Error during vector create and storage operation due to error {e}"
@@ -155,7 +156,7 @@ class DataFetcher:
                     response = self.client.scroll(scroll_id=scroll_id, scroll="10m")
                     hits = response["hits"]["hits"]
                     scroll_id = response["_scroll_id"]
-            
+
                 # Clear the scroll
                 self.client.clear_scroll(scroll_id=scroll_id)
                 pbar.close()
@@ -165,9 +166,9 @@ class DataFetcher:
 
                 # Move to the previous day
                 self.current_date -= timedelta(days=1)
-            
+
         logging.info(
             f"Processing completed for all documents in the date range "
             f"{self.start_date.strftime('%Y-%m-%d')} to {self.end_date.strftime('%Y-%m-%d')}."
         )
-                
+        self.current_date = self.end_date

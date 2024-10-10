@@ -37,17 +37,31 @@ class DimensionalityReducer:
             for embeddings_batch, _ in data_generator():
                 self.reducer.partial_fit(embeddings_batch)
         elif self.method == "UMAP":
-            # Collect data for UMAP fitting
             data = []
             for embeddings_batch, _ in data_generator():
                 data.append(embeddings_batch)
             data = np.vstack(data)
-            self.reducer = umap.UMAP(
-                n_components=self.n_components, random_state=42
-            )
+            self.reducer = umap.UMAP(n_components=self.n_components, random_state=42)
             self.reducer.fit(data)
         else:
             raise ValueError(f"Unknown dimensionality reduction method: {self.method}")
+
+    @log_time_memory
+    def fit_partial(self, embeddings):
+        """
+        Partially fits the dimensionality reduction model on the embeddings.
+
+        Args:
+            embeddings (np.ndarray): Embeddings to fit.
+        """
+        if self.method == "IncrementalPCA":
+            if self.reducer is None:
+                self.reducer = IncrementalPCA(n_components=self.n_components)
+            self.reducer.partial_fit(embeddings)
+        else:
+            raise NotImplementedError(
+                "fit_partial is only implemented for IncrementalPCA."
+            )
 
     @log_time_memory
     def transform(self, embeddings):
@@ -61,7 +75,6 @@ class DimensionalityReducer:
             np.ndarray: Reduced embeddings.
         """
         return self.reducer.transform(embeddings)
-    
 
     @log_time_memory
     def fit_transform(self, embeddings):
@@ -75,9 +88,7 @@ class DimensionalityReducer:
             np.ndarray: Reduced embeddings.
         """
         if self.method == "UMAP":
-            self.reducer = umap.UMAP(
-                n_components=self.n_components, random_state=42
-            )
+            self.reducer = umap.UMAP(n_components=self.n_components, random_state=42)
             return self.reducer.fit_transform(embeddings)
         else:
             raise NotImplementedError(

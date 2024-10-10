@@ -1,6 +1,7 @@
 """
 Module for establishing OpenSearch connection.
 """
+
 import utils
 from opensearchpy import OpenSearch
 

@@ -31,16 +31,18 @@ class ClusteringModel:
         """
         if self.method == "BIRCH":
             self.model = Birch(
-                threshold=0.5,
-                branching_factor=50,
-                n_clusters=None,
-                compute_labels=False,
+                threshold=2.0, #0.5
+                branching_factor=150, #50
+                # n_clusters=100, #None
+                compute_labels=True #False
             )
             for reduced_batch, _ in data_generator():
                 self.model.partial_fit(reduced_batch)
-            # Optionally set n_clusters and refit to assign labels
-            self.model.set_params(n_clusters=None)
-            self.model.fit(None)
+            
+            # Final clustering with defined number of clusters to condense the tree
+            self.model.set_params(n_clusters=100)
+            self.model.partial_fit()  # No data required, as it consolidates existing subclusters
+                       
         elif self.method == "HDBSCAN":
             # Collect data for HDBSCAN fitting
             data = []
@@ -82,7 +84,6 @@ class ClusteringModel:
             cluster_info = {
                 "n_clusters": len(self.model.subcluster_centers_),
                 "subcluster_centers": self.model.subcluster_centers_,
-                "labels": self.model.labels_,
             }
             return cluster_info
         elif self.method == "HDBSCAN":

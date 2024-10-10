@@ -87,11 +87,7 @@ class Processor:
                                 "abstract": "no abstract available on pubmed"
                             }
                         },
-                        {
-                            "match_phrase": {
-                                "abstract": "ABSTRACT TRUNCATED"
-                            }
-                        }
+                        {"match_phrase": {"abstract": "ABSTRACT TRUNCATED"}},
                     ],
                 }
             },
@@ -187,11 +183,7 @@ class Processor:
                                     "abstract": "no abstract available on pubmed"
                                 }
                             },
-                            {
-                                "match_phrase": {
-                                    "abstract": "ABSTRACT TRUNCATED AT"
-                                }
-                            }
+                            {"match_phrase": {"abstract": "ABSTRACT TRUNCATED AT"}},
                         ],
                     }
                 },
