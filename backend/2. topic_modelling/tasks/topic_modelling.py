@@ -66,7 +66,6 @@ class TopicModeller:
 
         # Dimensionality reduction with UMAP to 50 dimensions
         umap_model = UMAP(
-            n_neighbors=15,
             n_components=50, 
             min_dist=0.0, 
             metric='cosine',

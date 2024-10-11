@@ -82,16 +82,16 @@ def main(argv=None):
            # Generate date ranges for batching (every 15 days)
            date_batches = generate_date_ranges(min_date, max_date, delta_days=15)
            topic_modelling = TopicModeller(model_path=intermediate_path)
-
+                      
            for date_range in tqdm(date_batches):
-            topic_modelling.train_bertopic_model(
-               date_range=date_range,
-               data_fetcher=data_fetcher
-               )
-            
-            # Save the merged model
-            merged_model = topic_modelling.merge_bertopic_models()
-            final_model = topic_modelling.apply_vectorizer_to_merged_model(merged_model=merged_model)
+              topic_modelling.train_bertopic_model(
+                 date_range=date_range,
+                 data_fetcher=data_fetcher
+                 )
+           
+           # Save the merged model
+           merged_model = topic_modelling.merge_bertopic_models()
+           final_model = topic_modelling.apply_vectorizer_to_merged_model(merged_model=merged_model)
         
     finally:
       # Close OpenSearch connection
