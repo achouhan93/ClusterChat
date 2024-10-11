@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.vectorizers import ClassTfidfTransformer
+from bertopic.representation import MaximalMarginalRelevance
 
 class TopicModeller:
     """Class to fetch embeddings from OpenSearch in batches."""
@@ -78,15 +79,24 @@ class TopicModeller:
             metric='euclidean',
             cluster_selection_method='eom'
             )
+        
+        vectorizer_model = CountVectorizer(stop_words='english')
+        ctfidf_model = ClassTfidfTransformer(
+            bm25_weighting=True,
+            reduce_frequent_words=True
+            )
+        
+        # Representation model
+        representation_model = MaximalMarginalRelevance(diversity=0.3)
 
         # Initialize BERTopic
         topic_model = BERTopic(
             embedding_model=None,
             umap_model=umap_model,
             hdbscan_model=hdbscan_model,
-            vectorizer_model=None,
-            ctfidf_model=None,
-            representation_model=None,
+            vectorizer_model=vectorizer_model,
+            ctfidf_model=ctfidf_model,
+            representation_model=representation_model,
             top_n_words=10,
             language='english',
             verbose=True,
