@@ -23,8 +23,9 @@ en-core-sci-sm = {url = "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/rele
 psutil = "^6.0.0"
 hdbscan = "^0.8.38.post2"
 scikit-learn = "^1.5.2"
-umap-learn = "^0.5.6"
 joblib = "^1.4.2"
+umap-learn = "^0.5.6"
+bertopic = "^0.16.4"
 
 
 [build-system]

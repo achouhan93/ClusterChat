@@ -82,7 +82,10 @@ def main(argv=None):
             reducer = DimensionalityReducer(
                 method=config.DIMENSIONALITY_REDUCTION_METHOD
             )
-            clusterer = ClusteringModel(method=config.CLUSTERING_METHOD)
+            clusterer = ClusteringModel(
+                storage=storage_manager,
+                method=config.CLUSTERING_METHOD
+                )
 
             # Step 1: Dimensionality Reduction
             reducer_path = os.path.join(
@@ -126,10 +129,8 @@ def main(argv=None):
                         reduced_embeddings = reducer.transform(embeddings_batch)
                         yield reduced_embeddings, ids_batch
                 
-                #TODO: After sometime the processing of clustering was getting slower
                 clusterer.fit(data_generator)
-                storage_manager.save_intermediate("clusterer.joblib", clusterer.model)
-
+                
                 logging.info(
                     f"Finished clustering using {config.CLUSTERING_METHOD} algorithm "
                     f"and stored in clusterer.joblib."

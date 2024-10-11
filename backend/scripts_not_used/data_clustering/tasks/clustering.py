@@ -6,12 +6,13 @@ import numpy as np
 from sklearn.cluster import Birch
 import hdbscan
 from utils import log_time_memory
+import os
 
 
 class ClusteringModel:
     """Class to perform clustering."""
 
-    def __init__(self, method="BIRCH"):
+    def __init__(self, storage_manager, method="BIRCH"):
         """
         Initialize the ClusteringModel.
 
@@ -20,6 +21,7 @@ class ClusteringModel:
         """
         self.method = method
         self.model = None
+        self.storage_manager
 
     @log_time_memory
     def fit(self, data_generator):
@@ -31,18 +33,21 @@ class ClusteringModel:
         """
         if self.method == "BIRCH":
             self.model = Birch(
-                threshold=2.0, #0.5
-                branching_factor=150, #50
-                # n_clusters=100, #None
+                threshold=5.0, #0.5
+                branching_factor=300, #50
+                n_clusters=100, #None
                 compute_labels=True #False
             )
+
+            batch_count = 0
+            save_interval = 10  # Save every 10 batches
+
             for reduced_batch, _ in data_generator():
                 self.model.partial_fit(reduced_batch)
-            
-            # Final clustering with defined number of clusters to condense the tree
-            self.model.set_params(n_clusters=100)
-            self.model.partial_fit()  # No data required, as it consolidates existing subclusters
-                       
+                batch_count += 1
+                if batch_count % save_interval == 0:
+                    self.storage_manager.save_intermediate("clusterer.joblib", self.model)
+
         elif self.method == "HDBSCAN":
             # Collect data for HDBSCAN fitting
             data = []
