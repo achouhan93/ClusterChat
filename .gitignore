@@ -27,9 +27,6 @@ logs/
 .vscode
 __pycache__/
 *.lock
-<<<<<<< HEAD
 *intermediate_results/
-=======
 *paper
 
->>>>>>> 8562b056595716671a26d6639353ca56bc268a6b
