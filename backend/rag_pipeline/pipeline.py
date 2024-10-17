@@ -77,7 +77,7 @@ class Processor:
                     top_k_value=10,
                     document_ids=document_ids
                 )
-                # context = self.chat_model.vector_augment_prompt(
+                # context, retrieved_ids = self.chat_model.vector_augment_prompt(
                 #     query=question,
                 #     top_k_value=10,
                 #     document_ids=document_ids
