@@ -27,4 +27,5 @@ logs/
 .vscode
 __pycache__/
 *.lock
+*paper
 
