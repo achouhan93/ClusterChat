@@ -5,6 +5,7 @@ ECIR Demo Paper: https://ecir2025.eu/call-for-demo-papers/
 Submission Date: 23rd October 2024
 Notificatioin Date: 16th December 2024
 Conference: 6th-10th April 2025
+Potential Title: ClusterTalk: Engaging Conversations with Clustered Document Interfaces
 
 ## Related Softwares/Applications/Publications:
 - Publications: 

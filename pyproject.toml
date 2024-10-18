@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "corpus-explorer"
+version = "0.1.0"
+description = "Corpus Explorer combining the clustering and conversational aspects"
+authors = ["achouhan93"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+tqdm = "^4.66.5"
+python-dotenv = "^1.0.1"
+langchain-huggingface = "^0.1.0"
+pre-commit = "^3.8.0"
+langchain-community = "^0.3.0"
+black = "^24.8.0"
+sentence-transformers = "^3.1.0"
+scipy = "^1.7"
+spacy = "^3.7.6"
+langchain-text-splitters = "^0.3.0"
+en-core-sci-sm = {url = "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz"}
+psutil = "^6.0.0"
+hdbscan = "^0.8.38.post2"
+scikit-learn = "^1.5.2"
+joblib = "^1.4.2"
+umap-learn = "^0.5.6"
+bertopic = "^0.16.4"
+fastapi = "^0.115.2"
+uvicorn = "^0.32.0"
+opensearch-py = "^2.7.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -16,7 +16,17 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.test
+.venv
 
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Backend Modules
+logs/
+.vscode
+__pycache__/
+*.lock
+*intermediate_results/
+*paper
+
