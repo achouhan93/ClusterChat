@@ -4,11 +4,44 @@ import type { Node, Link } from '$lib/types';
 import { writable } from 'svelte/store';
 import { formatDate } from './utils';
 
-let nodes: Node[] = [];
+const nodes= writable<Node[]>([
+	/* {id: "38898713", x: -1.2475016280453854, y: -0.7180506886729104,cluster: 17, date: formatDate("12/12/2024")} */
+]);
 let links: Link[] = [];
 const dataloaded = writable(false);
 
-// Load nodes from the CSV file containing the nodes data after cluster analysis
+export async function getNodesfromOpenSearch(from:number, size: number) {
+const response = await fetch(`/api/opensearch/${from}/${size}`);
+const data = await response.json();
+// TODO
+if (Array.isArray(data)) {
+
+	const newNodes:Node[] = data.map(item => (
+		{
+			id: item._source.documentID,
+			x: item._source.x,
+			y: item._source.y,
+			cluster: item._source.cluster_label,
+			date: new Date()  // Assuming date will be set later
+		} satisfies Node
+));
+
+nodes.update(existingNodes => {
+	// Append new nodes to the existing ones
+	return [...existingNodes, ...newNodes];
+  });
+} else {
+	console.error("Expected an array but got:", data);
+}
+}
+	
+async function load10k(from: number, size:number){
+	await getNodesfromOpenSearch(from, size);
+}
+
+export { nodes, links, dataloaded, load10k };
+
+/* Load nodes from the CSV file containing the nodes data after cluster analysis
 async function loadNodes() {
 	try {
 		const response = await fetch('/src/data/nodes.csv');
@@ -45,31 +78,13 @@ async function loadNodes() {
 	}
 }
 
+
 async function loadData() {
 	await loadNodes();
 }
 
-export { loadData, nodes, links, dataloaded };
+
 
 // connecting with openSearch
 
-// load 5000 Nodes
-
-export async function getNodesfromOpenSearch(size: number) {
-	const response = await fetch(`/api/opensearch/${size}`);
-	const data = await response.json();
-
-	// TODO
-	/*	if (Array.isArray(data)) {
-		data.forEach((item, index) => {
-			const newNode: Node = {
-				id: item._source.id
-				// ...
-			}
-			nodes.push(newNode);
-		});
-	} else {
-		console.error("Expected an array but got:", data);
-	}
-*/
-}
+// load 5000 Nodes */

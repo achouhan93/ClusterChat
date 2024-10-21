@@ -30,3 +30,5 @@ __pycache__/
 *intermediate_results/
 *paper
 
+# virtual env
+ecir/

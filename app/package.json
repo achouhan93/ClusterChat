@@ -35,7 +35,7 @@
 	"type": "module",
 	"dependencies": {
 		"@cosmograph/cosmograph": "^1.4.0",
-		"@cosmograph/react": "^1.4.0",
+		"@opensearch-project/opensearch": "^2.12.0",
 		"lucide-svelte": "^0.428.0",
 		"open-props": "^1.7.5"
 	}

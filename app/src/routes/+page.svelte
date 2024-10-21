@@ -8,14 +8,15 @@
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
 	import { toggleMultipleNodesMode, toggleDragSelection, fitViewofGraph } from '$lib/graph';
 	import { onMount } from 'svelte';
-	import { loadData, dataloaded } from '$lib/readcluster';
+	import {load10k, dataloaded, nodes } from '$lib/readcluster';
+	import { get } from 'svelte/store';
 	onMount(async () => {
-		await loadData();
-		$dataloaded = true;
+		$dataloaded=true
 		const { createGraph, createSearchBar, createTimeline } = await import('$lib/graph');
 		createGraph();
 		createSearchBar();
 		createTimeline();
+		console.log(get(nodes))
 	});
 </script>
 

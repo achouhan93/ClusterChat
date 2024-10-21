@@ -6,12 +6,14 @@
 	// utils
 	import { splitTextIntoLines } from '$lib/utils';
 	import { getSelectedNodes } from '$lib/graph';
-	import type { Node } from '$lib/types';
+	import type { Node, ChatQuestion } from '$lib/types';
 
 	// svelte
 	import { writable } from 'svelte/store';
 	import { afterUpdate } from 'svelte';
 
+	// env
+	//import { API_URL } from '$env/static/public';
 
 	let isLoading = writable<boolean>(false);
 	let messages = writable<{ text: string; isUser: boolean }[]>([]);
@@ -43,6 +45,26 @@
 			return null;
 		}
 	}
+
+	
+	async function fetchChatAnswer(payload: ChatQuestion){
+		/* Requests FastAPI and fetches the answer to the question w/o context */
+		try {
+			const response = await fetch("http://localhost:8100/ask", {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(payload)
+
+			});
+			return response;
+		} catch (error) {
+			console.error('Error fetching chat completion: ', error);
+			return null;
+		}
+	}
+
 	function scrollToBottom(scrollArea: HTMLDivElement) {
 		// Scroll to the bottom of the message container
 		scrollArea.scrollTo({

@@ -1,40 +1,3 @@
-/*
-- cosmograph timeline
-- cosmograph filtration by cluster
-- cosmograph search
-
-
-pubmed_id (use for the references with https://pubmed.ncbi.nlm.nih.gov/)
-title
-articleDate
-doi
-be as generic with the namings as possible
-Clusters to use:
------------------------------------------------
-frameintell_arxiv_*
-frameintell_arxiv_embeddings (Embeddings: 2.4M)
-*/
-
-/* TODO
-
-
-* Area Selection with drag feature
-* add events to the search bar (Zooming doesn't work as intendet)
-* add chat feature
-*/
-
-/* DONE 
-
-* Add multiple selection
-* add search bar 
-* add timeline
-*/
-
-/* Suggestions
-* include scales for customization
-
-*/
-
 // Cosmograph Imports
 import type {
 	CosmographInputConfig,
@@ -43,31 +6,38 @@ import type {
 } from '@cosmograph/cosmograph';
 import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographSearch, CosmographTimeline } from '@cosmograph/cosmograph';
-import { nodes, links, getNodesfromOpenSearch } from './readcluster';
+import { nodes, links, load10k } from './readcluster';
 
 // Other 
 import '../app.css';
 import type { Node, Link } from '$lib/types';
 import { DragSelect } from '$lib/components/graph/DragSelect';
+import { get, writable } from 'svelte/store';
+
 
 // Useful global variables
 let graph: Cosmograph<Node, Link>;
 let timeline: CosmographTimeline<Node>;
+
+const INITIAL_VALUE:number = 5000
+
 export let selectMultipleNodes: boolean = false;
 export let selectNodeRange: boolean = false;
 let drag_select: boolean = false;
 let selectedNodes: Node[] = [];
 export let selectionArea: DragSelect | null = null;
+let $counter = writable<number>(0);
+ // Automatically load data when the component loads
 
 
-// Config for the Graph, Search and Timeline
+/* Config for the Graph, Search and Timeline */
 export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	//backgroundColor: '#151515',
 	backgroundColor: '#343a40',
 	//showFPSMonitor: true, /* shows performance monitor on the top right */
-	nodeSize: (node: Node) => node.size,
-	nodeColor: (node: Node) => node.color,
-	nodeLabelAccessor: (node: Node) => node.title,
+	nodeSize: (node: Node) => 0.1,
+	nodeColor: (node: Node) => "#4CC9FE",
+	//nodeLabelAccessor: (node: Node) => node.title,
 	nodeLabelClassName: 'cosmograph-node-label',
 	hoveredNodeLabelClassName: 'cosmograph-hovered-node-label',
 	hoveredNodeRingColor: '#2463EB',
@@ -76,6 +46,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	nodeGreyoutOpacity: 0.009,
 	disableSimulation: true,
 	renderLinks: false,
+	scaleNodesOnZoom: true,
 	//nodeLabelColor: '#FFFFFF',
 	hoveredNodeLabelColor: '#FFFFFF',
 	focusedNodeRingColor: 'yellow',
@@ -93,18 +64,34 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 				selectionArea = new DragSelect(container);
 			}
 		}
-	}
+	},
+	onZoomStart(e, userDriven){
+		if(userDriven){		
+		(async () => {
+		
+		if(get(nodes).length < 40000){
+			const counterValue = get($counter); // Get counter value using `get`
+			await load10k(counterValue, 5000); // Await loading 10k nodes
+			$counter.update(currentValue => currentValue + 1000); // Update counter
+			updateGraphData();
+		}
+		 // Update the graph after the new data is loaded
+	})();  // Immediately invoke the async function
+		}
+	},
+	
+	
 };
 
 const SearchConfig: CosmographSearchInputConfig<Node> = {
 	accessors: [
-		{ label: 'Title', accessor: (node: Node) => node.title }
+		{ label: 'ID', accessor: (node: Node) => node.id }
 		// one for the abstracts
 	],
 	placeholder: 'Find documents...',
 	ordering: {
-		order: ['Title'],
-		include: ['Title']
+		order: ['ID'],
+		include: ['ID']
 	},
 	maxVisibleItems: 10,
 	onSelectResult(clickedNode) {
@@ -112,7 +99,10 @@ const SearchConfig: CosmographSearchInputConfig<Node> = {
 	},
 	onSearch(foundMatches) {
 		showLabelsfor(foundMatches as Node[]);
-	}
+	},
+	onEnter(input, accessor) {
+		showLabelsfor([])
+	},
 };
 
 const TimelineConfig: CosmographTimelineInputConfig<Node> = {
@@ -122,12 +112,13 @@ const TimelineConfig: CosmographTimelineInputConfig<Node> = {
 };
 
 
-// create components
+/* Create components */
 export function createGraph() {
 	const canvas = document.getElementById('main-graph') as HTMLDivElement;
 	graph = new Cosmograph(canvas, GraphConfig);
 	graph.setConfig(GraphConfig);
-	graph.setData(nodes, links);
+	initializeGraph();
+	
 }
 
 export function createSearchBar() {
@@ -165,10 +156,25 @@ export function toggleDragSelection() {
 	}
 }
 
-// Graph functionalities
-export function updateGraph(config: CosmographInputConfig<Node, Link>) {
+/* Graph functionalities */
+
+async function initializeGraph(){
+	await load10k(0,INITIAL_VALUE)
+	graph.setData(get(nodes),links)
+	console.log(nodes)
+}
+
+export function updateGraphConfig(config: CosmographInputConfig<Node, Link>) {
 	graph.setConfig(config);
 }
+
+export function updateGraphData(){
+	nodes.subscribe(nodesArray => {
+		graph.setData(nodesArray, links); 
+	});	
+	console.dir(get(nodes))
+}
+
 
 export function selectNodesInRange(arr: [[number, number], [number, number]]) {
 	graph.selectNodesInRange(arr);
@@ -198,10 +204,10 @@ export function fitViewofGraph(){
 function showLabelsfor(nodes: Node[]) {
 	if (nodes) {
 		GraphConfig.showLabelsFor = nodes;
-		updateGraph(GraphConfig);
+		updateGraphConfig(GraphConfig);
 	} else {
 		GraphConfig.showLabelsFor = undefined;
-		updateGraph(GraphConfig);
+		updateGraphConfig(GraphConfig);
 	}
 }
 

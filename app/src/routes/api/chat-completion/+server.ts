@@ -3,13 +3,13 @@ import { Groq } from 'groq-sdk';
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
 // Function to get chat completion from Groq
-async function getGroqChatCompletion(messages: any[]) {
-	return groq.chat.completions.create({
-		messages: messages,
-		// Model ID for the Groq chat completion model
-		model: 'llama3-70b-8192'
-	});
-}
+// async function getGroqChatCompletion(messages: any[]) {
+// 	return groq.chat.completions.create({
+// 		messages: messages,
+// 		// Model ID for the Groq chat completion model
+// 		model: 'llama3-70b-8192'
+// 	});
+// }
 
 export async function POST({ request }) {
 	const { context, messages } = await request.json();
@@ -32,12 +32,12 @@ export async function POST({ request }) {
 			}
 		];
 
-		const chatCompletion = await getGroqChatCompletion(chat);
-		return new Response(JSON.stringify(chatCompletion), {
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
+		// const chatCompletion = await getGroqChatCompletion(chat);
+		// return new Response(JSON.stringify(chatCompletion), {
+		// 	headers: {
+		// 		'Content-Type': 'application/json'
+		// 	}
+		// });
 	} catch (error) {
 		return new Response('Error fetching chat completion', { status: 400 });
 	}
