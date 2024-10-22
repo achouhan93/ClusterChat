@@ -14,10 +14,10 @@ body {
 	--brand-light: var(--orange-10);
 	--text-1-light: var(--gray-8);
 	--text-2-light: var(--gray-7);
-	--surface-1-light: var(--green-0);
-	--surface-2-light: var(--green-1);
-	--surface-3-light: var(--green-2);
-	--surface-4-light: var(--green-3);
+	--surface-1-light: var(--gray-1);
+	--surface-2-light: var(--gray-2);
+	--surface-3-light: var(--gray-3);
+	--surface-4-light: var(--gray-4);
 	--background-light: var(--gradient-8);
 	--border-light: var(--green-4);
 }
@@ -27,7 +27,7 @@ body {
 	height: 100%;
 }
 
-.cosmograph-search {
+/* .cosmograph-search {
 	--cosmograph-search-list-background: var(--surface-dark-3);
 	--cosmograph-search-font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
 		'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -36,7 +36,7 @@ body {
 	--cosmograph-search-accessor-background: #2463eb;
 	--cosmograph-search-interactive-background: #1d4dd6;
 	--cosmograph-search-hover-color: #2463eb;
-}
+} */
 
 .cosmograph-node-label,
 .cosmograph-hovered-node-label {
@@ -52,7 +52,7 @@ body {
 }
 
 .cosmograph-timeline {
-	--cosmograph-timeline-background: var(--background-dark);
+	--cosmograph-timeline-background: var(--background-light);
 	--cosmograph-timeline-selection-color: #2463eb;
 	--cosmograph-timeline-bar-color: #4a5c79;
 	--cosmograph-timeline-selection-opacity: 0.5;
@@ -83,7 +83,7 @@ body {
 }
 
 .action {
-	margin-left: 2p0;
+	margin-left: 2pt;
 	font-size: 10pt;
 	text-decoration: underline;
 	cursor: pointer;

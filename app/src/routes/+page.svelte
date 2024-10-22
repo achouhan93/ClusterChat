@@ -12,9 +12,8 @@
 	import { get } from 'svelte/store';
 	onMount(async () => {
 		$dataloaded=true
-		const { createGraph, createSearchBar, createTimeline } = await import('$lib/graph');
+		const { createGraph, createTimeline } = await import('$lib/graph');
 		createGraph();
-		createSearchBar();
 		createTimeline();
 		console.log(get(nodes))
 	});

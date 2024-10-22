@@ -33,16 +33,16 @@ let $counter = writable<number>(0);
 /* Config for the Graph, Search and Timeline */
 export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	//backgroundColor: '#151515',
-	backgroundColor: '#343a40',
+	backgroundColor: '#ffffff',
 	//showFPSMonitor: true, /* shows performance monitor on the top right */
-	nodeSize: (node: Node) => 0.1,
-	nodeColor: (node: Node) => "#4CC9FE",
+	nodeSize: (node: Node) => 0.05,
+	nodeColor: (node: Node) => node.cluster,
 	//nodeLabelAccessor: (node: Node) => node.title,
 	nodeLabelClassName: 'cosmograph-node-label',
 	hoveredNodeLabelClassName: 'cosmograph-hovered-node-label',
 	hoveredNodeRingColor: '#2463EB',
 	showHoveredNodeLabel: true,
-	showDynamicLabels: false,
+	showDynamicLabels: true,
 	nodeGreyoutOpacity: 0.009,
 	disableSimulation: true,
 	renderLinks: false,
@@ -83,27 +83,6 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	
 };
 
-const SearchConfig: CosmographSearchInputConfig<Node> = {
-	accessors: [
-		{ label: 'ID', accessor: (node: Node) => node.id }
-		// one for the abstracts
-	],
-	placeholder: 'Find documents...',
-	ordering: {
-		order: ['ID'],
-		include: ['ID']
-	},
-	maxVisibleItems: 10,
-	onSelectResult(clickedNode) {
-		handleNodeClick(clickedNode as Node);
-	},
-	onSearch(foundMatches) {
-		showLabelsfor(foundMatches as Node[]);
-	},
-	onEnter(input, accessor) {
-		showLabelsfor([])
-	},
-};
 
 const TimelineConfig: CosmographTimelineInputConfig<Node> = {
 	accessor: (d) => (d.date ? d.date : 12 / 12 / 2000),
@@ -119,12 +98,6 @@ export function createGraph() {
 	graph.setConfig(GraphConfig);
 	initializeGraph();
 	
-}
-
-export function createSearchBar() {
-	const searchContainer = document.getElementById('main-search-bar') as HTMLDivElement;
-	const search = new CosmographSearch<Node, Link>(graph, searchContainer);
-	search.setConfig(SearchConfig);
 }
 
 export function createTimeline() {
@@ -172,7 +145,6 @@ export function updateGraphData(){
 	nodes.subscribe(nodesArray => {
 		graph.setData(nodesArray, links); 
 	});	
-	console.dir(get(nodes))
 }
 
 
@@ -225,3 +197,33 @@ const handleNodeClick = async (clickedNode: Node) => {
 		unselectNodes();
 	}
 };
+
+
+
+// const SearchConfig: CosmographSearchInputConfig<Node> = {
+// 	accessors: [
+// 		{ label: 'ID', accessor: (node: Node) => node.id }
+// 		// one for the abstracts
+// 	],
+// 	placeholder: 'Find documents...',
+// 	ordering: {
+// 		order: ['ID'],
+// 		include: ['ID']
+// 	},
+// 	maxVisibleItems: 10,
+// 	onSelectResult(clickedNode) {
+// 		handleNodeClick(clickedNode as Node);
+// 	},
+// 	onSearch(foundMatches) {
+// 		showLabelsfor(foundMatches as Node[]);
+// 	},
+// 	onEnter(input, accessor) {
+// 		showLabelsfor([])
+// 	},
+// };
+
+// export function createSearchBar() {
+// 	const searchContainer = document.getElementById('main-search-bar') as HTMLDivElement;
+// 	const search = new CosmographSearch<Node, Link>(graph, searchContainer);
+// 	search.setConfig(SearchConfig);
+// }

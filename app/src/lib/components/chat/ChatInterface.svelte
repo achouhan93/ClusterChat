@@ -16,7 +16,8 @@
 	//import { API_URL } from '$env/static/public';
 
 	let isLoading = writable<boolean>(false);
-	let messages = writable<{ text: string; isUser: boolean }[]>([]);
+	// let messages = writable<{ text: string; isUser: boolean }[]>([]);
+	let messages = writable<{ question: string; answer: string }[]>([]);
 	let context: JSON;
 	
 
@@ -74,71 +75,47 @@
 	}
 
 	async function handleSendMessage(event: Event) {
-		const form = event.target as HTMLFormElement;
+		console.log(event.target)
+		const form = event.currentTarget;
 		const message = new FormData(form).get('message') as string;
         $isLoading = true;
-
-		// clear input after sending message
-		const chat_input = document.getElementById('chat-input') as HTMLInputElement;
-		chat_input.value = '';
+		
 
 		if (!message) return;
 		const formattedUserInput = splitTextIntoLines(message, 30);
 		const userMessage: string = formattedUserInput;
 
+		messages.update((msgs) => [...msgs, { question:userMessage, answer: '' }]);
+
+		// clear input after sending message
+		const chat_input = document.getElementById('chat-input') as HTMLInputElement;
+		chat_input.value = '';
+
 		// get context from selected node
 		let selectedNodes: Node[] = getSelectedNodes();
-		if (selectedNodes.length > 0) {
 
-			// fetch response for the first node TODO: multiple nodes
-			const apiResponse = (await searchOpenSearchById(selectedNodes[0].id)) as JSON;
-			if (!apiResponse) {
-				throw new Error('Failed to fetch node');
-			}
-			context = apiResponse;
-			//console.dir('API Response:', JSON.stringify(context, null, 2));
-		} else {
-			throw new Error('No Node was selected');
+		let payload:ChatQuestion = {
+			question: userMessage,
+			question_type: "document-specific", // TODO: make it dropdown list of options
+			document_ids:  selectedNodes.map(node => (node.id as string))
 		}
-
-		// Prepare history
-		const history = [];
-		$messages.slice(-6).forEach((msg) => {
-			history.push({
-				role: msg.isUser ? 'user' : 'assistant',
-				content: msg.text
-			});
-		});
-		history.push({ role: 'user', content: formattedUserInput });
-
-		// Format the context
-		const fullContext = `${context ? `${JSON.stringify(context[0]._source.abstract)}\n\n` : ''}`;
-		// ${history.map((msg) => `${msg.role}: ${msg.content}`).join('\n')}`;
-		//console.dir(fullContext);
-
-		// Construct the payload
-		const payload = {
-			context: fullContext || null, // include context if it exists
-			messages: history
-		};
-
-		let payloadString = JSON.stringify(payload);
-
-		// Log the payload for verification
-		//console.log('Payload:', JSON.stringify(payload, null, 2));
-
 		// fetch chat completion from groq api
-		const chatCompletion = await fetchChatCompletion(payloadString);
+		const chatCompletion = await fetchChatAnswer(payload);
 		if (!chatCompletion) throw new Error('Failed to get chat completion');
 
-		const groqData = await chatCompletion.json();
-		const textContent = groqData.choices[0]?.message?.content || '';
+		const fastData = await chatCompletion.json();
+		const textContent = fastData.answer
 		const formattedText = splitTextIntoLines(textContent, 25);
-		messages.update((msgs) => [
-			...msgs,
-			{ text: userMessage, isUser: true },
-			{ text: formattedText, isUser: false }
-		]);
+		console.log(formattedText)
+		// messages.update((msgs) => [
+		// 	...msgs,
+		// 	{ question: userMessage, answer: formattedText },
+		// ]);
+
+		messages.update((msgs) => {
+        msgs[msgs.length - 1].answer = formattedText // Set the answer
+        return msgs;
+      });
 
         $isLoading = false;
 		// scroll to bottom
@@ -147,28 +124,27 @@
 		// Scroll to the bottom of the message container after each update
 		scrollToBottom(document.querySelector('.scroll-area') as HTMLDivElement);
 	});
+
 </script>
 
 <div class="chat-side">
 	<div class="scroll-area">
 		{#each $messages as message, index}
-			{#if message.isUser}
 				<div class="message user">
 					<p>
-						{message.text}
+						{message.question}
 					</p>
 				</div>
-			{:else}
+				{#if message.answer===""}
+					<div class="loader"><LoaderPinwheel size={20}/></div>
+				{:else}
 				<div class="message assistant">
 					<p>
-						{message.text}
+						{message.answer}
 					</p>
 				</div>
-			{/if}
+				{/if}
 		{/each}
-        {#if $isLoading}
-            <div class="loader"><LoaderPinwheel size={20}/></div>
-        {/if}
 	</div>
 	<div class="input-fields">
 		<form on:submit|preventDefault={handleSendMessage}>
@@ -187,12 +163,13 @@
 
 <style>
 	input {
-		background-color: var(--surface-4-dark);
-		height: 2rem;
+		background-color: var(--surface-4-light);
+		color: var(--text-2-light);
+		height: var(--size-8);
 	}
 
 	.chat-side {
-		background: var(--background-dark);
+		background: var(--surface-3-light);
 		display: grid;
 		grid-template-columns: 50% 50%;
 		grid-template-rows: 85% 15%;
@@ -219,6 +196,9 @@
 	}
 	button {
 		border: none;
+		height: var(--size-8);
+		background-color: var(--brand-whatsapp);
+		box-shadow: none;
 	}
 
 	.scroll-area {
