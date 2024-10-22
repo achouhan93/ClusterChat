@@ -66,7 +66,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		}
 	},
 	onZoomStart(e, userDriven){
-		if(userDriven){		
+		if(userDriven && e.sourceEvent.type != "mousedown"){		
 		(async () => {
 		
 		if(get(nodes).length < 40000){
