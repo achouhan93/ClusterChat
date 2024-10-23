@@ -8,7 +8,7 @@ import { interpolateRgb } from "d3";
 const nodes= writable<Node[]>([]);
 let links=writable<Link[]>([])
 const dataloaded = writable(false);
-let allClusters=writable<Cluster[]>([]);
+export let allClusters=writable<Cluster[]>([]);
 export let ClustersTree:{[depth: number]: string[]};
 
 export function getNodeColor(x: number, y: number, fitView: [[number, number], [number, number]], opacity:number): string {
@@ -35,18 +35,31 @@ function createDepthClusterDict(clusters: Cluster[]): { [key: number]: string[] 
 	clusters.forEach((cluster) => {
 	  const { depth, id } = cluster;
 
-	  const cleanId = id.replace(/^cluster_/, '');
 	  // If the depth is key in the dictionary, append to the array
 	  if (depthClusterDict[depth]) {
-		depthClusterDict[depth].push(cleanId);
+		depthClusterDict[depth].push(id);
 	  } else {
 		// else, create a new array for that depth
-		depthClusterDict[depth] = [cleanId];
+		depthClusterDict[depth] = [id];
 	  }
 	});
   
 	return depthClusterDict;
   }
+
+  export function getAssociatedLeafs(cluster_id: string): string[] {
+    if (get(allClusters).length != 0) {
+        const currentallClusters: Cluster[] = get(allClusters);
+        // Use filter to get clusters that match the condition, and map to extract the id.
+        const leafClusters: string[] = currentallClusters
+            .filter(cluster => cluster.isLeaf && cluster.path.includes(cluster_id))
+            .map(cluster => cluster.id);
+        return leafClusters; 
+    }
+
+    // Optionally return an empty array if no clusters are found
+    return [];
+}
 
 export async function getLabelsfromOpenSearch(){
 	const response = await fetch(`api/opensearch/cluster`);

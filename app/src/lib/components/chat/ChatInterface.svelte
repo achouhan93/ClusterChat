@@ -1,7 +1,7 @@
 <script lang="ts">
 	// style
 	import 'open-props/buttons';
-	import { Send, LoaderPinwheel } from 'lucide-svelte';
+	import { Send, LoaderPinwheel, File, ChartScatter } from 'lucide-svelte';
 
 	// utils
 	import { splitTextIntoLines } from '$lib/utils';
@@ -16,9 +16,13 @@
 	//import { API_URL } from '$env/static/public';
 
 	let isLoading = writable<boolean>(false);
-	// let messages = writable<{ text: string; isUser: boolean }[]>([]);
 	let messages = writable<{ question: string; answer: string }[]>([]);
-	let context: JSON;
+	let document_specific = writable(true);
+	
+	async function toggleQAoption(){
+		document_specific.update(value => !value);
+		console.log("Toggled to:", $document_specific);
+	}
 	
 
 	async function searchOpenSearchById(id: string) {
@@ -75,7 +79,6 @@
 	}
 
 	async function handleSendMessage(event: Event) {
-		console.log(event.target)
 		const form = event.currentTarget;
 		const message = new FormData(form).get('message') as string;
         $isLoading = true;
@@ -155,6 +158,11 @@
 			/>
 			<button class="btn"><Send size={18} /></button>
 		</form>
+		{#if $document_specific}
+		<button class="btn-specific" on:click={toggleQAoption}><File/> Document Specific</button>
+		{:else}
+		<button on:click={toggleQAoption}><ChartScatter/> Corpus Specific</button>
+		{/if}
 	</div>
 </div>
 
@@ -163,6 +171,7 @@
 		background-color: var(--surface-4-light);
 		color: var(--text-2-light);
 		height: var(--size-8);
+		width: 100%;
 	}
 
 	.chat-side {
@@ -181,15 +190,18 @@
 		display: flex;
 		flex-direction: row;
 		grid-area: input-field;
-		justify-content: space-around;
 		align-items: center;
 		height: 100%;
+		width: 100%;
+		padding: var(--size-2);
 	}
 	form {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
+		gap: var(--size-1);
 		height: 100%;
+		width: 100%;
+		margin: var(--size-2);
 	}
 	button {
 		border: none;
@@ -237,4 +249,16 @@
         max-width: fit-content;
 		color: var(--surface-4-dark)
     }
+	button:hover{
+		box-shadow: none;
+		text-shadow: none;
+	}
+	button {
+		box-shadow: none;
+		text-shadow: none;
+	}
+	.btn-specific{
+		width: fit-content;
+	}
+	
 </style>

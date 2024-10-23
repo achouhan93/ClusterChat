@@ -57,7 +57,7 @@ body {
 }
 
 .cosmograph-timeline {
-	--cosmograph-timeline-background: var(--surface-1-dark);
+	--cosmograph-timeline-background: var(--surface-1-light);
 	--cosmograph-timeline-selection-color: #2463eb;
 	--cosmograph-timeline-bar-color: #4a5c79;
 	--cosmograph-timeline-selection-opacity: 0.5;

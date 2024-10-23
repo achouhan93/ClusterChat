@@ -6,13 +6,14 @@ import type {
 import type { D3ZoomEvent } from 'd3-zoom';
 import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
-import { nodes, links, load10k, loadLables, getNodeColor, ClustersTree } from './readcluster';
+import { nodes, links, load10k, loadLables, getNodeColor, ClustersTree,getAssociatedLeafs } from './readcluster';
 
 // Other 
 import '../app.css';
 import type { Node, Link } from '$lib/types';
 import { DragSelect } from '$lib/components/graph/DragSelect';
 import { get, writable } from 'svelte/store';
+import { formatDate } from './utils';
 
 
 // Useful global variables
@@ -104,7 +105,11 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 const TimelineConfig: CosmographTimelineInputConfig<Node> = {
 	accessor: (d) => (d.date ? d.date : 1 / 1 / 1970),
 	showAnimationControls: true,
-	allowSelection: true
+	allowSelection: true,
+	tickStep: 31556952000,
+	barTopMargin: 1,
+	axisTickHeight: 30
+
 };
 
 
