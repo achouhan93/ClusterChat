@@ -15,7 +15,6 @@
 		const { createGraph, createTimeline } = await import('$lib/graph');
 		createGraph();
 		createTimeline();
-		console.log(get(nodes))
 	});
 </script>
 
@@ -50,6 +49,7 @@
 		width: 100%;
 		position: absolute;
 		scroll-behavior: smooth;
+		background-color: #fff;
 	}
 	#main-frame {
 		display: grid;
@@ -94,5 +94,7 @@
 		justify-content: center;
 		align-items: center;
 		cursor: wait;
+		background-color: #fff;
+		color: #000;
 	}
 </style>

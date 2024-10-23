@@ -97,7 +97,9 @@
 		let payload:ChatQuestion = {
 			question: userMessage,
 			question_type: "document-specific", // TODO: make it dropdown list of options
-			document_ids:  selectedNodes.map(node => (node.id as string))
+			document_ids:  selectedNodes.map(node => (
+				node.isClusterNode? "" : node.id as string
+			))
 		}
 		// fetch chat completion from groq api
 		const chatCompletion = await fetchChatAnswer(payload);
@@ -107,11 +109,6 @@
 		const textContent = fastData.answer
 		const formattedText = splitTextIntoLines(textContent, 25);
 		console.log(formattedText)
-		// messages.update((msgs) => [
-		// 	...msgs,
-		// 	{ question: userMessage, answer: formattedText },
-		// ]);
-
 		messages.update((msgs) => {
         msgs[msgs.length - 1].answer = formattedText // Set the answer
         return msgs;
@@ -197,8 +194,7 @@
 	button {
 		border: none;
 		height: var(--size-8);
-		background-color: var(--brand-whatsapp);
-		box-shadow: none;
+		background-color: var(--blue-7);
 	}
 
 	.scroll-area {
@@ -239,5 +235,6 @@
 		animation-iteration-count: infinite;
         position: relative;
         max-width: fit-content;
+		color: var(--surface-4-dark)
     }
 </style>
