@@ -7,7 +7,6 @@ import {
 	OPENSEARCH_NODE
 } from '$env/static/private';
 
-
 // OpenSearch client setup
 const client = new Client({
 	node: OPENSEARCH_NODE,
@@ -27,8 +26,8 @@ export async function GET({ params }) {
 				},
 				from: params.from,
 				size: params.size,
-			_source: {
-				"excludes": "abstract"
+				_source: {
+					excludes: 'abstract'
 				}
 			}
 		});

@@ -50,8 +50,8 @@ body {
 	text-align: center;
 	border-radius: var(--radius-drawn-1);
 }
-.cosmograph-cluster-label{
-	background-color: rgba(255,255,255,0.2);
+.cosmograph-cluster-label {
+	background-color: rgba(255, 255, 255, 0.2);
 	font-size: var(--font-size-3) !important;
 	max-width: 30ch;
 }

@@ -18,50 +18,22 @@
 	let isLoading = writable<boolean>(false);
 	let messages = writable<{ question: string; answer: string }[]>([]);
 	let document_specific = writable(true);
-	
-	async function toggleQAoption(){
-		document_specific.update(value => !value);
-		console.log("Toggled to:", $document_specific);
-	}
-	
 
-	async function searchOpenSearchById(id: string) {
-		try {
-			const response = await fetch(`/api/search/${id}`);
-			return await response.json();
-		} catch (error) {
-			console.error('Error fetching data: ', error);
-			return null;
-		}
+	async function toggleQAoption() {
+		document_specific.update((value) => !value);
+		console.log('Toggled to:', $document_specific);
 	}
 
-	async function fetchChatCompletion(payload: string) {
-		try {
-			const response = await fetch('/api/chat-completion', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: payload
-			});
-			return response;
-		} catch (error) {
-			console.error('Error fetching chat completion: ', error);
-			return null;
-		}
-	}
 
-	
-	async function fetchChatAnswer(payload: ChatQuestion){
+	async function fetchChatAnswer(payload: ChatQuestion) {
 		/* Requests FastAPI and fetches the answer to the question w/o context */
 		try {
-			const response = await fetch("http://localhost:8100/ask", {
+			const response = await fetch('http://localhost:8100/ask', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify(payload)
-
 			});
 			return response;
 		} catch (error) {
@@ -81,14 +53,13 @@
 	async function handleSendMessage(event: Event) {
 		const form = event.currentTarget;
 		const message = new FormData(form).get('message') as string;
-        $isLoading = true;
-		
+		$isLoading = true;
 
 		if (!message) return;
 		const formattedUserInput = splitTextIntoLines(message, 30);
 		const userMessage: string = formattedUserInput;
 
-		messages.update((msgs) => [...msgs, { question:userMessage, answer: '' }]);
+		messages.update((msgs) => [...msgs, { question: userMessage, answer: '' }]);
 
 		// clear input after sending message
 		const chat_input = document.getElementById('chat-input') as HTMLInputElement;
@@ -96,54 +67,51 @@
 
 		// get context from selected node
 		let selectedNodes: Node[] = getSelectedNodes();
-
-		let payload:ChatQuestion = {
+		console.dir(`These are the selected Nodes in handle send message: ${selectedNodes}`)
+		let payload: ChatQuestion = {
 			question: userMessage,
-			question_type: "document-specific", // TODO: make it dropdown list of options
-			document_ids:  selectedNodes.map(node => (
-				node.isClusterNode? "" : node.id as string
-			))
-		}
+			question_type: 'document-specific', // TODO: make it dropdown list of options
+			document_ids: selectedNodes.map((node) => (node.isClusterNode ? '' : (node.id as string)))
+		};
 		// fetch chat completion from groq api
 		const chatCompletion = await fetchChatAnswer(payload);
 		if (!chatCompletion) throw new Error('Failed to get chat completion');
 
 		const fastData = await chatCompletion.json();
-		const textContent = fastData.answer
+		const textContent = fastData.answer;
 		const formattedText = splitTextIntoLines(textContent, 25);
-		console.log(formattedText)
+		console.log(formattedText);
 		messages.update((msgs) => {
-        msgs[msgs.length - 1].answer = formattedText // Set the answer
-        return msgs;
-      });
+			msgs[msgs.length - 1].answer = formattedText; // Set the answer
+			return msgs;
+		});
 
-        $isLoading = false;
+		$isLoading = false;
 		// scroll to bottom
 	}
 	afterUpdate(() => {
 		// Scroll to the bottom of the message container after each update
 		scrollToBottom(document.querySelector('.scroll-area') as HTMLDivElement);
 	});
-
 </script>
 
 <div class="chat-side">
 	<div class="scroll-area">
 		{#each $messages as message, index}
-				<div class="message user">
-					<p>
-						{message.question}
-					</p>
-				</div>
-				{#if message.answer===""}
-					<div class="loader"><LoaderPinwheel size={20}/></div>
-				{:else}
+			<div class="message user">
+				<p>
+					{message.question}
+				</p>
+			</div>
+			{#if message.answer === ''}
+				<div class="loader"><LoaderPinwheel size={20} /></div>
+			{:else}
 				<div class="message assistant">
 					<p>
 						{message.answer}
 					</p>
 				</div>
-				{/if}
+			{/if}
 		{/each}
 	</div>
 	<div class="input-fields">
@@ -159,9 +127,9 @@
 			<button class="btn"><Send size={18} /></button>
 		</form>
 		{#if $document_specific}
-		<button class="btn-specific" on:click={toggleQAoption}><File/> Document Specific</button>
+			<button class="btn-specific" on:click={toggleQAoption}><File /> Document Specific</button>
 		{:else}
-		<button on:click={toggleQAoption}><ChartScatter/> Corpus Specific</button>
+			<button on:click={toggleQAoption}><ChartScatter /> Corpus Specific</button>
 		{/if}
 	</div>
 </div>
@@ -240,16 +208,16 @@
 		align-self: flex-start;
 		background-color: var(--surface-2-dark);
 	}
-    .loader {
-        animation: var(--animation-spin);
+	.loader {
+		animation: var(--animation-spin);
 		animation-duration: 2s;
 		animation-timing-function: linear;
 		animation-iteration-count: infinite;
-        position: relative;
-        max-width: fit-content;
-		color: var(--surface-4-dark)
-    }
-	button:hover{
+		position: relative;
+		max-width: fit-content;
+		color: var(--surface-4-dark);
+	}
+	button:hover {
 		box-shadow: none;
 		text-shadow: none;
 	}
@@ -257,8 +225,7 @@
 		box-shadow: none;
 		text-shadow: none;
 	}
-	.btn-specific{
+	.btn-specific {
 		width: fit-content;
 	}
-	
 </style>

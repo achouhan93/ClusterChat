@@ -22,9 +22,9 @@ export async function GET({ params }) {
 			index: OPENSEARCH_CLUSTER_INDEX,
 			body: {
 				query: {
-					match_all:{}
-                },  
-                size: 361
+					match_all: {}
+				},
+				size: 361
 			}
 		});
 		return new Response(JSON.stringify(response.body.hits.hits));

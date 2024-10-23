@@ -11,25 +11,24 @@
 
 export type Node = {
 	id: string;
-	title:string | "No Title";
+	title: string | 'No Title';
 	cluster: number;
 	isClusterNode: boolean | false;
 	x: number;
 	y: number;
 	date: Date | undefined;
-	color: string | "#000";
+	color: string | '#000';
 };
 
 export type Cluster = {
-	id:string;
+	id: string;
 	xCenter: number;
-	yCenter:number
-	label: string | "";
+	yCenter: number;
+	label: string | '';
 	depth: number | 0;
 	isLeaf: boolean | false;
-	path:string;
-
-}
+	path: string;
+};
 
 export type Link = {
 	source: string | '';
@@ -38,7 +37,7 @@ export type Link = {
 };
 
 export type ChatQuestion = {
-	question:string | '';
-	question_type: "document-specific" | "corpus-based";
+	question: string | '';
+	question_type: 'document-specific' | 'corpus-based';
 	document_ids: string[] | [];
-}
+};

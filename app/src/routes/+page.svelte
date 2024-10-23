@@ -6,14 +6,14 @@
 	import 'open-props/animations';
 	import { SquareStack, SquareDashedMousePointer, LoaderCircle, BoxSelect } from 'lucide-svelte';
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
-	import ClusterView from '$lib/components/cluster/ClusterView.svelte';
+	// import ClusterView from '$lib/components/cluster/ClusterView.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
 	import { toggleMultipleNodesMode, toggleDragSelection, fitViewofGraph } from '$lib/graph';
 	import { onMount } from 'svelte';
 	import { dataloaded } from '$lib/readcluster';
 
 	onMount(async () => {
-		$dataloaded=true
+		$dataloaded = true;
 		const { createGraph, createTimeline } = await import('$lib/graph');
 		createGraph();
 		createTimeline();
@@ -26,7 +26,7 @@
 	{:else}
 		<div id="main-graph"></div>
 		<div id="main-search-bar" class="cosmograph-search">
-			<SearchBar/>
+			<SearchBar />
 		</div>
 		<div class="control-buttons">
 			<button id="multiple-node-btn" class="btn" on:click={toggleMultipleNodesMode}
@@ -64,7 +64,7 @@
 		grid-template-areas:
 			'chat control-btns search-bar search-bar'
 			'chat . . .'
-			'chat . . cluster-view'
+			'chat cluster-view . .'
 			'chat timeline timeline timeline';
 	}
 	#main-search-bar {
@@ -89,14 +89,13 @@
 		color: var(--text-1-light);
 		max-width: fit-content;
 		overflow-y: auto;
-		background-color: rgb(255,255,255);
+		background-color: rgb(255, 255, 255);
 		opacity: 0%;
 		box-shadow: inset;
 		display: flex;
 		flex-wrap: wrap;
 		flex-direction: column;
 	}
-
 
 	.loader {
 		animation: var(--animation-spin);
@@ -116,7 +115,6 @@
 		color: #000;
 	}
 	.control-buttons {
-		
 		z-index: 2;
 		align-items: flex-start;
 		grid-area: control-btns;
@@ -125,7 +123,7 @@
 		scale: 0.9;
 		gap: var(--size-1);
 		margin-top: var(--size-1);
-		}
+	}
 	.control-buttons button {
 		background-color: var(--blue-8);
 		box-shadow: none;

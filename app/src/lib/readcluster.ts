@@ -4,6 +4,7 @@ import type { Node, Link, Cluster } from '$lib/types';
 import { writable, get } from 'svelte/store';
 import { formatDate } from './utils';
 import { interpolateRgb } from "d3";
+import { setSelectedNodes, highlightNodes, getSelectedNodes, updateGraphData } from './graph';
 
 const nodes= writable<Node[]>([]);
 let links=writable<Link[]>([])
@@ -48,18 +49,19 @@ function createDepthClusterDict(clusters: Cluster[]): { [key: number]: string[] 
   }
 
   export function getAssociatedLeafs(cluster_id: string): string[] {
-    if (get(allClusters).length != 0) {
-        const currentallClusters: Cluster[] = get(allClusters);
-        // Use filter to get clusters that match the condition, and map to extract the id.
-        const leafClusters: string[] = currentallClusters
-            .filter(cluster => cluster.isLeaf && cluster.path.includes(cluster_id))
-            .map(cluster => cluster.id);
-        return leafClusters; 
-    }
-
-    // Optionally return an empty array if no clusters are found
-    return [];
-}
+    const currentallClusters: Cluster[] = get(allClusters);
+			if (currentallClusters.length != 0) {
+				// Use filter to get clusters that match the condition, and map to extract the id.
+				let leafClusters: string[] = currentallClusters
+					.filter(cluster => cluster.isLeaf && cluster.path.includes(cluster_id))
+					.map(cluster => cluster.id);
+					console.dir(leafClusters)
+				return leafClusters; 
+			}
+		
+			// Optionally return an empty array if no clusters are found
+			return [];
+		}
 
 export async function getLabelsfromOpenSearch(){
 	const response = await fetch(`api/opensearch/cluster`);
@@ -73,7 +75,7 @@ export async function getLabelsfromOpenSearch(){
 				yCenter: item._source.y,
 				label: item._source.label,
 				depth: item._source.depth,
-				isLeaf: item._source.isLeaf,
+				isLeaf: item._source.is_leaf,
 				path: item._source.path
 			}
 		));
@@ -145,6 +147,49 @@ if (Array.isArray(data)) {
 	console.error("Expected an array but got:", data);
 }
 }
+async function fetchDocumentIds(cluster_ids:string[]){
+	const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({ cluster_ids }) // Send the array in the request body as JSON
+    });
+
+    const data = await response.json();
+	const newNodes:Node[] = data.map(item => (
+		{
+			id: item._source.document_id,
+			title:item._source.title,
+			x: item._source.x,
+			y: item._source.y,
+			isClusterNode: false,
+			cluster: item._source.cluster_id,
+			date: formatDate(item._source.date), // Assuming date will be set later
+			color: getNodeColor(item._source.x,item._source.y,[[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]],0.6),
+		} satisfies Node
+	));
+	
+	// update selectednodes
+	setSelectedNodes(newNodes)
+
+	// update the view
+	nodes.update(existingNodes => {
+		const existingIds = new Set(existingNodes.map(node => node.id));
+	
+		const uniqueNewNodes = newNodes.filter(newNode => !existingIds.has(newNode.id));
+	
+		return [...existingNodes, ...uniqueNewNodes];
+	});
+	highlightNodes(getSelectedNodes())
+
+}
+
+async function LoadAndSelect(cluster_ids:string[]){
+	await fetchDocumentIds(cluster_ids)
+}
+
 	
 async function load10k(from: number, size:number){
 	await getNodesfromOpenSearch(from, size);
@@ -154,5 +199,5 @@ async function loadLables(){
 	await getLabelsfromOpenSearch();
 }
 
-export { nodes, links, dataloaded, load10k, loadLables };
+export { nodes, links, dataloaded, load10k, loadLables,LoadAndSelect };
 

@@ -6,11 +6,11 @@ import type {
 import type { D3ZoomEvent } from 'd3-zoom';
 import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
-import { nodes, links, load10k, loadLables, getNodeColor, ClustersTree,getAssociatedLeafs } from './readcluster';
+import { nodes, links, load10k, loadLables, getNodeColor, ClustersTree, getAssociatedLeafs, LoadAndSelect } from './readcluster';
 
 // Other 
 import '../app.css';
-import type { Node, Link } from '$lib/types';
+import type { Node, Link, Cluster } from '$lib/types';
 import { DragSelect } from '$lib/components/graph/DragSelect';
 import { get, writable } from 'svelte/store';
 import { formatDate } from './utils';
@@ -25,12 +25,12 @@ const MAX_SIZE:number = 100000;
 let $batch_number= writable<number>(1);
 let $update_number=writable<number>(1);
 const INITIAL_FITVIEW:[[number,number],[number,number]] = [[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]];
-
+let selectedNodes = writable<Node[]>([]);
 
 export let selectMultipleNodes: boolean = false;
 export let selectNodeRange: boolean = false;
 let drag_select: boolean = false;
-let selectedNodes: Node[] = [];
+
 export let selectionArea: DragSelect | null = null;
 
  // Automatically load data when the component loads
@@ -54,7 +54,6 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	renderLinks: false,
 	scaleNodesOnZoom: true,
 	fitViewByNodesInRect:INITIAL_FITVIEW,
-	// xMin=10 yMax=21 xMax=13 yMin=15
 	showDynamicLabels: false,
 	showHoveredNodeLabel: true,
 	showTopLabels: true,
@@ -62,9 +61,9 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	showTopLabelsValueKey: "isClusterNode",
 	
 	// Selection Event handled with button Click
-	onClick(clickedNode) {
-		handleNodeClick(clickedNode as Node);
-	},
+	onClick(clickedNode) {handleNodeClick(clickedNode as Node);},
+	onLabelClick(node) {handleLabelClick(node)},
+	onZoom(){console.log(graph.getZoomLevel())},
 	onMouseMove() {
 		if (drag_select) {
 			const container = document.getElementById('main-frame');
@@ -72,9 +71,6 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 				selectionArea = new DragSelect(container);
 			}
 		}
-	},
-	onZoom(){
-		console.log(graph.getZoomLevel())
 	},
 	onZoomStart(e, userDriven){
 		const ZoomLevel:number = graph.getZoomLevel() || 10
@@ -85,20 +81,13 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		} else if (ZoomLevel > 1000) {
 			GraphConfig.showTopLabelsLimit = 360
 		}
-		
 		updateGraphConfig(GraphConfig)
 		
 		if(userDriven && e.sourceEvent.type != "mousedown"){		
 			handleZoomEvent()
 		}
 	},
-	// onZoomEnd(e, userDriven) {
-	// 	if(userDriven){
-	// 		console.dir(getFitViewAfterZoom(e))
-	// 	}
-	// },
-	
-	
+
 };
 
 
@@ -155,7 +144,6 @@ export function toggleDragSelection() {
 
 async function initializeGraph(){
 	await loadLables()
-	console.log(ClustersTree)
 	await load10k(0,BATCH_SIZE)
 	graph.setData(get(nodes),get(links))
 }
@@ -173,23 +161,26 @@ export function updateGraphData(){
 
 export function selectNodesInRange(arr: [[number, number], [number, number]]) {
 	graph.selectNodesInRange(arr);
-	selectedNodes = graph.getSelectedNodes() as Node[];
+	selectedNodes.set(graph.getSelectedNodes() as Node[])
 }
 
 export function unselectNodes() {
 	graph.unselectNodes();
 	showLabelsfor([]);
-	selectedNodes = [];
+	selectedNodes.set([]);
 }
 
 export function getSelectedNodes() {
-	selectedNodes = graph.getSelectedNodes() as Node[];
-	if (selectedNodes) {
-		return selectedNodes;
-	} else {
-		selectedNodes = [];
-		return selectedNodes;
-	}
+	return get(selectedNodes);
+	
+}
+
+export function setSelectedNodes(nodes:Node[]){
+	selectedNodes.set(nodes)
+}
+
+export function highlightNodes(nodes:Node[]){
+	graph.selectNodes(nodes)
 }
 
 export function fitViewofGraph(){
@@ -211,11 +202,11 @@ const handleNodeClick = async (clickedNode: Node) => {
 		showLabelsfor([clickedNode] as Node[]);
 		graph.focusNode(clickedNode);
 		graph.selectNode(clickedNode);
-		selectedNodes = [clickedNode];
+		selectedNodes.update((existingNodes)=>{return [...existingNodes, clickedNode]})
 	} else if (selectMultipleNodes && clickedNode) {
-		selectedNodes.push(clickedNode); // Add clicked node to selectedNodes
-		graph.selectNodes(selectedNodes);
-		showLabelsfor(selectedNodes);
+		selectedNodes.update((existingNodes)=>{return [...existingNodes, clickedNode]})
+		graph.selectNodes(get(selectedNodes));
+		showLabelsfor(get(selectedNodes));
 	} else if (!clickedNode) {
 		unselectNodes();
 	}
@@ -237,6 +228,14 @@ const handleZoomEvent = async () => {
 		}
 }
 
+const handleLabelClick = async (node:Node) => {
+	if(node.isClusterNode){
+		const cluster_ids:string[] = getAssociatedLeafs(node.id)
+		LoadAndSelect(cluster_ids)
+		showLabelsfor([node])
+	}
+	
+}
 // function getFitViewAfterZoom(event:D3ZoomEvent<HTMLCanvasElement, undefined>){
 
 // 		const transform = event.transform;
