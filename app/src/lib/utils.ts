@@ -39,7 +39,7 @@ export const splitTextIntoLines = (text: string, maxLength: number) => {
 
 export function formatDate(dateString: string) {
 	if (dateString) {
-		let [day, month, year] = dateString.split('/');
+		let [year, month, day] = dateString.split('-');
 		return new Date(+year, +month - 1, +day);
 	}
 }

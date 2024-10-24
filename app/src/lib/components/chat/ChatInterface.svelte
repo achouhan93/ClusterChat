@@ -1,7 +1,7 @@
 <script lang="ts">
 	// style
 	import 'open-props/buttons';
-	import { Send, LoaderPinwheel } from 'lucide-svelte';
+	import { Send, LoaderPinwheel, File, ChartScatter } from 'lucide-svelte';
 
 	// utils
 	import { splitTextIntoLines } from '$lib/utils';
@@ -16,47 +16,24 @@
 	//import { API_URL } from '$env/static/public';
 
 	let isLoading = writable<boolean>(false);
-	let messages = writable<{ text: string; isUser: boolean }[]>([]);
-	let context: JSON;
-	
+	let messages = writable<{ question: string; answer: string }[]>([]);
+	let document_specific = writable(true);
 
-	async function searchOpenSearchById(id: string) {
-		try {
-			const response = await fetch(`/api/search/${id}`);
-			return await response.json();
-		} catch (error) {
-			console.error('Error fetching data: ', error);
-			return null;
-		}
+	async function toggleQAoption() {
+		document_specific.update((value) => !value);
+		console.log('Toggled to:', $document_specific);
 	}
 
-	async function fetchChatCompletion(payload: string) {
-		try {
-			const response = await fetch('/api/chat-completion', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: payload
-			});
-			return response;
-		} catch (error) {
-			console.error('Error fetching chat completion: ', error);
-			return null;
-		}
-	}
 
-	
-	async function fetchChatAnswer(payload: ChatQuestion){
+	async function fetchChatAnswer(payload: ChatQuestion) {
 		/* Requests FastAPI and fetches the answer to the question w/o context */
 		try {
-			const response = await fetch("http://localhost:8100/ask", {
+			const response = await fetch('http://localhost:8100/ask', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify(payload)
-
 			});
 			return response;
 		} catch (error) {
@@ -74,73 +51,42 @@
 	}
 
 	async function handleSendMessage(event: Event) {
-		const form = event.target as HTMLFormElement;
+		const form = event.currentTarget;
 		const message = new FormData(form).get('message') as string;
-        $isLoading = true;
-
-		// clear input after sending message
-		const chat_input = document.getElementById('chat-input') as HTMLInputElement;
-		chat_input.value = '';
+		$isLoading = true;
 
 		if (!message) return;
 		const formattedUserInput = splitTextIntoLines(message, 30);
 		const userMessage: string = formattedUserInput;
 
+		messages.update((msgs) => [...msgs, { question: userMessage, answer: '' }]);
+
+		// clear input after sending message
+		const chat_input = document.getElementById('chat-input') as HTMLInputElement;
+		chat_input.value = '';
+
 		// get context from selected node
 		let selectedNodes: Node[] = getSelectedNodes();
-		if (selectedNodes.length > 0) {
-
-			// fetch response for the first node TODO: multiple nodes
-			const apiResponse = (await searchOpenSearchById(selectedNodes[0].id)) as JSON;
-			if (!apiResponse) {
-				throw new Error('Failed to fetch node');
-			}
-			context = apiResponse;
-			//console.dir('API Response:', JSON.stringify(context, null, 2));
-		} else {
-			throw new Error('No Node was selected');
-		}
-
-		// Prepare history
-		const history = [];
-		$messages.slice(-6).forEach((msg) => {
-			history.push({
-				role: msg.isUser ? 'user' : 'assistant',
-				content: msg.text
-			});
-		});
-		history.push({ role: 'user', content: formattedUserInput });
-
-		// Format the context
-		const fullContext = `${context ? `${JSON.stringify(context[0]._source.abstract)}\n\n` : ''}`;
-		// ${history.map((msg) => `${msg.role}: ${msg.content}`).join('\n')}`;
-		//console.dir(fullContext);
-
-		// Construct the payload
-		const payload = {
-			context: fullContext || null, // include context if it exists
-			messages: history
+		console.dir(`These are the selected Nodes in handle send message: ${selectedNodes}`)
+		let payload: ChatQuestion = {
+			question: userMessage,
+			question_type: 'document-specific', // TODO: make it dropdown list of options
+			document_ids: selectedNodes.map((node) => (node.isClusterNode ? '' : (node.id as string)))
 		};
-
-		let payloadString = JSON.stringify(payload);
-
-		// Log the payload for verification
-		//console.log('Payload:', JSON.stringify(payload, null, 2));
-
 		// fetch chat completion from groq api
-		const chatCompletion = await fetchChatCompletion(payloadString);
+		const chatCompletion = await fetchChatAnswer(payload);
 		if (!chatCompletion) throw new Error('Failed to get chat completion');
 
-		const groqData = await chatCompletion.json();
-		const textContent = groqData.choices[0]?.message?.content || '';
+		const fastData = await chatCompletion.json();
+		const textContent = fastData.answer;
 		const formattedText = splitTextIntoLines(textContent, 25);
-		messages.update((msgs) => [
-			...msgs,
-			{ text: userMessage, isUser: true },
-			{ text: formattedText, isUser: false }
-		]);
+		console.log(formattedText);
+		messages.update((msgs) => {
+			msgs[msgs.length - 1].answer = formattedText; // Set the answer
+			return msgs;
+		});
 
-        $isLoading = false;
+		$isLoading = false;
 		// scroll to bottom
 	}
 	afterUpdate(() => {
@@ -151,48 +97,75 @@
 
 <div class="chat-side">
 	<div class="scroll-area">
+		<!-- Title that dynamically changes based on the toggle state -->
+		<h4 style="padding-bottom: 10px; text-align:center">{$document_specific ? 'Interact with Document(s)' : 'Interact with Corpus'}</h4>
 		{#each $messages as message, index}
-			{#if message.isUser}
-				<div class="message user">
-					<p>
-						{message.text}
-					</p>
-				</div>
+			<div class="message user">
+				<p>
+					{message.question}
+				</p>
+			</div>
+			{#if message.answer === ''}
+				<div class="loader"><LoaderPinwheel size={20} /></div>
 			{:else}
 				<div class="message assistant">
 					<p>
-						{message.text}
+						{message.answer}
 					</p>
 				</div>
 			{/if}
 		{/each}
-        {#if $isLoading}
-            <div class="loader"><LoaderPinwheel size={20}/></div>
-        {/if}
 	</div>
 	<div class="input-fields">
+		<!-- Toggle for Document Specific / Corpus Specific -->
+		<div class="toggle-container">
+			<!-- <span class="label"><File style="display:inline-block; vertical-align:middle; margin-right:5px"/> Document(s)</span>
+			<label class="switch">
+				<input type="checkbox" bind:checked={$document_specific} on:click={toggleQAoption} />
+				<span class="slider"></span>
+			</label>
+			<span class="label"><ChartScatter style="display:inline-block; vertical-align:middle; margin-right:5px"/> Corpus</span> -->
+			  <!-- Document(s) Button -->
+			<button class="toggle-button { $document_specific ? 'active' : '' }" on:click={() => document_specific.set(true)}>
+				<File style="display:inline-block; vertical-align:middle; margin-right:5px" /> Document(s)
+			</button>
+
+			<!-- Corpus Button -->
+			<button class="toggle-button { !$document_specific ? 'active' : '' }" on:click={() => document_specific.set(false)}>
+				<ChartScatter style="display:inline-block; vertical-align:middle; margin-right:5px" /> Corpus
+			</button>
+		</div>
+
+		<!-- Input field and send button -->
 		<form on:submit|preventDefault={handleSendMessage}>
 			<input
 				id="chat-input"
 				autocomplete="off"
 				type="textarea"
-				placeholder="Type a message..."
+				placeholder="Type your query..."
 				name="message"
 				on:keypress={(e) => e.key === 'Enter' && handleSendMessage(e)}
 			/>
 			<button class="btn"><Send size={18} /></button>
 		</form>
+		<!-- {#if $document_specific}
+			<button class="btn-specific" on:click={toggleQAoption}><File /> Document Specific</button>
+		{:else}
+			<button on:click={toggleQAoption}><ChartScatter /> Corpus Specific</button>
+		{/if} -->
 	</div>
 </div>
 
 <style>
 	input {
-		background-color: var(--surface-4-dark);
-		height: 2rem;
+		background-color: var(--surface-4-light);
+		color: var(--text-2-light);
+		height: var(--size-8);
+		width: 100%;
 	}
 
 	.chat-side {
-		background: var(--background-dark);
+		background: var(--surface-3-light);
 		display: grid;
 		grid-template-columns: 50% 50%;
 		grid-template-rows: 85% 15%;
@@ -205,20 +178,25 @@
 
 	.input-fields {
 		display: flex;
-		flex-direction: row;
+		flex-direction: column;
 		grid-area: input-field;
-		justify-content: space-around;
 		align-items: center;
 		height: 100%;
+		width: 100%;
+		padding: var(--size-2);
 	}
 	form {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
+		gap: var(--size-1);
 		height: 100%;
+		width: 100%;
+		margin: var(--size-2);
 	}
 	button {
 		border: none;
+		height: var(--size-8);
+		background-color: #d2f9cb;
 	}
 
 	.scroll-area {
@@ -245,19 +223,124 @@
 
 	.message.user {
 		align-self: flex-end;
-		background-color: #248bf5;
+		background-color: #fbfbfb;
 	}
 
 	.message.assistant {
 		align-self: flex-start;
-		background-color: var(--surface-2-dark);
+		background-color: #c2e2f9;
 	}
-    .loader {
-        animation: var(--animation-spin);
+	.loader {
+		animation: var(--animation-spin);
 		animation-duration: 2s;
 		animation-timing-function: linear;
 		animation-iteration-count: infinite;
-        position: relative;
-        max-width: fit-content;
-    }
+		position: relative;
+		max-width: fit-content;
+		color: var(--surface-4-dark);
+	}
+	button:hover {
+		box-shadow: none;
+		text-shadow: none;
+	}
+	button {
+		box-shadow: none;
+		text-shadow: none;
+	}
+
+	.toggle-container {
+		display: flex;
+		align-items: center;
+		gap: 15px;
+	}
+
+	/* Buttons styling */
+	.toggle-button {
+		padding: 10px 20px;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		background-color: #f0f0f0;
+		cursor: pointer;
+		font-size: 16px;
+		display: flex;
+		align-items: center;
+		transition: background-color 0.3s ease, color 0.3s ease;
+	}
+
+	/* Highlight the active button */
+	.toggle-button.active {
+		background-color: #007bff;
+		color: white;
+		border-color: #007bff;
+	}
+
+	.toggle-button:hover {
+		background-color: #0056b3;
+		color: white;
+	}
+
+	.label {
+	font-size: 18px;
+	color: #333;
+	}
+
+	/* Toggle Switch Styling */
+	.switch {
+		position: relative;
+		display: inline-block;
+		width: 60px;
+		height: 34px;
+	}
+
+	.switch input {
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.slider {
+		position: absolute;
+		cursor: pointer;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: #ccc;
+		transition: 0.4s;
+		border-radius: 34px;
+	}
+
+	.slider:before {
+		position: absolute;
+		content: "";
+		height: 26px;
+		width: 26px;
+		left: 4px;
+		bottom: 4px;
+		background-color: white;
+		transition: 0.4s;
+		border-radius: 50%;
+	}
+
+	input:checked + .slider {
+	background-color: #007bff;
+	}
+
+	input:checked + .slider:before {
+	transform: translateX(26px);
+	}
+
+	.chat-input {
+		margin-right: 10px; /* Adjust the value as needed */
+		width: calc(100% - 60px); /* Ensure the input doesn't overflow */
+	}
+		
+	.btn {
+		padding: 10px 20px;
+		background-color: #007bff;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+	}
 </style>

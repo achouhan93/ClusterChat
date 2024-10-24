@@ -3,10 +3,9 @@ import { Client } from '@opensearch-project/opensearch';
 import {
 	OPENSEARCH_USERNAME,
 	OPENSEARCH_PASSWORD,
-	OPENSEARCH_INDEX,
+	OPENSEARCH_CLUSTER_INDEX,
 	OPENSEARCH_NODE
 } from '$env/static/private';
-
 
 // OpenSearch client setup
 const client = new Client({
@@ -17,19 +16,18 @@ const client = new Client({
 	}
 });
 
-export async function GET() {
+export async function GET({ params }) {
 	try {
 		const response = await client.search({
-			index: OPENSEARCH_INDEX,
-            scroll: "1m",
-            size: 10000,
+			index: OPENSEARCH_CLUSTER_INDEX,
 			body: {
 				query: {
 					match_all: {}
 				},
+				size: 361
 			}
 		});
-		return new Response(JSON.stringify(response.body/* .hits.hits */));
+		return new Response(JSON.stringify(response.body.hits.hits));
 	} catch (error) {
 		console.error('Error:', error);
 		return new Response('Error', { status: 404 });

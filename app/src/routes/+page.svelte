@@ -6,17 +6,17 @@
 	import 'open-props/animations';
 	import { SquareStack, SquareDashedMousePointer, LoaderCircle, BoxSelect } from 'lucide-svelte';
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
+	// import ClusterView from '$lib/components/cluster/ClusterView.svelte';
+	import SearchBar from '$lib/components/search/SearchBar.svelte';
 	import { toggleMultipleNodesMode, toggleDragSelection, fitViewofGraph } from '$lib/graph';
 	import { onMount } from 'svelte';
-	import {load10k, dataloaded, nodes } from '$lib/readcluster';
-	import { get } from 'svelte/store';
+	import { dataloaded } from '$lib/readcluster';
+
 	onMount(async () => {
-		$dataloaded=true
-		const { createGraph, createSearchBar, createTimeline } = await import('$lib/graph');
+		$dataloaded = true;
+		const { createGraph, createTimeline } = await import('$lib/graph');
 		createGraph();
-		createSearchBar();
 		createTimeline();
-		console.log(get(nodes))
 	});
 </script>
 
@@ -25,7 +25,9 @@
 		<div class="loader"><LoaderCircle size="48" /></div>
 	{:else}
 		<div id="main-graph"></div>
-		<div id="main-search-bar" class="cosmograph-search"></div>
+		<div id="main-search-bar" class="cosmograph-search">
+			<SearchBar />
+		</div>
 		<div class="control-buttons">
 			<button id="multiple-node-btn" class="btn" on:click={toggleMultipleNodesMode}
 				><SquareStack /></button
@@ -38,7 +40,9 @@
 			</button>
 		</div>
 		<div id="chat-interface"><ChatInterface /></div>
-
+		<!-- <div id="cluster-view">
+			<ClusterView/>
+		</div> -->
 		<div id="main-timeline" class="cosmograph-timeline"></div>
 	{/if}
 	<slot />
@@ -51,18 +55,25 @@
 		width: 100%;
 		position: absolute;
 		scroll-behavior: smooth;
+		background-color: #fff;
 	}
 	#main-frame {
 		display: grid;
-		grid-template-columns: 18% 32% 25% 25%;
-		grid-template-rows: 10% 80% 10%;
+		grid-template-columns: 35% 15% 25% 25%;
+		grid-template-rows: 15% 45% 30% 10%;
 		grid-template-areas:
-			'chat search-bar search-bar search-bar'
+			'chat control-btns search-bar search-bar'
 			'chat . . .'
+			'chat cluster-view . .'
 			'chat timeline timeline timeline';
 	}
 	#main-search-bar {
 		grid-area: search-bar;
+		height: 100%;
+		z-index: 2;
+	}
+	#main-search-bar input {
+		background-color: var(--surface-4-light);
 	}
 	#main-timeline {
 		grid-area: timeline;
@@ -72,15 +83,20 @@
 		z-index: 2;
 		border-right: solid 1px #ffffff1c;
 	}
-
-	.control-buttons {
-		position: absolute;
-		bottom: 160px;
-		right: 10px;
+	#cluster-view {
+		grid-area: cluster-view;
+		z-index: 2;
+		color: var(--text-1-light);
+		max-width: fit-content;
+		overflow-y: auto;
+		background-color: rgb(255, 255, 255);
+		opacity: 0%;
+		box-shadow: inset;
 		display: flex;
+		flex-wrap: wrap;
 		flex-direction: column;
-		gap: var(--size-1);
 	}
+
 	.loader {
 		animation: var(--animation-spin);
 		animation-duration: 2s;
@@ -95,5 +111,23 @@
 		justify-content: center;
 		align-items: center;
 		cursor: wait;
+		background-color: #fff;
+		color: #000;
+	}
+	.control-buttons {
+		z-index: 2;
+		align-items: flex-start;
+		grid-area: control-btns;
+		display: flex;
+		flex-direction: column;
+		scale: 0.9;
+		gap: var(--size-1);
+		margin-top: var(--size-1);
+	}
+	.control-buttons button {
+		background-color: #007bff;
+		color: white;
+		box-shadow: none;
+		border: none;
 	}
 </style>
