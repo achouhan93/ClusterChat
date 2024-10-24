@@ -125,7 +125,8 @@
 		margin-top: var(--size-1);
 	}
 	.control-buttons button {
-		background-color: var(--blue-8);
+		background-color: #007bff;
+		color: white;
 		box-shadow: none;
 		border: none;
 	}

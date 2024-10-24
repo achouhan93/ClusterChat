@@ -46,6 +46,7 @@ class ragChat:
             temperature=model_config.get("temperature", 0.1),
             huggingfacehub_api_token=self.hf_auth,
             repetition_penalty=model_config.get("repetition_penalty", 1.2),
+            stop_sequences=model_config.get("stop_sequences", ["</s>"])
         )
 
         self.llama_prompt = PromptTemplate(

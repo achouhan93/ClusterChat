@@ -97,6 +97,8 @@
 
 <div class="chat-side">
 	<div class="scroll-area">
+		<!-- Title that dynamically changes based on the toggle state -->
+		<h4 style="padding-bottom: 10px; text-align:center">{$document_specific ? 'Interact with Document(s)' : 'Interact with Corpus'}</h4>
 		{#each $messages as message, index}
 			<div class="message user">
 				<p>
@@ -115,22 +117,42 @@
 		{/each}
 	</div>
 	<div class="input-fields">
+		<!-- Toggle for Document Specific / Corpus Specific -->
+		<div class="toggle-container">
+			<!-- <span class="label"><File style="display:inline-block; vertical-align:middle; margin-right:5px"/> Document(s)</span>
+			<label class="switch">
+				<input type="checkbox" bind:checked={$document_specific} on:click={toggleQAoption} />
+				<span class="slider"></span>
+			</label>
+			<span class="label"><ChartScatter style="display:inline-block; vertical-align:middle; margin-right:5px"/> Corpus</span> -->
+			  <!-- Document(s) Button -->
+			<button class="toggle-button { $document_specific ? 'active' : '' }" on:click={() => document_specific.set(true)}>
+				<File style="display:inline-block; vertical-align:middle; margin-right:5px" /> Document(s)
+			</button>
+
+			<!-- Corpus Button -->
+			<button class="toggle-button { !$document_specific ? 'active' : '' }" on:click={() => document_specific.set(false)}>
+				<ChartScatter style="display:inline-block; vertical-align:middle; margin-right:5px" /> Corpus
+			</button>
+		</div>
+
+		<!-- Input field and send button -->
 		<form on:submit|preventDefault={handleSendMessage}>
 			<input
 				id="chat-input"
 				autocomplete="off"
 				type="textarea"
-				placeholder="Type a message..."
+				placeholder="Type your query..."
 				name="message"
 				on:keypress={(e) => e.key === 'Enter' && handleSendMessage(e)}
 			/>
 			<button class="btn"><Send size={18} /></button>
 		</form>
-		{#if $document_specific}
+		<!-- {#if $document_specific}
 			<button class="btn-specific" on:click={toggleQAoption}><File /> Document Specific</button>
 		{:else}
 			<button on:click={toggleQAoption}><ChartScatter /> Corpus Specific</button>
-		{/if}
+		{/if} -->
 	</div>
 </div>
 
@@ -156,7 +178,7 @@
 
 	.input-fields {
 		display: flex;
-		flex-direction: row;
+		flex-direction: column;
 		grid-area: input-field;
 		align-items: center;
 		height: 100%;
@@ -174,7 +196,7 @@
 	button {
 		border: none;
 		height: var(--size-8);
-		background-color: var(--blue-7);
+		background-color: #d2f9cb;
 	}
 
 	.scroll-area {
@@ -201,12 +223,12 @@
 
 	.message.user {
 		align-self: flex-end;
-		background-color: #248bf5;
+		background-color: #fbfbfb;
 	}
 
 	.message.assistant {
 		align-self: flex-start;
-		background-color: var(--surface-2-dark);
+		background-color: #c2e2f9;
 	}
 	.loader {
 		animation: var(--animation-spin);
@@ -225,7 +247,100 @@
 		box-shadow: none;
 		text-shadow: none;
 	}
-	.btn-specific {
-		width: fit-content;
+
+	.toggle-container {
+		display: flex;
+		align-items: center;
+		gap: 15px;
+	}
+
+	/* Buttons styling */
+	.toggle-button {
+		padding: 10px 20px;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		background-color: #f0f0f0;
+		cursor: pointer;
+		font-size: 16px;
+		display: flex;
+		align-items: center;
+		transition: background-color 0.3s ease, color 0.3s ease;
+	}
+
+	/* Highlight the active button */
+	.toggle-button.active {
+		background-color: #007bff;
+		color: white;
+		border-color: #007bff;
+	}
+
+	.toggle-button:hover {
+		background-color: #0056b3;
+		color: white;
+	}
+
+	.label {
+	font-size: 18px;
+	color: #333;
+	}
+
+	/* Toggle Switch Styling */
+	.switch {
+		position: relative;
+		display: inline-block;
+		width: 60px;
+		height: 34px;
+	}
+
+	.switch input {
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.slider {
+		position: absolute;
+		cursor: pointer;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: #ccc;
+		transition: 0.4s;
+		border-radius: 34px;
+	}
+
+	.slider:before {
+		position: absolute;
+		content: "";
+		height: 26px;
+		width: 26px;
+		left: 4px;
+		bottom: 4px;
+		background-color: white;
+		transition: 0.4s;
+		border-radius: 50%;
+	}
+
+	input:checked + .slider {
+	background-color: #007bff;
+	}
+
+	input:checked + .slider:before {
+	transform: translateX(26px);
+	}
+
+	.chat-input {
+		margin-right: 10px; /* Adjust the value as needed */
+		width: calc(100% - 60px); /* Ensure the input doesn't overflow */
+	}
+		
+	.btn {
+		padding: 10px 20px;
+		background-color: #007bff;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
 	}
 </style>
