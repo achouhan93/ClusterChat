@@ -3,10 +3,9 @@ import { Client } from '@opensearch-project/opensearch';
 import {
 	OPENSEARCH_USERNAME,
 	OPENSEARCH_PASSWORD,
-	OPENSEARCH_INDEX,
+	OPENSEARCH_DOC_INDEX,
 	OPENSEARCH_NODE
 } from '$env/static/private';
-
 
 // OpenSearch client setup
 const client = new Client({
@@ -20,13 +19,16 @@ const client = new Client({
 export async function GET({ params }) {
 	try {
 		const response = await client.search({
-			index: OPENSEARCH_INDEX,
+			index: OPENSEARCH_DOC_INDEX,
 			body: {
 				query: {
 					match_all: {}
 				},
 				from: params.from,
-				size: params.size
+				size: params.size,
+				_source: {
+					excludes: 'abstract'
+				}
 			}
 		});
 		return new Response(JSON.stringify(response.body.hits.hits));

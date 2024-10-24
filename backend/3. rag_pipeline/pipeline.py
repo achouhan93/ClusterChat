@@ -5,8 +5,6 @@ from sentence_transformers import SentenceTransformer
 import utils
 import json
 from tqdm import tqdm
-import concurrent.futures
-import threading
 
 from tasks.rag_components import rag_chatmodel, rag_loader, rag_prompt
 

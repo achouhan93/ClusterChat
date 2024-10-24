@@ -1,62 +1,69 @@
 // Cosmograph Imports
 import type {
 	CosmographInputConfig,
-	CosmographSearchInputConfig,
 	CosmographTimelineInputConfig
 } from '@cosmograph/cosmograph';
+import type { D3ZoomEvent } from 'd3-zoom';
 import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
-import { Cosmograph, CosmographSearch, CosmographTimeline } from '@cosmograph/cosmograph';
-import { nodes, links, load10k } from './readcluster';
+import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
+import { nodes, links, load10k, loadLables, getNodeColor, ClustersTree, getAssociatedLeafs, LoadAndSelect } from './readcluster';
 
 // Other 
 import '../app.css';
-import type { Node, Link } from '$lib/types';
+import type { Node, Link, Cluster } from '$lib/types';
 import { DragSelect } from '$lib/components/graph/DragSelect';
 import { get, writable } from 'svelte/store';
+import { formatDate } from './utils';
 
 
 // Useful global variables
 let graph: Cosmograph<Node, Link>;
 let timeline: CosmographTimeline<Node>;
 
-const INITIAL_VALUE:number = 5000
+const BATCH_SIZE:number = 10000;
+const MAX_SIZE:number = 100000;
+let $batch_number= writable<number>(1);
+let $update_number=writable<number>(1);
+const INITIAL_FITVIEW:[[number,number],[number,number]] = [[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]];
+let selectedNodes = writable<Node[]>([]);
 
 export let selectMultipleNodes: boolean = false;
 export let selectNodeRange: boolean = false;
 let drag_select: boolean = false;
-let selectedNodes: Node[] = [];
+
 export let selectionArea: DragSelect | null = null;
-let $counter = writable<number>(0);
+
  // Automatically load data when the component loads
 
 
 /* Config for the Graph, Search and Timeline */
 export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	//backgroundColor: '#151515',
-	backgroundColor: '#343a40',
+	backgroundColor: '#ffffff',
 	//showFPSMonitor: true, /* shows performance monitor on the top right */
-	nodeSize: (node: Node) => 0.1,
-	nodeColor: (node: Node) => "#4CC9FE",
-	//nodeLabelAccessor: (node: Node) => node.title,
-	nodeLabelClassName: 'cosmograph-node-label',
+	nodeSize: (node: Node) => 0.01,
+	nodeColor: (node: Node) => node.color,
+	nodeLabelAccessor: (node: Node) => node.title,
+	nodeLabelClassName: (node: Node) => node.isClusterNode ? 'cosmograph-cluster-label' : 'cosmograph-node-label',
+	nodeLabelColor: (node:Node) => node.isClusterNode ? getNodeColor(node.x,node.y,INITIAL_FITVIEW,1) : "#fff",
+	hoveredNodeLabelColor: (node:Node) => node.isClusterNode? '#000': node.color,
 	hoveredNodeLabelClassName: 'cosmograph-hovered-node-label',
 	hoveredNodeRingColor: '#2463EB',
-	showHoveredNodeLabel: true,
-	showDynamicLabels: false,
-	nodeGreyoutOpacity: 0.009,
+	nodeGreyoutOpacity: 0.09,
 	disableSimulation: true,
 	renderLinks: false,
 	scaleNodesOnZoom: true,
-	//nodeLabelColor: '#FFFFFF',
-	hoveredNodeLabelColor: '#FFFFFF',
-	focusedNodeRingColor: 'yellow',
+	fitViewByNodesInRect:INITIAL_FITVIEW,
+	showDynamicLabels: false,
+	showHoveredNodeLabel: true,
+	showTopLabels: true,
+	showTopLabelsLimit: 10,
+	showTopLabelsValueKey: "isClusterNode",
+	
 	// Selection Event handled with button Click
-	onClick(clickedNode) {
-		handleNodeClick(clickedNode as Node);
-	},
-	onLabelClick(node, event) {
-		console.log(node.id);
-	},
+	onClick(clickedNode) {handleNodeClick(clickedNode as Node);},
+	onLabelClick(node) {handleLabelClick(node)},
+	onZoom(){console.log(graph.getZoomLevel())},
 	onMouseMove() {
 		if (drag_select) {
 			const container = document.getElementById('main-frame');
@@ -66,49 +73,32 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		}
 	},
 	onZoomStart(e, userDriven){
-		if(userDriven){		
-		(async () => {
-		
-		if(get(nodes).length < 40000){
-			const counterValue = get($counter); // Get counter value using `get`
-			await load10k(counterValue, 5000); // Await loading 10k nodes
-			$counter.update(currentValue => currentValue + 1000); // Update counter
-			updateGraphData();
+		const ZoomLevel:number = graph.getZoomLevel() || 10
+		if (ZoomLevel < 200){
+			GraphConfig.showTopLabelsLimit = 10
+		} else if(ZoomLevel > 200 && ZoomLevel < 1000) {
+			GraphConfig.showTopLabelsLimit = Math.floor(ZoomLevel / 5)
+		} else if (ZoomLevel > 1000) {
+			GraphConfig.showTopLabelsLimit = 360
 		}
-		 // Update the graph after the new data is loaded
-	})();  // Immediately invoke the async function
+		updateGraphConfig(GraphConfig)
+		
+		if(userDriven && e.sourceEvent.type != "mousedown"){		
+			handleZoomEvent()
 		}
 	},
-	
-	
+
 };
 
-const SearchConfig: CosmographSearchInputConfig<Node> = {
-	accessors: [
-		{ label: 'ID', accessor: (node: Node) => node.id }
-		// one for the abstracts
-	],
-	placeholder: 'Find documents...',
-	ordering: {
-		order: ['ID'],
-		include: ['ID']
-	},
-	maxVisibleItems: 10,
-	onSelectResult(clickedNode) {
-		handleNodeClick(clickedNode as Node);
-	},
-	onSearch(foundMatches) {
-		showLabelsfor(foundMatches as Node[]);
-	},
-	onEnter(input, accessor) {
-		showLabelsfor([])
-	},
-};
 
 const TimelineConfig: CosmographTimelineInputConfig<Node> = {
-	accessor: (d) => (d.date ? d.date : 12 / 12 / 2000),
+	accessor: (d) => (d.date ? d.date : 1 / 1 / 1970),
 	showAnimationControls: true,
-	allowSelection: true
+	allowSelection: true,
+	tickStep: 31556952000,
+	barTopMargin: 1,
+	axisTickHeight: 30
+
 };
 
 
@@ -119,12 +109,6 @@ export function createGraph() {
 	graph.setConfig(GraphConfig);
 	initializeGraph();
 	
-}
-
-export function createSearchBar() {
-	const searchContainer = document.getElementById('main-search-bar') as HTMLDivElement;
-	const search = new CosmographSearch<Node, Link>(graph, searchContainer);
-	search.setConfig(SearchConfig);
 }
 
 export function createTimeline() {
@@ -159,9 +143,9 @@ export function toggleDragSelection() {
 /* Graph functionalities */
 
 async function initializeGraph(){
-	await load10k(0,INITIAL_VALUE)
-	graph.setData(get(nodes),links)
-	console.log(nodes)
+	await loadLables()
+	await load10k(0,BATCH_SIZE)
+	graph.setData(get(nodes),get(links))
 }
 
 export function updateGraphConfig(config: CosmographInputConfig<Node, Link>) {
@@ -170,31 +154,33 @@ export function updateGraphConfig(config: CosmographInputConfig<Node, Link>) {
 
 export function updateGraphData(){
 	nodes.subscribe(nodesArray => {
-		graph.setData(nodesArray, links); 
+		graph.setData(nodesArray, get(links)); 
 	});	
-	console.dir(get(nodes))
 }
 
 
 export function selectNodesInRange(arr: [[number, number], [number, number]]) {
 	graph.selectNodesInRange(arr);
-	selectedNodes = graph.getSelectedNodes() as Node[];
+	selectedNodes.set(graph.getSelectedNodes() as Node[])
 }
 
 export function unselectNodes() {
 	graph.unselectNodes();
 	showLabelsfor([]);
-	selectedNodes = [];
+	selectedNodes.set([]);
 }
 
 export function getSelectedNodes() {
-	selectedNodes = graph.getSelectedNodes() as Node[];
-	if (selectedNodes) {
-		return selectedNodes;
-	} else {
-		selectedNodes = [];
-		return selectedNodes;
-	}
+	return get(selectedNodes);
+	
+}
+
+export function setSelectedNodes(nodes:Node[]){
+	selectedNodes.set(nodes)
+}
+
+export function highlightNodes(nodes:Node[]){
+	graph.selectNodes(nodes)
 }
 
 export function fitViewofGraph(){
@@ -216,12 +202,94 @@ const handleNodeClick = async (clickedNode: Node) => {
 		showLabelsfor([clickedNode] as Node[]);
 		graph.focusNode(clickedNode);
 		graph.selectNode(clickedNode);
-		selectedNodes = [clickedNode];
+		selectedNodes.update((existingNodes)=>{return [...existingNodes, clickedNode]})
 	} else if (selectMultipleNodes && clickedNode) {
-		selectedNodes.push(clickedNode); // Add clicked node to selectedNodes
-		graph.selectNodes(selectedNodes);
-		showLabelsfor(selectedNodes);
+		selectedNodes.update((existingNodes)=>{return [...existingNodes, clickedNode]})
+		graph.selectNodes(get(selectedNodes));
+		showLabelsfor(get(selectedNodes));
 	} else if (!clickedNode) {
 		unselectNodes();
 	}
 };
+
+const handleZoomEvent = async () => {
+	const from_value:number = get($batch_number)*BATCH_SIZE
+		if(from_value <= MAX_SIZE){
+			// const current = get($BATCH_SIZE); 
+
+			await load10k(from_value, BATCH_SIZE); // Await loading 10k nodes
+			// $counter.update(currentValue => currentValue + 5000); 
+			$batch_number.update(n => n+1);
+			const nodenumber:number = get(nodes).length
+			if(Math.floor(nodenumber/35000) > get($update_number)){
+				updateGraphData();
+				$update_number.update(n => n+1);
+			}
+		}
+}
+
+const handleLabelClick = async (node:Node) => {
+	if(node.isClusterNode){
+		const cluster_ids:string[] = getAssociatedLeafs(node.id)
+		LoadAndSelect(cluster_ids)
+		showLabelsfor([node])
+	}
+	
+}
+// function getFitViewAfterZoom(event:D3ZoomEvent<HTMLCanvasElement, undefined>){
+
+// 		const transform = event.transform;
+	
+// 		// Extract zoom transformation
+// 		const scale = transform.k; // Current zoom scale
+// 		const translateX = transform.x; // X-translation
+// 		const translateY = transform.y; // Y-translation
+	
+// 		// Get the dimensions of the SVG element
+// 		const svg = event.sourceEvent.target; // Get the SVG element from the event
+// 		const width = svg.clientWidth; // Width of the SVG viewport
+// 		const height = svg.clientHeight; // Height of the SVG viewport
+	
+// 		// Calculate the top-left corner of the current view
+// 		const viewX = -translateX / scale; // Top-left X coordinate
+// 		const viewY = -translateY / scale; // Top-left Y coordinate
+	
+// 		// Calculate the dimensions of the current view
+// 		const viewWidth = width / scale; // Width of the visible area
+// 		const viewHeight = height / scale; // Height of the visible area
+	
+// 		return {
+// 			viewX,
+// 			viewY,
+// 			viewWidth,
+// 			viewHeight
+// 		};
+// }
+
+// const SearchConfig: CosmographSearchInputConfig<Node> = {
+// 	accessors: [
+// 		{ label: 'ID', accessor: (node: Node) => node.id }
+// 		// one for the abstracts
+// 	],
+// 	placeholder: 'Find documents...',
+// 	ordering: {
+// 		order: ['ID'],
+// 		include: ['ID']
+// 	},
+// 	maxVisibleItems: 10,
+// 	onSelectResult(clickedNode) {
+// 		handleNodeClick(clickedNode as Node);
+// 	},
+// 	onSearch(foundMatches) {
+// 		showLabelsfor(foundMatches as Node[]);
+// 	},
+// 	onEnter(input, accessor) {
+// 		showLabelsfor([])
+// 	},
+// };
+
+// export function createSearchBar() {
+// 	const searchContainer = document.getElementById('main-search-bar') as HTMLDivElement;
+// 	const search = new CosmographSearch<Node, Link>(graph, searchContainer);
+// 	search.setConfig(SearchConfig);
+// }
