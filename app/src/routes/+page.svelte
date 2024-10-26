@@ -62,7 +62,7 @@
 		grid-template-columns: 35% 15% 25% 25%;
 		grid-template-rows: 15% 45% 30% 10%;
 		grid-template-areas:
-			'chat control-btns search-bar search-bar'
+			'chat control-btns . search-bar'
 			'chat . . .'
 			'chat cluster-view . .'
 			'chat timeline timeline timeline';

@@ -22,7 +22,9 @@ let timeline: CosmographTimeline<Node>;
 
 const BATCH_SIZE:number = 10000;
 const MAX_SIZE:number = 100000;
-let $batch_number= writable<number>(1);
+const BATCH_NUMBER_START:number = 5
+const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START*BATCH_SIZE;
+let $batch_number= writable<number>(BATCH_NUMBER_START);
 let $update_number=writable<number>(1);
 const INITIAL_FITVIEW:[[number,number],[number,number]] = [[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]];
 let selectedNodes = writable<Node[]>([]);
@@ -30,6 +32,7 @@ let selectedNodes = writable<Node[]>([]);
 export let selectMultipleNodes: boolean = false;
 export let selectNodeRange: boolean = false;
 let drag_select: boolean = false;
+let hoveredNodeId = writable<string>("")
 
 export let selectionArea: DragSelect | null = null;
 
@@ -49,7 +52,8 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	hoveredNodeLabelColor: (node:Node) => node.isClusterNode? '#000': node.color,
 	hoveredNodeLabelClassName: 'cosmograph-hovered-node-label',
 	hoveredNodeRingColor: '#2463EB',
-	nodeGreyoutOpacity: 0.09,
+	nodeGreyoutOpacity: 0.01,
+	
 	disableSimulation: true,
 	renderLinks: false,
 	scaleNodesOnZoom: true,
@@ -59,11 +63,28 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	showTopLabels: true,
 	showTopLabelsLimit: 10,
 	showTopLabelsValueKey: "isClusterNode",
+
 	
 	// Selection Event handled with button Click
 	onClick(clickedNode) {handleNodeClick(clickedNode as Node);},
-	onLabelClick(node) {handleLabelClick(node)},
-	onZoom(){console.log(graph.getZoomLevel())},
+	onLabelClick(node) {
+		handleLabelClick(node)
+		showLabelsfor([node])
+	},
+	  // Scale node on hover
+	  onNodeMouseOver(hoveredNode) {
+		hoveredNodeId.set(hoveredNode.id);  // Track the hovered node by ID
+		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? 0.1 : 0.01)
+		updateGraphConfig(GraphConfig);  // Update the graph configuration to reflect the new node size
+	  },
+	  
+	  // Reset node size when mouse leaves the node
+	  onNodeMouseOut() {
+		hoveredNodeId.set("")  // Reset the hovered node
+		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? 0.1 : 0.01)
+		updateGraphConfig(GraphConfig);  // Update the graph configuration to reset the node size
+	  },
+	// onZoom(){console.log(graph.getZoomLevel())},
 	onMouseMove() {
 		if (drag_select) {
 			const container = document.getElementById('main-frame');
@@ -92,12 +113,22 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 
 
 const TimelineConfig: CosmographTimelineInputConfig<Node> = {
-	accessor: (d) => (d.date ? d.date : 1 / 1 / 1970),
-	showAnimationControls: true,
+	accessor: (d) => (d.date ? new Date(d.date) : 1 / 1 / 1970),
+	
 	allowSelection: true,
-	tickStep: 31556952000,
-	barTopMargin: 1,
-	axisTickHeight: 30
+	showAnimationControls: true,
+	//dataStep:  1000*3600*24, 
+	//tickStep: 3*31557600000,  // One year in milliseconds,
+	//axisTickHeight: 30,
+	filterType: "nodes",
+	onSelection(selection, isManuallySelected) {
+		if(selection){
+			handleTimelineSelection(selection)
+
+		}
+
+	},
+
 
 };
 
@@ -113,9 +144,10 @@ export function createGraph() {
 
 export function createTimeline() {
 	const timelineContainer = document.getElementById('main-timeline') as HTMLDivElement;
-	const castedGraph = graph as unknown as Cosmograph<CosmosInputNode, CosmosInputLink>; // for typecasting
-	timeline = new CosmographTimeline<Node>(castedGraph, timelineContainer);
+	timeline = new CosmographTimeline<Node>(graph as unknown as Cosmograph<CosmosInputNode, CosmosInputLink>, 
+		timelineContainer);
 	timeline.setConfig(TimelineConfig);
+	console.log(TimelineConfig)
 }
 
 // control buttons functions
@@ -144,7 +176,7 @@ export function toggleDragSelection() {
 
 async function initializeGraph(){
 	await loadLables()
-	await load10k(0,BATCH_SIZE)
+	await load10k(0,INITIAL_BATCH_SIZE)
 	graph.setData(get(nodes),get(links))
 }
 
@@ -153,15 +185,28 @@ export function updateGraphConfig(config: CosmographInputConfig<Node, Link>) {
 }
 
 export function updateGraphData(){
+	const startTime = new Date().getTime()
+	console.log("Updating the graph")
 	nodes.subscribe(nodesArray => {
 		graph.setData(nodesArray, get(links)); 
 	});	
+	const endTime = new Date().getTime()
+	const duration = (Math.round(endTime - startTime)/1000)
+	console.log(`Time to set Data: ${duration} sec`)
+}
+
+export function updateNodes(newNodes:Node[]){
+	nodes.update(existingNodes => {
+		// Append new nodes to the existing ones
+		return [...existingNodes, ...newNodes];
+	  });
 }
 
 
 export function selectNodesInRange(arr: [[number, number], [number, number]]) {
+	// TODO: fix this function
 	graph.selectNodesInRange(arr);
-	selectedNodes.set(graph.getSelectedNodes() as Node[])
+	selectedNodes.set(getSelectedNodes() as Node[])
 }
 
 export function unselectNodes() {
@@ -171,17 +216,30 @@ export function unselectNodes() {
 }
 
 export function getSelectedNodes() {
-	return get(selectedNodes);
+	return graph.getSelectedNodes();
 	
 }
 
-export function setSelectedNodes(nodes:Node[]){
-	selectedNodes.set(nodes)
+
+
+export function getRenderedNodes(){
+	return get(nodes)
 }
 
-export function highlightNodes(nodes:Node[]){
-	graph.selectNodes(nodes)
+export function setSelectedNodes(nodes:Node[]){
+	
+	selectedNodes.set(nodes)
+	graph.selectNodes(get(selectedNodes))
+	//graph.addNodesFilter()
 }
+
+export function updateSelectedNodes(nodes:Node[]){
+	selectedNodes.update(existingSelectedNodes => {
+		return [...existingSelectedNodes, ...nodes]
+	})
+	graph.selectNodes(get(selectedNodes))
+}
+
 
 export function fitViewofGraph(){
 	graph.fitView()
@@ -214,9 +272,10 @@ const handleNodeClick = async (clickedNode: Node) => {
 
 const handleZoomEvent = async () => {
 	const from_value:number = get($batch_number)*BATCH_SIZE
-		if(from_value <= MAX_SIZE){
+	console.log(`Current batch_number = ${get($batch_number)}`)
+	console.log(`Current from_value = ${from_value}`)
+		if(from_value < MAX_SIZE){
 			// const current = get($BATCH_SIZE); 
-
 			await load10k(from_value, BATCH_SIZE); // Await loading 10k nodes
 			// $counter.update(currentValue => currentValue + 5000); 
 			$batch_number.update(n => n+1);
@@ -232,9 +291,18 @@ const handleLabelClick = async (node:Node) => {
 	if(node.isClusterNode){
 		const cluster_ids:string[] = getAssociatedLeafs(node.id)
 		LoadAndSelect(cluster_ids)
-		showLabelsfor([node])
+		//updateSelectedNodes([node])		
 	}
-	
+
+graph.addNodesFilter
+
+}
+const handleTimelineSelection = async(selection:[Date,Date]) => {
+	//selectNodesInSelection(selection)
+	const nodesToSelect:Node[]=getRenderedNodes().filter(node => 
+		node.date != undefined && new Date(node.date) >= selection[0] && new Date(node.date) <= selection[1])
+		console.log(nodesToSelect)
+	setSelectedNodes(nodesToSelect)
 }
 // function getFitViewAfterZoom(event:D3ZoomEvent<HTMLCanvasElement, undefined>){
 

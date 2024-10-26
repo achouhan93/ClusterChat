@@ -51,7 +51,7 @@
 	}
 
 	async function handleSendMessage(event: Event) {
-		const form = event.currentTarget;
+		const form = event.currentTarget as HTMLFormElement;
 		const message = new FormData(form).get('message') as string;
 		$isLoading = true;
 
@@ -67,13 +67,12 @@
 
 		// get context from selected node
 		let selectedNodes: Node[] = getSelectedNodes();
-		console.dir(`These are the selected Nodes in handle send message: ${selectedNodes}`)
 		let payload: ChatQuestion = {
 			question: userMessage,
-			question_type: 'document-specific', // TODO: make it dropdown list of options
+			question_type: $document_specific? "document-specific" : "corpus-based", // TODO: make it dropdown list of options
 			document_ids: selectedNodes.map((node) => (node.isClusterNode ? '' : (node.id as string)))
 		};
-		// fetch chat completion from groq api
+		// fetch chat completion
 		const chatCompletion = await fetchChatAnswer(payload);
 		if (!chatCompletion) throw new Error('Failed to get chat completion');
 
@@ -86,8 +85,7 @@
 			return msgs;
 		});
 
-		$isLoading = false;
-		// scroll to bottom
+		$isLoading = false;	
 	}
 	afterUpdate(() => {
 		// Scroll to the bottom of the message container after each update
@@ -98,7 +96,7 @@
 <div class="chat-side">
 	<div class="scroll-area">
 		<!-- Title that dynamically changes based on the toggle state -->
-		<h4 style="padding-bottom: 10px; text-align:center">{$document_specific ? 'Interact with Document(s)' : 'Interact with Corpus'}</h4>
+		<h4>{$document_specific ? 'Interact with Document(s)' : 'Interact with Corpus'}</h4>
 		{#each $messages as message, index}
 			<div class="message user">
 				<p>
@@ -119,13 +117,6 @@
 	<div class="input-fields">
 		<!-- Toggle for Document Specific / Corpus Specific -->
 		<div class="toggle-container">
-			<!-- <span class="label"><File style="display:inline-block; vertical-align:middle; margin-right:5px"/> Document(s)</span>
-			<label class="switch">
-				<input type="checkbox" bind:checked={$document_specific} on:click={toggleQAoption} />
-				<span class="slider"></span>
-			</label>
-			<span class="label"><ChartScatter style="display:inline-block; vertical-align:middle; margin-right:5px"/> Corpus</span> -->
-			  <!-- Document(s) Button -->
 			<button class="toggle-button { $document_specific ? 'active' : '' }" on:click={() => document_specific.set(true)}>
 				<File style="display:inline-block; vertical-align:middle; margin-right:5px" /> Document(s)
 			</button>
@@ -144,19 +135,19 @@
 				type="textarea"
 				placeholder="Type your query..."
 				name="message"
-				on:keypress={(e) => e.key === 'Enter' && handleSendMessage(e)}
 			/>
 			<button class="btn"><Send size={18} /></button>
 		</form>
-		<!-- {#if $document_specific}
-			<button class="btn-specific" on:click={toggleQAoption}><File /> Document Specific</button>
-		{:else}
-			<button on:click={toggleQAoption}><ChartScatter /> Corpus Specific</button>
-		{/if} -->
 	</div>
 </div>
 
 <style>
+	h4 {
+		color: black;
+		text-align: center;
+		align-self: center;
+		padding: var(--size-2);
+	}
 	input {
 		background-color: var(--surface-4-light);
 		color: var(--text-2-light);
@@ -192,6 +183,7 @@
 		height: 100%;
 		width: 100%;
 		margin: var(--size-2);
+		padding: var(--size-2);
 	}
 	button {
 		border: none;
@@ -219,6 +211,7 @@
 		border-radius: var(--size-4);
 		padding: var(--size-3);
 		margin-bottom: var(--size-3);
+		color: var(--text-2-light);
 	}
 
 	.message.user {
@@ -246,12 +239,13 @@
 	button {
 		box-shadow: none;
 		text-shadow: none;
+		color: var(--text-1-dark);
 	}
 
 	.toggle-container {
 		display: flex;
 		align-items: center;
-		gap: 15px;
+		gap: var(--size-2);
 	}
 
 	/* Buttons styling */
@@ -277,62 +271,6 @@
 	.toggle-button:hover {
 		background-color: #0056b3;
 		color: white;
-	}
-
-	.label {
-	font-size: 18px;
-	color: #333;
-	}
-
-	/* Toggle Switch Styling */
-	.switch {
-		position: relative;
-		display: inline-block;
-		width: 60px;
-		height: 34px;
-	}
-
-	.switch input {
-		opacity: 0;
-		width: 0;
-		height: 0;
-	}
-
-	.slider {
-		position: absolute;
-		cursor: pointer;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: #ccc;
-		transition: 0.4s;
-		border-radius: 34px;
-	}
-
-	.slider:before {
-		position: absolute;
-		content: "";
-		height: 26px;
-		width: 26px;
-		left: 4px;
-		bottom: 4px;
-		background-color: white;
-		transition: 0.4s;
-		border-radius: 50%;
-	}
-
-	input:checked + .slider {
-	background-color: #007bff;
-	}
-
-	input:checked + .slider:before {
-	transform: translateX(26px);
-	}
-
-	.chat-input {
-		margin-right: 10px; /* Adjust the value as needed */
-		width: calc(100% - 60px); /* Ensure the input doesn't overflow */
 	}
 		
 	.btn {

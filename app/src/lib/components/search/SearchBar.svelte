@@ -1,34 +1,75 @@
 <script lang="ts">
 	import { Search } from 'lucide-svelte';
+	import { getRenderedNodes, setSelectedNodes, updateGraphData, updateNodes } from '$lib/graph';
+	import type { Node } from '$lib/types';
+
+	async function fetchSearchQueryAnswer(search_query:string, search_accessor:string){
+		/* Requests OpenSearch and fetches to 10k nodes */
+		try {
+			const response = await fetch(`/api/opensearch/search/${search_accessor}/${search_query}`);
+			const data = await response.json();
+			return data
+		} catch(error) {
+			console.error('Error fetching Answer for Search Query:', error);
+			return null
+		}
+	}
 
 	async function handleSearch(event: Event) {
-		console.log(event.target);
+		const form = event.currentTarget as HTMLFormElement;
+		const formData = new FormData(form);
+
+		const searchQuery = formData.get('search-query') as string;
+		const searchAccessor = formData.get('search-accessor') as string;
+
+		if (!searchQuery) return;
+
+		// send to opensearch and get the top 10k
+		const data = await fetchSearchQueryAnswer(searchQuery, searchAccessor);
+
+		if (Array.isArray(data)){
+			const nodeIdsToSelect:Set<string> = new Set(data.map(item => item._id));
+			// get all nodes with these ids
+			const nodesToSelect:Node[] = getRenderedNodes().filter(node => nodeIdsToSelect.has(node.id))
+			
+			// updates the nodes to render
+			updateNodes(nodesToSelect)
+			updateGraphData()
+			setSelectedNodes(nodesToSelect)
+		}
+
+		// highlight top 10k and select them
+		
 	}
+
+
 </script>
 
-<div class="search-bar-elems">
-	<input
-		id="search-bar-input"
+
+	<form on:submit|preventDefault={handleSearch}>
+		<div class="search-bar-elems">
+		<input
+		id="search-query"
 		autocomplete="off"
 		type="textarea"
 		placeholder="Search..."
 		name="search-query"
-		on:keypress={(e) => e.key === 'Enter' && handleSearch(e)}
 	/>
-	<div class="dropdown">
-		<select name="search" id="search-accessor">
-			<!-- <option value="id">ID</option> -->
+		<select name="search-accessor" id="search-accessor">
 			<option value="abstract">Abstract</option>
 			<option value="title">Title</option>
 		</select>
 	</div>
-</div>
+	</form>
+
 
 <style>
 	.search-bar-elems {
 		display: flex;
 		direction: rows;
 		margin-top: var(--size-3);
+		gap: var(--size-1);
+		margin-right: var(--size-2);
 	}
 	input {
 		width: 80%;
@@ -41,6 +82,17 @@
 	input:focus-visible {
 		transition: none !important;
 	}
+	#search-query {
+		width: 75%;
+		background-color: var(--surface-3-light);
+	}
+	#search-query:focus-visible {
+		background-color: var(--surface-4-light);
+		animation: var(--animation-scale-up) forwards;
+	}
+	/* #search-query:hover {
+		
+	} */
 	#search-accessor {
 		/* background-color: var(--surface-2-light); */
 		/* color: var(--text-1-light); */
@@ -49,13 +101,14 @@
 		height: 100%;
 		margin-left: var(--size-2);
 		/* border-radius: var(--size-3); */
-		border-radius: 10px; 
+		border-radius: var(--radius-3); 
 		/* background-color: #caf1f5; */
 		padding: var(--size-1);
 		/* Center align the text */
 		text-align: center;
 		text-align-last: center; /* For modern browsers to center the selected option */
-		width: 100%;
+		width: fit-content;
+		padding: var(--size-3);
 		
 		/* Optional: Add some padding to ensure the text is vertically centered
 		line-height: 1.5; */
