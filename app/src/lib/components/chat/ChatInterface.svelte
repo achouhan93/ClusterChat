@@ -159,7 +159,7 @@
 		background: var(--surface-3-light);
 		display: grid;
 		grid-template-columns: 50% 50%;
-		grid-template-rows: 85% 15%;
+		grid-template-rows: 80% 20%;
 		grid-template-areas:
 			'scroll-area scroll-area'
 			'input-field input-field';
@@ -175,6 +175,7 @@
 		height: 100%;
 		width: 100%;
 		padding: var(--size-2);
+		background-color: var(--surface-3-light);
 	}
 	form {
 		display: inline-flex;
@@ -250,12 +251,12 @@
 
 	/* Buttons styling */
 	.toggle-button {
-		padding: 10px 20px;
+		padding: var(--size-1);
 		border: 1px solid #ccc;
 		border-radius: 4px;
 		background-color: #f0f0f0;
 		cursor: pointer;
-		font-size: 16px;
+		font-size: 12px;
 		display: flex;
 		align-items: center;
 		transition: background-color 0.3s ease, color 0.3s ease;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Search } from 'lucide-svelte';
-	import { getRenderedNodes, setSelectedNodes, updateGraphData, updateNodes } from '$lib/graph';
+	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes } from '$lib/graph';
 	import type { Node } from '$lib/types';
 
 	async function fetchSearchQueryAnswer(search_query:string, search_accessor:string){
@@ -29,6 +29,7 @@
 
 		if (Array.isArray(data)){
 			const nodeIdsToSelect:Set<string> = new Set(data.map(item => item._id));
+			if(getSelectedNodes()?.length ===0 && getSelectedNodes() != undefined){
 			// get all nodes with these ids
 			const nodesToSelect:Node[] = getRenderedNodes().filter(node => nodeIdsToSelect.has(node.id))
 			
@@ -36,9 +37,13 @@
 			updateNodes(nodesToSelect)
 			updateGraphData()
 			setSelectedNodes(nodesToSelect)
+			} else if (getSelectedNodes() != undefined && getSelectedNodes() != null) {
+				const nodesToSelect:Node[] = getSelectedNodes().filter(node => nodeIdsToSelect.has(node.id))
+				setSelectedNodes(nodesToSelect)
+			}
+
 		}
 
-		// highlight top 10k and select them
 		
 	}
 

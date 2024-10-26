@@ -11,6 +11,7 @@
 	import { toggleMultipleNodesMode, toggleDragSelection, fitViewofGraph } from '$lib/graph';
 	import { onMount } from 'svelte';
 	import { dataloaded } from '$lib/readcluster';
+	import InfoView from '$lib/components/graph/InfoView.svelte';
 
 	onMount(async () => {
 		$dataloaded = true;
@@ -24,7 +25,9 @@
 	{#if !$dataloaded}
 		<div class="loader"><LoaderCircle size="48" /></div>
 	{:else}
-		<div id="main-graph"></div>
+		<div id="main-graph"> 
+			<svg id="selection-svg"/>
+		</div>
 		<div id="main-search-bar" class="cosmograph-search">
 			<SearchBar />
 		</div>
@@ -39,7 +42,9 @@
 				<BoxSelect />
 			</button>
 		</div>
+
 		<div id="chat-interface"><ChatInterface /></div>
+		<div id="info-view"><InfoView/></div>
 		<!-- <div id="cluster-view">
 			<ClusterView/>
 		</div> -->
@@ -64,26 +69,33 @@
 		grid-template-areas:
 			'chat control-btns . search-bar'
 			'chat . . .'
-			'chat cluster-view . .'
-			'chat timeline timeline timeline';
+			'info . . .'
+			'info timeline timeline timeline';
 	}
+
 	#main-search-bar {
 		grid-area: search-bar;
 		height: 100%;
 		z-index: 2;
 	}
-	#main-search-bar input {
-		background-color: var(--surface-4-light);
-	}
 	#main-timeline {
 		grid-area: timeline;
+		height: 100%;
+		z-index: 2;
 	}
 	#chat-interface {
 		grid-area: chat;
 		z-index: 2;
-		border-right: solid 1px #ffffff1c;
+		border-bottom: solid 1px #fff;
+		height: 100%;
 	}
-	#cluster-view {
+	#info-view {
+		grid-area: info;
+		height: 100%;
+		z-index: 2;
+		background-color: var(--surface-3-light);
+	}
+	/* #cluster-view {
 		grid-area: cluster-view;
 		z-index: 2;
 		color: var(--text-1-light);
@@ -95,7 +107,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		flex-direction: column;
-	}
+	} */
 
 	.loader {
 		animation: var(--animation-spin);

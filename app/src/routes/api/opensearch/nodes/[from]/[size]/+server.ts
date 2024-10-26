@@ -27,7 +27,7 @@ export async function GET({ params }) {
 				from: params.from,
 				size: params.size,
 				_source: {
-					excludes: 'abstract'
+					includes: ["document_id","x","y","title","date","cluster_id"]
 				}
 			}
 		});

@@ -4,7 +4,7 @@ import type { Node, Link, Cluster } from '$lib/types';
 import { writable, get } from 'svelte/store';
 import { formatDate } from './utils';
 import { interpolateRgb } from "d3";
-import { setSelectedNodes, updateGraphData } from './graph';
+import { updateSelectedNodes, updateGraphData } from './graph';
 
 const nodes= writable<Node[]>([]);
 let links=writable<Link[]>([])
@@ -126,7 +126,7 @@ if (Array.isArray(data)) {
 			cluster: item._source.cluster_id,
 			date: item._source.date,//formatDate(item._source.date), // Assuming date will be set later
 			color: getNodeColor(item._source.x,item._source.y,
-				[[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]],0.8),
+				[[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]],0.9),
 		} satisfies Node
 ));
 	const newLinks:Link[] = data.map(item => (
@@ -183,7 +183,7 @@ async function fetchDocumentIds(cluster_ids:string[]){
 		return [...existingNodes, ...uniqueNewNodes];
 	});
 		// update selectednodes
-		setSelectedNodes(newNodes)
+		updateSelectedNodes(newNodes)
 
 }
 

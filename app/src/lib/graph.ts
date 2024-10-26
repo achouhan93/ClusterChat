@@ -3,7 +3,7 @@ import type {
 	CosmographInputConfig,
 	CosmographTimelineInputConfig
 } from '@cosmograph/cosmograph';
-import type { D3ZoomEvent } from 'd3-zoom';
+
 import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
 import { nodes, links, load10k, loadLables, getNodeColor, ClustersTree, getAssociatedLeafs, LoadAndSelect } from './readcluster';
@@ -13,8 +13,7 @@ import '../app.css';
 import type { Node, Link, Cluster } from '$lib/types';
 import { DragSelect } from '$lib/components/graph/DragSelect';
 import { get, writable } from 'svelte/store';
-import { formatDate } from './utils';
-
+import { dragSelection } from './components/graph/D3DragSelection';
 
 // Useful global variables
 let graph: Cosmograph<Node, Link>;
@@ -26,20 +25,67 @@ const BATCH_NUMBER_START:number = 5
 const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START*BATCH_SIZE;
 let $batch_number= writable<number>(BATCH_NUMBER_START);
 let $update_number=writable<number>(1);
-const INITIAL_FITVIEW:[[number,number],[number,number]] = [[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]];
-let selectedNodes = writable<Node[]>([]);
+export const INITIAL_FITVIEW:[[number,number],[number,number]] = [[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]];
+export let selectedNodes = writable<Node[]>([]);
 
 export let selectMultipleNodes: boolean = false;
 export let selectNodeRange: boolean = false;
 let drag_select: boolean = false;
 let hoveredNodeId = writable<string>("")
 
-export let selectionArea: DragSelect | null = null;
+export let selectionArea: D3DragSelection | null=null;
 
- // Automatically load data when the component loads
+/* ====================================== Graph and Timeline Event Handlers ====================================== */
 
+const handleNodeClick = async (clickedNode: Node) => {
+	if (!selectMultipleNodes && clickedNode) {
+		showLabelsfor([clickedNode] as Node[]);
+		graph.focusNode(clickedNode);
+		graph.selectNode(clickedNode);
+		setSelectedNodes([clickedNode])
+	} else if (selectMultipleNodes && clickedNode) {
+		selectedNodes.update((existingNodes)=>{return [...existingNodes, clickedNode]})
+		graph.selectNodes(get(selectedNodes));
+		showLabelsfor(get(selectedNodes));
+	} else if (!clickedNode) {
+		unselectNodes();
+	}
+};
 
-/* Config for the Graph, Search and Timeline */
+const handleZoomEvent = async () => {
+	const from_value:number = get($batch_number)*BATCH_SIZE
+	console.log(`Current batch_number = ${get($batch_number)}`)
+	console.log(`Current from_value = ${from_value}`)
+		if(from_value < MAX_SIZE){
+			// const current = get($BATCH_SIZE); 
+			await load10k(from_value, BATCH_SIZE); // Await loading 10k nodes
+			// $counter.update(currentValue => currentValue + 5000); 
+			$batch_number.update(n => n+1);
+			const nodenumber:number = get(nodes).length
+			if(Math.floor(nodenumber/35000) > get($update_number)){
+				updateGraphData();
+				$update_number.update(n => n+1);
+			}
+		}
+}
+
+const handleLabelClick = async (node:Node) => {
+	if(node.isClusterNode){
+		const cluster_ids:string[] = getAssociatedLeafs(node.id)
+		LoadAndSelect(cluster_ids)
+		//updateSelectedNodes([node])		
+	}
+}
+const handleTimelineSelection = async(selection:[Date,Date]) => {
+
+	const nodesToSelect:Node[]=getRenderedNodes().filter(node => 
+		node.date != undefined && new Date(node.date) >= selection[0] && new Date(node.date) <= selection[1])
+		console.log(nodesToSelect)
+	updateSelectedNodes(nodesToSelect)
+}
+
+/* ====================================== Config for the Graph and Timeline ====================================== */
+
 export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	//backgroundColor: '#151515',
 	backgroundColor: '#ffffff',
@@ -52,14 +98,12 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	hoveredNodeLabelColor: (node:Node) => node.isClusterNode? '#000': node.color,
 	hoveredNodeLabelClassName: 'cosmograph-hovered-node-label',
 	hoveredNodeRingColor: '#2463EB',
-	nodeGreyoutOpacity: 0.01,
-	
 	disableSimulation: true,
 	renderLinks: false,
 	scaleNodesOnZoom: true,
 	fitViewByNodesInRect:INITIAL_FITVIEW,
 	showDynamicLabels: false,
-	showHoveredNodeLabel: true,
+	showHoveredNodeLabel: false,
 	showTopLabels: true,
 	showTopLabelsLimit: 10,
 	showTopLabelsValueKey: "isClusterNode",
@@ -88,8 +132,10 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	onMouseMove() {
 		if (drag_select) {
 			const container = document.getElementById('main-frame');
-			if (container && !selectionArea) {
-				selectionArea = new DragSelect(container);
+			const containerCanvas = container?.querySelector('canvas') as HTMLCanvasElement;
+
+			if (containerCanvas) {
+				selectionArea = new DragSelect(containerCanvas)
 			}
 		}
 	},
@@ -108,32 +154,35 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 			handleZoomEvent()
 		}
 	},
+	onNodesFiltered(filteredNodes) {
+		// console.log("Filtered Nodes: ")
+		// console.log(filteredNodes)
+	},
 
 };
 
-
 const TimelineConfig: CosmographTimelineInputConfig<Node> = {
 	accessor: (d) => (d.date ? new Date(d.date) : 1 / 1 / 1970),
-	
 	allowSelection: true,
 	showAnimationControls: true,
-	//dataStep:  1000*3600*24, 
-	//tickStep: 3*31557600000,  // One year in milliseconds,
+	dataStep:  1000*3600*24, 
+	tickStep: 31557600000 / 12,  // One year in milliseconds,
 	//axisTickHeight: 30,
 	filterType: "nodes",
+	formatter(d) {
+		return new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+	},
 	onSelection(selection, isManuallySelected) {
 		if(selection){
 			handleTimelineSelection(selection)
-
 		}
-
 	},
 
 
 };
 
+/* ====================================== Functions to Create Graph and Timeline ====================================== */
 
-/* Create components */
 export function createGraph() {
 	const canvas = document.getElementById('main-graph') as HTMLDivElement;
 	graph = new Cosmograph(canvas, GraphConfig);
@@ -147,7 +196,6 @@ export function createTimeline() {
 	timeline = new CosmographTimeline<Node>(graph as unknown as Cosmograph<CosmosInputNode, CosmosInputLink>, 
 		timelineContainer);
 	timeline.setConfig(TimelineConfig);
-	console.log(TimelineConfig)
 }
 
 // control buttons functions
@@ -166,13 +214,12 @@ export function toggleDragSelection() {
 		main_frame.style.cursor = 'crosshair';
 	} else {
 		main_frame.style.cursor = 'default';
-		selectionArea?.destroy();
-		selectionArea = null;
+		main_frame.draggable = true;
 		unselectNodes();
 	}
 }
 
-/* Graph functionalities */
+/* ====================================== Graph Methods ====================================== */
 
 async function initializeGraph(){
 	await loadLables()
@@ -216,11 +263,10 @@ export function unselectNodes() {
 }
 
 export function getSelectedNodes() {
-	return graph.getSelectedNodes();
+	return get(selectedNodes)
+	// return graph.getSelectedNodes();
 	
 }
-
-
 
 export function getRenderedNodes(){
 	return get(nodes)
@@ -255,84 +301,21 @@ function showLabelsfor(nodes: Node[]) {
 	}
 }
 
-const handleNodeClick = async (clickedNode: Node) => {
-	if (!selectMultipleNodes && clickedNode) {
-		showLabelsfor([clickedNode] as Node[]);
-		graph.focusNode(clickedNode);
-		graph.selectNode(clickedNode);
-		selectedNodes.update((existingNodes)=>{return [...existingNodes, clickedNode]})
-	} else if (selectMultipleNodes && clickedNode) {
-		selectedNodes.update((existingNodes)=>{return [...existingNodes, clickedNode]})
-		graph.selectNodes(get(selectedNodes));
-		showLabelsfor(get(selectedNodes));
-	} else if (!clickedNode) {
-		unselectNodes();
-	}
-};
 
-const handleZoomEvent = async () => {
-	const from_value:number = get($batch_number)*BATCH_SIZE
-	console.log(`Current batch_number = ${get($batch_number)}`)
-	console.log(`Current from_value = ${from_value}`)
-		if(from_value < MAX_SIZE){
-			// const current = get($BATCH_SIZE); 
-			await load10k(from_value, BATCH_SIZE); // Await loading 10k nodes
-			// $counter.update(currentValue => currentValue + 5000); 
-			$batch_number.update(n => n+1);
-			const nodenumber:number = get(nodes).length
-			if(Math.floor(nodenumber/35000) > get($update_number)){
-				updateGraphData();
-				$update_number.update(n => n+1);
-			}
-		}
+// Graph filters
+
+function applyDateFilter(startDate: Date, endDate: Date) {
+	const dateFilter = graph.addNodesFilter();
+	console.dir(dateFilter)
+	dateFilter.setAccessor((node) => node.isClusterNode && node.date ? 
+	new Date(node.date).getTime(): new Date("2024-01-01").getTime());
+	const startTimestamp = startDate.getTime();
+	const endTimestamp = endDate.getTime();
+	dateFilter.applyFilter((d) => d != undefined && d as number >= startTimestamp  && d as number <= endTimestamp);
+	
 }
 
-const handleLabelClick = async (node:Node) => {
-	if(node.isClusterNode){
-		const cluster_ids:string[] = getAssociatedLeafs(node.id)
-		LoadAndSelect(cluster_ids)
-		//updateSelectedNodes([node])		
-	}
-
-graph.addNodesFilter
-
-}
-const handleTimelineSelection = async(selection:[Date,Date]) => {
-	//selectNodesInSelection(selection)
-	const nodesToSelect:Node[]=getRenderedNodes().filter(node => 
-		node.date != undefined && new Date(node.date) >= selection[0] && new Date(node.date) <= selection[1])
-		console.log(nodesToSelect)
-	setSelectedNodes(nodesToSelect)
-}
-// function getFitViewAfterZoom(event:D3ZoomEvent<HTMLCanvasElement, undefined>){
-
-// 		const transform = event.transform;
 	
-// 		// Extract zoom transformation
-// 		const scale = transform.k; // Current zoom scale
-// 		const translateX = transform.x; // X-translation
-// 		const translateY = transform.y; // Y-translation
-	
-// 		// Get the dimensions of the SVG element
-// 		const svg = event.sourceEvent.target; // Get the SVG element from the event
-// 		const width = svg.clientWidth; // Width of the SVG viewport
-// 		const height = svg.clientHeight; // Height of the SVG viewport
-	
-// 		// Calculate the top-left corner of the current view
-// 		const viewX = -translateX / scale; // Top-left X coordinate
-// 		const viewY = -translateY / scale; // Top-left Y coordinate
-	
-// 		// Calculate the dimensions of the current view
-// 		const viewWidth = width / scale; // Width of the visible area
-// 		const viewHeight = height / scale; // Height of the visible area
-	
-// 		return {
-// 			viewX,
-// 			viewY,
-// 			viewWidth,
-// 			viewHeight
-// 		};
-// }
 
 // const SearchConfig: CosmographSearchInputConfig<Node> = {
 // 	accessors: [
