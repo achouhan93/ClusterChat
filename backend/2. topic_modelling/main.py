@@ -90,8 +90,8 @@ def main(argv=None):
                  )
            
            # Save the merged model
-           merged_model = topic_modelling.merge_bertopic_models()
-           final_model = topic_modelling.apply_vectorizer_to_merged_model(merged_model=merged_model)
+        #    merged_model = topic_modelling.merge_bertopic_models()
+        #    final_model = topic_modelling.apply_vectorizer_to_merged_model(merged_model=merged_model)
         
     finally:
       # Close OpenSearch connection

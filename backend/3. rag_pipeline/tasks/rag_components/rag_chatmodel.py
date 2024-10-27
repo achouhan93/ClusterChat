@@ -188,7 +188,7 @@ class ragChat:
             }
 
             results = self.index.client.search(
-                index=CONFIG["EMBEDDING_INDEX"],
+                index=CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_SENTENCE"],
                 body=search_query,
                 request_timeout=10,
             )
