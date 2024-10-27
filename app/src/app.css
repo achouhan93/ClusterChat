@@ -25,6 +25,8 @@ body {
 html,
 body {
 	height: 100%;
+	scroll-behavior: smooth;
+	color: var(--text-1-light)
 }
 
 /* .cosmograph-search {

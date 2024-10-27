@@ -37,7 +37,7 @@
 			updateNodes(nodesToSelect)
 			updateGraphData()
 			setSelectedNodes(nodesToSelect)
-			} else if (getSelectedNodes() != undefined && getSelectedNodes() != null) {
+			} else if (getSelectedNodes() != undefined && getSelectedNodes() != null && getSelectedNodes()?.length != 0) {
 				const nodesToSelect:Node[] = getSelectedNodes().filter(node => nodeIdsToSelect.has(node.id))
 				setSelectedNodes(nodesToSelect)
 			}

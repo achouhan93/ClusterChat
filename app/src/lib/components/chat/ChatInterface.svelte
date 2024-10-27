@@ -21,7 +21,6 @@
 
 	async function toggleQAoption() {
 		document_specific.update((value) => !value);
-		console.log('Toggled to:', $document_specific);
 	}
 
 
@@ -67,6 +66,7 @@
 
 		// get context from selected node
 		let selectedNodes: Node[] = getSelectedNodes();
+		if (!selectedNodes) return
 		let payload: ChatQuestion = {
 			question: userMessage,
 			question_type: $document_specific? "document-specific" : "corpus-based", // TODO: make it dropdown list of options

@@ -8,7 +8,7 @@
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
 	// import ClusterView from '$lib/components/cluster/ClusterView.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
-	import { toggleMultipleNodesMode, toggleDragSelection, fitViewofGraph } from '$lib/graph';
+	import { toggleMultipleNodesMode, toggleDragSelection, fitViewofGraph, selectMultipleNodes } from '$lib/graph';
 	import { onMount } from 'svelte';
 	import { dataloaded } from '$lib/readcluster';
 	import InfoView from '$lib/components/graph/InfoView.svelte';
@@ -32,7 +32,7 @@
 			<SearchBar />
 		</div>
 		<div class="control-buttons">
-			<button id="multiple-node-btn" class="btn" on:click={toggleMultipleNodesMode}
+			<button id="multiple-node-btn" class={$selectMultipleNodes ? "btn active" : "btn"} on:click={toggleMultipleNodesMode}
 				><SquareStack /></button
 			>
 			<button id="select-node-range-btn" class="btn" on:click={toggleDragSelection}
@@ -94,6 +94,8 @@
 		height: 100%;
 		z-index: 2;
 		background-color: var(--surface-3-light);
+		overflow-y: auto;
+		overflow-x: hidden;
 	}
 	/* #cluster-view {
 		grid-area: cluster-view;
@@ -108,7 +110,9 @@
 		flex-wrap: wrap;
 		flex-direction: column;
 	} */
-
+	#multiple-node-btn.active{
+		background-color: var(--surface-1-dark);
+	}
 	.loader {
 		animation: var(--animation-spin);
 		animation-duration: 2s;

@@ -8,6 +8,7 @@ import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
 import { nodes, links, load10k, loadLables, getNodeColor, ClustersTree, getAssociatedLeafs, LoadAndSelect } from './readcluster';
 
+
 // Other 
 import '../app.css';
 import type { Node, Link, Cluster } from '$lib/types';
@@ -27,13 +28,13 @@ let $batch_number= writable<number>(BATCH_NUMBER_START);
 let $update_number=writable<number>(1);
 export const INITIAL_FITVIEW:[[number,number],[number,number]] = [[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]];
 export let selectedNodes = writable<Node[]>([]);
+export let DateRange = writable<[Date,Date]>(undefined)
 
-export let selectMultipleNodes: boolean = false;
+export let selectMultipleNodes= writable<boolean>(false);
 export let selectNodeRange: boolean = false;
 let drag_select: boolean = false;
 let hoveredNodeId = writable<string>("")
 
-export let selectionArea: D3DragSelection | null=null;
 
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
 
@@ -76,12 +77,22 @@ const handleLabelClick = async (node:Node) => {
 		//updateSelectedNodes([node])		
 	}
 }
-const handleTimelineSelection = async(selection:[Date,Date]) => {
+const handleTimelineSelection = async(selection:[Date,Date] | [number,number]) => {
+	
+	if(getRenderedNodes().length !=0){
+		if(selection.length === 2 && selection[0] instanceof Date && selection[1] instanceof Date){DateRange.set(selection)}
+		// TODO: update range also from opensearch
+		const nodesToSelect:Node[]=getRenderedNodes().filter(node => 
+			node.date != undefined && new Date(node.date) >= selection[0] && new Date(node.date) <= selection[1])
+		setSelectedNodes(nodesToSelect)
+		// TODO: for some reason the graph selection only appears,
+		// when the user clicks outside the blue timeline selection box!
+		// so setting the selection to [0,0] emulates that
+		timeline.setSelection([0,0])
 
-	const nodesToSelect:Node[]=getRenderedNodes().filter(node => 
-		node.date != undefined && new Date(node.date) >= selection[0] && new Date(node.date) <= selection[1])
-		console.log(nodesToSelect)
-	updateSelectedNodes(nodesToSelect)
+		
+	}
+
 }
 
 /* ====================================== Config for the Graph and Timeline ====================================== */
@@ -113,12 +124,14 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	onClick(clickedNode) {handleNodeClick(clickedNode as Node);},
 	onLabelClick(node) {
 		handleLabelClick(node)
-		showLabelsfor([node])
 	},
 	  // Scale node on hover
 	  onNodeMouseOver(hoveredNode) {
 		hoveredNodeId.set(hoveredNode.id);  // Track the hovered node by ID
+		const main_frame = document.getElementById('main-graph');
+		main_frame.style.cursor = "pointer"
 		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? 0.1 : 0.01)
+
 		updateGraphConfig(GraphConfig);  // Update the graph configuration to reflect the new node size
 	  },
 	  
@@ -127,8 +140,12 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		hoveredNodeId.set("")  // Reset the hovered node
 		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? 0.1 : 0.01)
 		updateGraphConfig(GraphConfig);  // Update the graph configuration to reset the node size
+		const main_frame = document.getElementById('main-graph');
+		main_frame.style.cursor = "default"
 	  },
 	// onZoom(){console.log(graph.getZoomLevel())},
+
+	// TODO: DRAG SELECT DOESN'T WORK!
 	onMouseMove() {
 		if (drag_select) {
 			const container = document.getElementById('main-frame');
@@ -155,16 +172,14 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		}
 	},
 	onNodesFiltered(filteredNodes) {
-		// console.log("Filtered Nodes: ")
-		// console.log(filteredNodes)
+		console.log("Filtered Nodes: ")
+		console.log(filteredNodes)
 	},
 
 };
 
 const TimelineConfig: CosmographTimelineInputConfig<Node> = {
-	accessor: (d) => (d.date ? new Date(d.date) : 1 / 1 / 1970),
-	allowSelection: true,
-	showAnimationControls: true,
+	accessor: (d) => (d.date ? new Date(d.date) : new Date("2024-01-01")),
 	dataStep:  1000*3600*24, 
 	tickStep: 31557600000 / 12,  // One year in milliseconds,
 	//axisTickHeight: 30,
@@ -172,12 +187,13 @@ const TimelineConfig: CosmographTimelineInputConfig<Node> = {
 	formatter(d) {
 		return new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 	},
-	onSelection(selection, isManuallySelected) {
+	onSelection(selection) {
 		if(selection){
 			handleTimelineSelection(selection)
-		}
-	},
 
+		}
+			
+	},
 
 };
 
@@ -200,7 +216,7 @@ export function createTimeline() {
 
 // control buttons functions
 export function toggleMultipleNodesMode() {
-	selectMultipleNodes = !selectMultipleNodes;
+	selectMultipleNodes.update((value) => !value);
 	selectNodeRange = false;
 }
 
@@ -214,7 +230,6 @@ export function toggleDragSelection() {
 		main_frame.style.cursor = 'crosshair';
 	} else {
 		main_frame.style.cursor = 'default';
-		main_frame.draggable = true;
 		unselectNodes();
 	}
 }
@@ -243,10 +258,14 @@ export function updateGraphData(){
 }
 
 export function updateNodes(newNodes:Node[]){
+	// make sure you update only unique
 	nodes.update(existingNodes => {
-		// Append new nodes to the existing ones
-		return [...existingNodes, ...newNodes];
-	  });
+		const existingIds = new Set(existingNodes.map(node => node.id));
+	
+		const uniqueNewNodes = newNodes.filter(newNode => !existingIds.has(newNode.id));
+	
+		return [...existingNodes, ...uniqueNewNodes];
+	});
 }
 
 
@@ -257,9 +276,10 @@ export function selectNodesInRange(arr: [[number, number], [number, number]]) {
 }
 
 export function unselectNodes() {
-	graph.unselectNodes();
-	showLabelsfor([]);
 	selectedNodes.set([]);
+	graph.unselectNodes();
+	showLabelsfor([])
+	DateRange.set(undefined)
 }
 
 export function getSelectedNodes() {
@@ -279,13 +299,21 @@ export function setSelectedNodes(nodes:Node[]){
 	//graph.addNodesFilter()
 }
 
-export function updateSelectedNodes(nodes:Node[]){
-	selectedNodes.update(existingSelectedNodes => {
-		return [...existingSelectedNodes, ...nodes]
-	})
-	graph.selectNodes(get(selectedNodes))
+export function updateSelectedNodes(thenodes:Node[]){
+	selectedNodes.update(existingNodes => {
+		const existingIds = new Set(existingNodes.map(node => node.id));
+	
+		const uniqueNewNodes = thenodes.filter(newNode => !existingIds.has(newNode.id));
+	
+		return [...existingNodes, ...uniqueNewNodes];
+	});
+	graph.selectNodes(getSelectedNodes())
+	
 }
 
+export function updateTimelineData(){
+
+}
 
 export function fitViewofGraph(){
 	graph.fitView()
