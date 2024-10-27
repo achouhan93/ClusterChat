@@ -25,13 +25,14 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
+
 # Initialize the models and processor at startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global processor
     # Database setup and indexing
     os_connection = database_connection.opensearch_connection()
-    embedding_model = CONFIG["EMBEDDING_MODEL"]
+    embedding_model = CONFIG["CLUSTER_TALK_EMBEDDING_MODEL"]
     embedding_index = CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_SENTENCE"]
     model_configs = json.loads(CONFIG["MODEL_CONFIGS"])
 
@@ -40,10 +41,11 @@ async def lifespan(app: FastAPI):
         opensearch_connection=os_connection,
         embedding_os_index=embedding_index,
         embedding_model=embedding_model,
-        model_config=model_configs["mixtral7B"]
+        model_config=model_configs["mixtral7B"],
     )
     yield
     os_connection.close()
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -51,35 +53,43 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],  # frontend URL
     allow_credentials=True,
-    allow_methods=["*"],  
-    allow_headers=["*"], 
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
 
 class QuestionRequest(BaseModel):
     question: str
     question_type: str  # 'corpus-based' or 'document-specific'
     document_ids: list = []  # List of document IDs
 
+
 class AnswerResponse(BaseModel):
     answer: str
     sources: list
+
 
 @app.post("/ask", response_model=AnswerResponse)
 def ask_question(request: QuestionRequest):
     # Process the request
     try:
         if request.question_type not in ["corpus-specific", "document-specific"]:
-            raise HTTPException(status_code=400, detail="Invalid question_type. Must be 'corpus-specific' or 'document-specific'.")
-
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid question_type. Must be 'corpus-specific' or 'document-specific'.",
+            )
 
         # Use the processor to generate the answer
         if request.question_type == "corpus-specific":
             if not request.corpus_specific:
-                raise HTTPException(status_code=400, detail="Missing 'corpus_specific' field for corpus-specific queries.")
-            
-            answer, sources = processor.process_corpus_specific_request(
-                question=request.question
-            )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Missing 'corpus_specific' field for corpus-specific queries.",
+                )
+
+            # answer, sources = processor.process_corpus_specific_request(
+            #     question=request.question
+            # )
         else:
             answer, sources = processor.process_api_request(
                 question=request.question,

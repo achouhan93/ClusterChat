@@ -2,6 +2,7 @@ from opensearchpy import OpenSearch, helpers
 import dotenv
 from tqdm import tqdm
 
+
 def load_config_from_env():
     """_summary_
 
@@ -14,7 +15,9 @@ def load_config_from_env():
 
     return CONFIG
 
+
 CONFIG = load_config_from_env()
+
 
 # Function to create OpenSearch connection
 def opensearch_connection():
@@ -43,30 +46,20 @@ def opensearch_connection():
 
     return os
 
+
 # Reindex function
 def reindex_data(source_index, dest_index, batch_size=10000):
     # Define the query to retrieve all documents from the source index
-    query = {
-        "query": {
-            "match_all": {}
-        },
-        "sort": [
-            {
-                "articleDate": {
-                    "order": "desc"
-                }
-            }
-        ]
-    }
+    query = {"query": {"match_all": {}}, "sort": [{"articleDate": {"order": "desc"}}]}
 
     # Use a scroll API to fetch data from the source index in batches
-    scroll = '2m'  # Keep the search context alive for 2 minutes
+    scroll = "2m"  # Keep the search context alive for 2 minutes
     docs = helpers.scan(
         client=client,
         query=query,
         index=source_index,
         scroll=scroll,
-        size=batch_size  # Number of documents to fetch per batch
+        size=batch_size,  # Number of documents to fetch per batch
     )
 
     actions = []
@@ -75,8 +68,8 @@ def reindex_data(source_index, dest_index, batch_size=10000):
         action = {
             "_op_type": "index",
             "_index": dest_index,
-            "_id": doc['_id'],  # Keep the original document ID
-            "_source": doc['_source']  # Copy the source content
+            "_id": doc["_id"],  # Keep the original document ID
+            "_source": doc["_source"],  # Copy the source content
         }
         actions.append(action)
 
@@ -93,12 +86,15 @@ def reindex_data(source_index, dest_index, batch_size=10000):
 
     print("Reindexing completed")
 
+
 # Create the OpenSearch client
 client = opensearch_connection()
 
 # Source and destination index names
-source_index = 'frameintell_pubmed_sentence_embeddings'  # The current index
-dest_index = 'frameintell_pubmed_sentence_embeddings_lucene'  # The new index with Lucene
+source_index = "frameintell_pubmed_sentence_embeddings"  # The current index
+dest_index = (
+    "frameintell_pubmed_sentence_embeddings_lucene"  # The new index with Lucene
+)
 
 # Start reindexing
 reindex_data(source_index, dest_index)

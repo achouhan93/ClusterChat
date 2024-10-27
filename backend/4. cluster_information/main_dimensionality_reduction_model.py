@@ -7,6 +7,7 @@ import os
 import dotenv
 from tqdm import tqdm
 
+
 def loadConfigFromEnv():
     """_summary_
 
@@ -19,7 +20,9 @@ def loadConfigFromEnv():
 
     return CONFIG
 
+
 CONFIG = loadConfigFromEnv()
+
 
 # Connect to OpenSearch (Update this with your specific connection details)
 def opensearch_connection():
@@ -33,7 +36,12 @@ def opensearch_connection():
     user_name = CONFIG["OPENSEARCH_USERNAME"]
     password = CONFIG["OPENSEARCH_PASSWORD"]
     os = OpenSearch(
-        hosts=[{"host": CONFIG["CLUSTER_TALK_OPENSEARCH_HOST"], "port": CONFIG["OPENSEARCH_PORT"]}],
+        hosts=[
+            {
+                "host": CONFIG["CLUSTER_TALK_OPENSEARCH_HOST"],
+                "port": CONFIG["OPENSEARCH_PORT"],
+            }
+        ],
         http_auth=(user_name, password),
         use_ssl=True,
         verify_certs=True,
@@ -42,6 +50,7 @@ def opensearch_connection():
     )
 
     return os
+
 
 def fetch_sample_embeddings(client, index_name, sample_size=1000000, batch_size=5000):
     """
@@ -63,29 +72,19 @@ def fetch_sample_embeddings(client, index_name, sample_size=1000000, batch_size=
         "query": {
             "bool": {
                 "must": [
-                    {
-                        "range": {
-                            "articleDate": {
-                                "gte": start_date,
-                                "lte": end_date
-                            }
-                        }
-                    }
+                    {"range": {"articleDate": {"gte": start_date, "lte": end_date}}}
                 ]
             }
-        }
+        },
     }
-    
+
     embeddings = []
     scroll_id = None
 
     # Fetch batches from OpenSearch
     response = client.search(
-        index=index_name, 
-        body=search_params, 
-        scroll="5m", 
-        size=batch_size
-        )
+        index=index_name, body=search_params, scroll="5m", size=batch_size
+    )
     scroll_id = response["_scroll_id"]
     hits = response["hits"]["hits"]
 
@@ -96,19 +95,20 @@ def fetch_sample_embeddings(client, index_name, sample_size=1000000, batch_size=
                 if embedding:
                     embeddings.append(embedding)
 
-            pbar.update(len(hits))        
+            pbar.update(len(hits))
             response = client.scroll(scroll_id=scroll_id, scroll="5m")
             hits = response["hits"]["hits"]
             scroll_id = response["_scroll_id"]
 
         # Stop scrolling and cleanup
         client.clear_scroll(scroll_id=scroll_id)
-    
+
     # Shuffle and limit to sample size
     embeddings = np.array(embeddings, dtype=np.float32)
     embeddings = shuffle(embeddings, random_state=42)
-    
+
     return embeddings
+
 
 def fit_umap_models(embeddings, output_dir):
     """
@@ -131,17 +131,22 @@ def fit_umap_models(embeddings, output_dir):
     # UMAP model for 2 components
     print("Training UMAP model with 2 components...")
     umap_2 = umap.UMAP(n_components=2, n_jobs=-1, random_state=42)
-    embeddings_2 = umap_2.fit_transform(embeddings_50)  # Transform 50D reduced embeddings to 2D
+    embeddings_2 = umap_2.fit_transform(
+        embeddings_50
+    )  # Transform 50D reduced embeddings to 2D
     joblib.dump(umap_2, os.path.join(output_dir, "umap_2_components.joblib"))
     print("UMAP model with 2 components saved.")
+
 
 # Main script
 if __name__ == "__main__":
     # Configuration
     INDEX_NAME = "frameintell_pubmed_abstract_embeddings"
-    SAMPLE_SIZE = 400000  # Adjust based on available memory and sample representativeness
+    SAMPLE_SIZE = (
+        400000  # Adjust based on available memory and sample representativeness
+    )
     OUTPUT_DIR = "umap_models"
-    
+
     # Step 1: Fetch sample data
     client = opensearch_connection()
     embeddings = fetch_sample_embeddings(client, INDEX_NAME, SAMPLE_SIZE)
