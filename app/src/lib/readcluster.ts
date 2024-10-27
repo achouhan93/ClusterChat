@@ -4,7 +4,7 @@ import type { Node, Link, Cluster } from '$lib/types';
 import { writable, get } from 'svelte/store';
 import { formatDate } from './utils';
 import { interpolateRgb } from "d3";
-import { setSelectedNodes, highlightNodes, getSelectedNodes, updateGraphData } from './graph';
+import { updateSelectedNodes, updateGraphData } from './graph';
 
 const nodes= writable<Node[]>([]);
 let links=writable<Link[]>([])
@@ -55,7 +55,7 @@ function createDepthClusterDict(clusters: Cluster[]): { [key: number]: string[] 
 				let leafClusters: string[] = currentallClusters
 					.filter(cluster => cluster.isLeaf && cluster.path.includes(cluster_id))
 					.map(cluster => cluster.id);
-					console.dir(leafClusters)
+					// console.dir(leafClusters)
 				return leafClusters; 
 			}
 		
@@ -124,8 +124,9 @@ if (Array.isArray(data)) {
 			y: item._source.y,
 			isClusterNode: false,
 			cluster: item._source.cluster_id,
-			date: formatDate(item._source.date), // Assuming date will be set later
-			color: getNodeColor(item._source.x,item._source.y,[[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]],0.6),
+			date: item._source.date,//formatDate(item._source.date), // Assuming date will be set later
+			color: getNodeColor(item._source.x,item._source.y,
+				[[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]],0.9),
 		} satisfies Node
 ));
 	const newLinks:Link[] = data.map(item => (
@@ -148,7 +149,7 @@ if (Array.isArray(data)) {
 }
 }
 async function fetchDocumentIds(cluster_ids:string[]){
-	const response = await fetch('/api/search', {
+	const response = await fetch('/api/opensearch/clusterids', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -166,13 +167,12 @@ async function fetchDocumentIds(cluster_ids:string[]){
 			y: item._source.y,
 			isClusterNode: false,
 			cluster: item._source.cluster_id,
-			date: formatDate(item._source.date), // Assuming date will be set later
+			date: item._source.date,//formatDate(item._source.date), // Assuming date will be set later
 			color: getNodeColor(item._source.x,item._source.y,[[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]],0.6),
 		} satisfies Node
 	));
 	
-	// update selectednodes
-	setSelectedNodes(newNodes)
+
 
 	// update the view
 	nodes.update(existingNodes => {
@@ -182,7 +182,8 @@ async function fetchDocumentIds(cluster_ids:string[]){
 	
 		return [...existingNodes, ...uniqueNewNodes];
 	});
-	highlightNodes(getSelectedNodes())
+		// update selectednodes
+		updateSelectedNodes(newNodes)
 
 }
 

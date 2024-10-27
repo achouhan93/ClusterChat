@@ -5,13 +5,13 @@ export interface Point {
 }
 
 export class DragSelect {
-	container: HTMLElement;
+	container: HTMLCanvasElement;
 	selectionBox: HTMLDivElement;
 	startPoint: Point | null = null;
 	leftTop: Point | Point = { x: 0, y: 0 };
 	bottomRight: Point | Point = { x: 0, y: 0 };
 
-	constructor(container: HTMLElement) {
+	constructor(container: HTMLCanvasElement) {
 		this.container = container;
 		this.selectionBox = document.createElement('div');
 		this.selectionBox.classList.add('selection-box');

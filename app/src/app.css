@@ -25,6 +25,8 @@ body {
 html,
 body {
 	height: 100%;
+	scroll-behavior: smooth;
+	color: var(--text-1-light)
 }
 
 /* .cosmograph-search {
@@ -57,7 +59,8 @@ body {
 }
 
 .cosmograph-timeline {
-	--cosmograph-timeline-background: var(--surface-1-light);
+	--cosmograph-timeline-background: var(--surface-1-dark);
+	--cosmograph-timeline-text-color: var(--text-1-dark);
 	--cosmograph-timeline-selection-color: #2463eb;
 	--cosmograph-timeline-bar-color: #4a5c79;
 	--cosmograph-timeline-selection-opacity: 0.5;

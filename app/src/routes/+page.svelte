@@ -8,9 +8,10 @@
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
 	// import ClusterView from '$lib/components/cluster/ClusterView.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
-	import { toggleMultipleNodesMode, toggleDragSelection, fitViewofGraph } from '$lib/graph';
+	import { toggleMultipleNodesMode, toggleDragSelection, fitViewofGraph, selectMultipleNodes } from '$lib/graph';
 	import { onMount } from 'svelte';
 	import { dataloaded } from '$lib/readcluster';
+	import InfoView from '$lib/components/graph/InfoView.svelte';
 
 	onMount(async () => {
 		$dataloaded = true;
@@ -24,12 +25,14 @@
 	{#if !$dataloaded}
 		<div class="loader"><LoaderCircle size="48" /></div>
 	{:else}
-		<div id="main-graph"></div>
+		<div id="main-graph"> 
+			<svg id="selection-svg"/>
+		</div>
 		<div id="main-search-bar" class="cosmograph-search">
 			<SearchBar />
 		</div>
 		<div class="control-buttons">
-			<button id="multiple-node-btn" class="btn" on:click={toggleMultipleNodesMode}
+			<button id="multiple-node-btn" class={$selectMultipleNodes ? "btn active" : "btn"} on:click={toggleMultipleNodesMode}
 				><SquareStack /></button
 			>
 			<button id="select-node-range-btn" class="btn" on:click={toggleDragSelection}
@@ -39,7 +42,9 @@
 				<BoxSelect />
 			</button>
 		</div>
+
 		<div id="chat-interface"><ChatInterface /></div>
+		<div id="info-view"><InfoView/></div>
 		<!-- <div id="cluster-view">
 			<ClusterView/>
 		</div> -->
@@ -62,28 +67,37 @@
 		grid-template-columns: 35% 15% 25% 25%;
 		grid-template-rows: 15% 45% 30% 10%;
 		grid-template-areas:
-			'chat control-btns search-bar search-bar'
+			'chat control-btns . search-bar'
 			'chat . . .'
-			'chat cluster-view . .'
-			'chat timeline timeline timeline';
+			'info . . .'
+			'info timeline timeline timeline';
 	}
+
 	#main-search-bar {
 		grid-area: search-bar;
 		height: 100%;
 		z-index: 2;
 	}
-	#main-search-bar input {
-		background-color: var(--surface-4-light);
-	}
 	#main-timeline {
 		grid-area: timeline;
+		height: 100%;
+		z-index: 2;
 	}
 	#chat-interface {
 		grid-area: chat;
 		z-index: 2;
-		border-right: solid 1px #ffffff1c;
+		border-bottom: solid 1px #fff;
+		height: 100%;
 	}
-	#cluster-view {
+	#info-view {
+		grid-area: info;
+		height: 100%;
+		z-index: 2;
+		background-color: var(--surface-3-light);
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+	/* #cluster-view {
 		grid-area: cluster-view;
 		z-index: 2;
 		color: var(--text-1-light);
@@ -95,8 +109,10 @@
 		display: flex;
 		flex-wrap: wrap;
 		flex-direction: column;
+	} */
+	#multiple-node-btn.active{
+		background-color: var(--surface-1-dark);
 	}
-
 	.loader {
 		animation: var(--animation-spin);
 		animation-duration: 2s;
