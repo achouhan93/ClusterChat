@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     # Database setup and indexing
     os_connection = database_connection.opensearch_connection()
     embedding_model = CONFIG["EMBEDDING_MODEL"]
-    embedding_index = CONFIG["EMBEDDING_INDEX"]
+    embedding_index = CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_SENTENCE"]
     model_configs = json.loads(CONFIG["MODEL_CONFIGS"])
 
     # Initialize Processor
@@ -68,15 +68,23 @@ class AnswerResponse(BaseModel):
 def ask_question(request: QuestionRequest):
     # Process the request
     try:
-        if request.question_type not in ["corpus-based", "document-specific"]:
-            raise HTTPException(status_code=400, detail="Invalid question_type. Must be 'corpus-based' or 'document-specific'.")
+        if request.question_type not in ["corpus-specific", "document-specific"]:
+            raise HTTPException(status_code=400, detail="Invalid question_type. Must be 'corpus-specific' or 'document-specific'.")
+
 
         # Use the processor to generate the answer
-        answer, sources = processor.process_api_request(
-            question=request.question,
-            question_type=request.question_type,
-            document_ids=request.document_ids,
-        )
+        if request.question_type == "corpus-specific":
+            if not request.corpus_specific:
+                raise HTTPException(status_code=400, detail="Missing 'corpus_specific' field for corpus-specific queries.")
+            
+            answer, sources = processor.process_corpus_specific_request(
+                question=request.question
+            )
+        else:
+            answer, sources = processor.process_api_request(
+                question=request.question,
+                document_ids=request.document_ids,
+            )
 
         return AnswerResponse(answer=answer, sources=sources)
 
