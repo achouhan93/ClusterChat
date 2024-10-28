@@ -8,45 +8,12 @@ from typing import List, Tuple, Dict, Any
 from langchain.prompts import PromptTemplate
 import re
 
-# from langchain.chains.query_constructor.base import AttributeInfo
-# from langchain.retrievers import SelfQueryRetriever
-# from langchain_huggingface import HuggingFaceEmbeddings
-# from langchain_community.vectorstores.opensearch_vector_search import OpenSearchVectorSearch
-# from langchain_community.query_constructors.opensearch import OpenSearchTranslator
-
-from langchain_openai import OpenAI
+# from langchain_openai import OpenAI
 
 from tasks.rag_components import rag_chatmodel, rag_loader, rag_prompt
 
 log = logging.getLogger(__name__)
 CONFIG = utils.loadConfigFromEnv()
-
-
-# class FilterReturner(OpenSearchVectorSearch):
-#     def __init__(self):
-#         pass 
-
-#     def _remove_dot_metadata_and_keyword_from_keys(self, d):
-#         new_dict = {}
-#         for k, v in d.items():
-#             new_key = k.replace("metadata.", "").replace(".keyword", "")
-            
-#             if isinstance(v, dict):
-#                 new_dict[new_key] = self._remove_dot_metadata_and_keyword_from_keys(v)
-#             else:
-#                 new_dict[new_key] = v
-#         return new_dict
-
-#     def search(self, query, search_type, **kwargs):
-#         """Returns filters provided by the SelfQueryRetriever.
-#         This is done in order to use the SelfQueryRetriever as 
-#         framework with minimal implementation even though this might seem very confusing.
-#         As a result. The `get_relevant_documents` method of the SelfQueryRetriever 
-#         returns *filters* not *documents*.
-#         """
-#         if self.remove_dot_metadata_from_keys:
-#             return self._remove_dot_metadata_and_keyword_from_keys(kwargs)
-#         return kwargs
 
 
 class Processor:
@@ -75,11 +42,6 @@ class Processor:
             self.embed_model, self.embeddings_os_index_name
         )
 
-        # self.cluster_info_model = HuggingFaceEmbeddings(
-        #     model_name=embedding_model,
-        #     model_kwargs={"device": self.device},
-        # )
-
         self.model_config = model_config
 
         self.prompt = rag_prompt.ragPrompt().prompt_template()
@@ -91,7 +53,7 @@ class Processor:
             self.model_config,
         )
 
-        # Initialize OpenAI LLM
+        #!! Initialize OpenAI
         # openai_api_key = CONFIG["OPENAI_API_KEY"]
         # self.llm = OpenAI(
         #     api_key=openai_api_key, 
@@ -100,7 +62,7 @@ class Processor:
         #     )
         self.llm = self.chat_model.llm
 
-        # Initialize LangChain LLMChain for parsing queries
+        #!! Prompt when OpenAI is used
         # parse_query_template = """
         # You are an assistant that parses user queries into structured intents for querying a corpus.
         
@@ -180,101 +142,6 @@ class Processor:
         # Define the OpenSearch index names
         self.cluster_information_index = CONFIG["CLUSTER_TALK_CLUSTER_INFORMATION_INDEX"]
 
-        # # Initialize SelfQueryRetriever for corpus-specific queries
-        # self.cluster_info_index = CONFIG["CLUSTER_TALK_CLUSTER_INFORMATION_INDEX"]
-        
-        # self.cluster_vector_store = rag_loader.ragLoader().get_opensearch_index(
-        #     self.cluster_info_model, self.cluster_info_index
-        # )
-
-        # self.cluster_info_retriever = self.initialize_cluster_info_retriever()
-
-    # def initialize_cluster_info_retriever(self):
-    #     # Define metadata fields for the cluster information index
-    #     metadata_field_info = [
-    #         AttributeInfo(
-    #             name="cluster_id",
-    #             description="The unique identifier for a cluster",
-    #             type="string",
-    #         ),
-    #         AttributeInfo(
-    #             name="label",
-    #             description="The name of the cluster representing a topic or theme",
-    #             type="string",
-    #         ),
-    #         AttributeInfo(
-    #             name="depth",
-    #             description="The depth level of the cluster in the hierarchy",
-    #             type="integer",
-    #         ),
-    #         AttributeInfo(
-    #             name="is_leaf",
-    #             description="Indicates if the cluster is a leaf node",
-    #             type="boolean",
-    #         ),
-    #         AttributeInfo(
-    #             name="children",
-    #             description="List of child cluster IDs",
-    #             type="list[string]",
-    #         ),
-    #         AttributeInfo(
-    #             name="path",
-    #             description="The hierarchical path of the cluster",
-    #             type="string",
-    #         ),
-    #         AttributeInfo(
-    #             name="x",
-    #             description="The x-coordinate of the node present in the cluster for visualization",
-    #             type="float",
-    #         ),
-    #         AttributeInfo(
-    #             name="y",
-    #             description="The y-coordinate of the node present in the cluster for visualization",
-    #             type="float",
-    #         ),
-    #         AttributeInfo(
-    #             name="pairwise_similarity",
-    #             description="Nested information about pairwise similarity with other clusters including similarity scores",
-    #             type="nested",
-    #         ),
-    #         AttributeInfo(
-    #             name="topic_information",
-    #             description="Nested information containing topic words and their relevance scores for the cluster",
-    #             type="nested",
-    #         ),
-    #         AttributeInfo(
-    #             name="description",
-    #             description="A textual description of the cluster's main topic and characteristics",
-    #             type="text",
-    #         ),
-    #         AttributeInfo(
-    #             name="topic_words",
-    #             description="A list of significant words that describe the main topic of the cluster",
-    #             type="test",
-    #         ),
-    #         AttributeInfo(
-    #             name="embedding",
-    #             description="The embedding of the cluster centroid",
-    #             type="knn_vector",
-    #         ),
-    #     ]
-
-    #     vectorstore = FilterReturner()
-    #     vectorstore.remove_dot_metadata_from_keys = True
-
-    #     # Create SelfQueryRetriever
-    #     self.retriever = SelfQueryRetriever.from_llm(
-    #         llm = self.chat_model.llm,
-    #         vectorstore=vectorstore,
-    #         document_contents="Information about clusters including labels and hierarchy.",
-    #         metadata_field_info=metadata_field_info,
-    #         verbose=True,
-    #         structured_query_translator=OpenSearchTranslator()
-    #         # llm_chain_kwargs={'prompt': prompt}
-    #     )
-
-    #     return self.retriever
-
     def parse_user_query(self, user_query: str) -> Dict[str, Any]:
         """
         Parses the user query to extract intent and parameters using LLM.
@@ -336,7 +203,7 @@ class Processor:
                     }
                 }
             }
-            return {"query": query, "size": 10000, "_source": ["label", "description"]}  # Adjust as needed
+            return {"query": query, "size": 10000, "_source": ["label", "description"]}
         
         else:
             raise ValueError(f"Unsupported intent: {intent}")
@@ -377,14 +244,18 @@ class Processor:
         """
         try:
             if cluster_information:
-                # If cluster_information is provided, use it to filter
+                should_clauses = [
+                    {
+                        "match_phrase": {"label": phrase}
+                    }
+                    for phrase in cluster_information
+                    ]
+                
                 query_body = {
                     "query": {
                         "bool": {
-                            "must": [
-                                {"match_phrase": {
-                                    "label": cluster_information[0]}} #TODO: Look into multiple cluster information
-                            ]
+                            "should": should_clauses,
+                            "minimum_should_match": 1
                         }
                     },
                     "_source": ["cluster_id", "label", "description", "topic_words"]
@@ -474,69 +345,3 @@ class Processor:
         except Exception as e:
             log.error(f"Error processing API request: {e}")
             raise RuntimeError(f"Error processing API request: {e}")
-
-    # def process_corpus_specific_request(self, question, cluster_information):
-    #     """
-    #     Process a corpus-specific API request to generate an answer based on the question and corpus.
-
-    #     :param question: The user's question as a string.
-    #     :param corpus_specific: The corpus-specific string value.
-    #     :return: A tuple (answer, sources)
-    #     """
-    #     try:
-    #         # Use SelfQueryRetriever to retrieve relevant cluster information
-    #         # TODO: Look into this part
-    #         # retrieved_docs = self.cluster_info_retriever.invoke(input=question)
-    #         filters = self.retriever.invoke(question)
-
-    #         # Aggregate retrieved information
-    #         # retrieved_info = "\n".join([doc.page_content for doc in retrieved_docs])
-    #         retrieved_info = " "
-
-    #         # Generate the answer using LLM
-    #         answer_prompt = f"""
-    #         You are an expert assistant helping users explore a specific corpus.
-
-    #         Given the user's question and the retrieved cluster information, provide a concise and informative answer.
-
-    #         User Question:
-    #         {question}
-
-    #         Retrieved Information:
-    #         {retrieved_info}
-
-    #         Answer the question using the retrieved information.
-    #         """
-
-    #         # Initialize LLM for answer generation
-    #         llm_answer = OpenAI(api_key=CONFIG["OPENAI_API_KEY"], temperature=0)
-
-    #         # Create a prompt template
-    #         answer_prompt_template = PromptTemplate(
-    #             input_variables=["question", "retrieved_info"],
-    #             template=answer_prompt
-    #         )
-
-    #         # Create LLMChain
-    #         llm_chain = LLMChain(
-    #             llm=llm_answer,
-    #             prompt=answer_prompt_template,
-    #         )
-
-    #         # Generate the answer
-    #         answer = llm_chain.run({
-    #             "question": question,
-    #             "retrieved_info": retrieved_info
-    #         })
-
-    #         cleaned_answer = answer.strip()
-
-    #         # # Extract source information (e.g., cluster IDs)
-    #         # sources = [doc.metadata.get("cluster_id") for doc in retrieved_docs]
-
-    #         # return cleaned_answer, sources
-    #         return cleaned_answer
-
-    #     except Exception as e:
-    #         log.error(f"Error processing corpus-specific request: {e}")
-    #         raise RuntimeError(f"Error processing corpus-specific request: {e}")
