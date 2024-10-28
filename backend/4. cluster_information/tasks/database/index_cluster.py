@@ -76,7 +76,7 @@ def index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddin
     """
     Index clusters into OpenSearch.
     """
-    logging.info(f"Indexing the cluster information in OpenSearch started")
+    log.info(f"Indexing the cluster information in OpenSearch started")
     cluster_actions = []
     for cluster_id, cluster in clusters.items():
         formatted_topic_information = (
@@ -113,4 +113,4 @@ def index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddin
         cluster_actions.append(action)
 
     bulk(os_connection, cluster_actions)
-    logging.info(f"Indexing the cluster information in OpenSearch completed")
+    log.info(f"Indexing the cluster information in OpenSearch completed")

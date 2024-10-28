@@ -62,22 +62,11 @@ def main():
             # Step 2: Process BERTopic models
             (
                 merged_topics,
-                merged_topic_embeddings,
+                merged_topic_embeddings_array,
                 topic_label,
                 topic_description,
                 topic_words,
-            ) = process_models(model_path)
-
-            # Save merged_topic_embeddings_array for later use
-            merged_topic_embeddings_array = np.array(
-                merged_topic_embeddings, dtype=np.float32
-            )
-            np.save(
-                os.path.join(model_path, "merged_topic_embeddings_array.npy"),
-                merged_topic_embeddings_array,
-            )
-
-            logging.info("Saved the topic embedding array in the folder")            
+            ) = process_models(model_path)           
 
             # Step 3: Load UMAP model
             logging.info(f"Loading the trained UMAP model")

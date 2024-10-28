@@ -3,7 +3,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from opensearchpy.helpers import bulk
 import logging
 import gc
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ def index_documents(
     """
     Fetches documents, assigns clusters, transforms embeddings, and indexes them into OpenSearch.
     """
-    logging.info(f"Started indexing document information")
+    log.info(f"Started indexing document information")
     # Fetch and process documents in batches
     for embeddings_batch, ids_batch in data_fetcher.fetch_embeddings():
         # Convert embeddings to numpy array
@@ -58,7 +57,7 @@ def index_documents(
             document_embeddings, merged_topic_embeddings_array
         )
         assigned_topics = np.argmax(similarity, axis=1)
-        logging.info(f"UMAP embedding creation for the batch")
+        log.info(f"UMAP embedding creation for the batch")
 
         document_umap_embeddings = []
         batch_size = 500  # Adjust batch size as needed
@@ -100,7 +99,7 @@ def index_documents(
             # Index in batches to OpenSearch
             if len(document_actions) >= 1000:
                 bulk(os_connection, document_actions)
-                logging.info(f"Inserted {len(document_actions)} document information in OpenSearch")
+                log.info(f"Inserted {len(document_actions)} document information in OpenSearch")
                 document_actions = []
 
         # Index any remaining documents in the current batch
@@ -111,4 +110,4 @@ def index_documents(
         del document_embeddings
         gc.collect()
 
-    logging.info(f"Document Indexing Pipeline completed")
+    log.info(f"Document Indexing Pipeline completed")

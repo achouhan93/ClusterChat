@@ -68,7 +68,7 @@ def build_custom_hierarchy(
     Build a hierarchy of clusters up to a specified depth.
     At each level, clusters are merged into pairs to achieve the desired depth.
     """
-    logging.info(f"Building the topic hierarchy started")
+    log.info(f"Building the topic hierarchy started")
     # Initialize clusters
     clusters = {}
     cluster_embeddings = {}
@@ -183,6 +183,6 @@ def build_custom_hierarchy(
                     similarity_matrix[i, j]
                 )
     
-    logging.info(f"Building the topic hierarchy completed")
+    log.info(f"Building the topic hierarchy completed")
 
     return clusters, cluster_embeddings

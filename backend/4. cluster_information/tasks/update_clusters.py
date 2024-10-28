@@ -12,12 +12,12 @@ def update_cluster_paths(os_connection, cluster_index_name):
         os_connection (OpenSearch): The OpenSearch client connection.
         cluster_index_name (str): The name of the cluster index in OpenSearch.
     """
-    logging.info(f"Started updating the cluster path")
+    log.info(f"Started updating the cluster path")
     # Step 1: Retrieve all clusters from the OpenSearch index
     clusters = {}
     child_to_parent = {}
 
-    logging.info("Fetching all clusters from OpenSearch...")
+    log.info("Fetching all clusters from OpenSearch...")
     for hit in scan(os_connection, index=cluster_index_name):
         cluster_id = hit["_source"]["cluster_id"]
         cluster = hit["_source"]
@@ -28,8 +28,8 @@ def update_cluster_paths(os_connection, cluster_index_name):
 
     # Check if 'child_to_parent' mapping is correct
     if not child_to_parent:
-        logging.error("The 'children' fields are empty or not populated correctly.")
-        logging.error("Attempting to build 'child_to_parent' mapping using other methods.")
+        log.error("The 'children' fields are empty or not populated correctly.")
+        log.error("Attempting to build 'child_to_parent' mapping using other methods.")
         # Alternative method: Use 'depth' field to infer parent-child relationships
         depth_to_clusters = {}
         for cluster_id, cluster in clusters.items():
@@ -61,11 +61,11 @@ def update_cluster_paths(os_connection, cluster_index_name):
     root_cluster_ids = all_cluster_ids - child_cluster_ids
 
     if not root_cluster_ids:
-        logging.error("No root clusters found. Please check the cluster data.")
+        log.error("No root clusters found. Please check the cluster data.")
         return
 
     # Build paths from each cluster up to the root
-    logging.info("Updating paths for all clusters...")
+    log.info("Updating paths for all clusters...")
     for cluster_id in clusters.keys():
         path = []
         current_id = cluster_id
@@ -93,5 +93,5 @@ def update_cluster_paths(os_connection, cluster_index_name):
 
     # Execute bulk update
     bulk(os_connection, actions)
-    logging.info("Cluster paths updated successfully.")
+    log.info("Cluster paths updated successfully.")
 
