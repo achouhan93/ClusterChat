@@ -50,49 +50,6 @@ class ragChat:
         self.llm_chain = self.llama_prompt | self.llm
         log.info("ragChat initialized successfully.")
 
-    # def vector_augment_prompt(self, query, top_k_value, document_ids):
-    #     """
-    #     Augments a query prompt with retrieved knowledge based on top-k similarity search.
-    #     """
-    #     query_list = [query]
-
-    #     try:
-    #         # Encoding the query and searching for the most relevant vector
-    #         embed_query = self.embed_model.encode(
-    #             query_list, show_progress_bar=False
-    #         ).tolist()
-
-    #         max_tokens_for_knowledge = (
-    #             self.max_context
-    #             - len(self.tokenizer.encode(query))
-    #             - len(self.tokenizer.encode(self.prompt))
-    #             - 100
-    #         )
-
-    #         log.info("Performing similarity search for top-k results.")
-
-    #         results = self.index.similarity_search_with_score_by_vector(
-    #             embedding=embed_query[0],
-    #             space_type="cosineSimilarity",
-    #             search_type="painless_scripting",
-    #             k=top_k_value,
-    #             vector_field="pubmed_bert_vector",
-    #             text_field="abstract_chunk",
-    #             request_timeout=10,
-    #             pre_filter={"terms": {"documentID":document_ids}}
-    #         )
-
-    #         source_knowledge, retrieved_ids = self.process_results(
-    #             results, max_tokens_for_knowledge
-    #         )
-    #         log.info(
-    #             f"Knowledge augmented successfully. Retrieved {len(retrieved_ids)} IDs."
-    #         )
-    #         return source_knowledge, retrieved_ids
-    #     except Exception as e:
-    #         logging.error(f"Failed to augment prompt: {e}")
-    #         raise
-
     def process_results(self, results, max_tokens_for_knowledge):
         """
         Processes results from a similarity search to fit within token limits
@@ -169,7 +126,7 @@ class ragChat:
                         },
                     }
                 },
-                "_source": ["abstract_chunk", "documentID", "abstract_chunk_id"],
+                "_source": ["abstract_chunk", "documentID"],
             }
 
             results = self.index.client.search(
@@ -184,7 +141,7 @@ class ragChat:
                     Document(
                         page_content=hit["_source"][
                             "abstract_chunk"
-                        ],  # Adjust field names
+                        ],
                         metadata=hit["_source"],
                     ),
                     hit["_score"],
