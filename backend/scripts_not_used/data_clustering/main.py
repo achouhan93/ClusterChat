@@ -83,9 +83,8 @@ def main(argv=None):
                 method=config.DIMENSIONALITY_REDUCTION_METHOD
             )
             clusterer = ClusteringModel(
-                storage=storage_manager,
-                method=config.CLUSTERING_METHOD
-                )
+                storage=storage_manager, method=config.CLUSTERING_METHOD
+            )
 
             # Step 1: Dimensionality Reduction
             reducer_path = os.path.join(
@@ -128,9 +127,9 @@ def main(argv=None):
                     for embeddings_batch, ids_batch in data_fetcher.fetch_embeddings():
                         reduced_embeddings = reducer.transform(embeddings_batch)
                         yield reduced_embeddings, ids_batch
-                
+
                 clusterer.fit(data_generator)
-                
+
                 logging.info(
                     f"Finished clustering using {config.CLUSTERING_METHOD} algorithm "
                     f"and stored in clusterer.joblib."
@@ -152,8 +151,6 @@ def main(argv=None):
             for embeddings_batch, _ in data_fetcher.fetch_embeddings():
                 reduced_embeddings = reducer.transform(embeddings_batch)
                 reducer_2d.fit_partial(reduced_embeddings)
-
-            # TODO: Store intermediate results of IncrementalPCA for 2D
 
             # Now, transform and store results
             for embeddings_batch, ids_batch in data_fetcher.fetch_embeddings():

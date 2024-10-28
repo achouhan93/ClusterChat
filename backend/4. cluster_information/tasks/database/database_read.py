@@ -5,29 +5,30 @@ Module for fetching embeddings from OpenSearch.
 import numpy as np
 import logging
 from tqdm import tqdm
-from datetime import timedelta, datetime, date
-
-CONST_EUTILS_DEFAULT_MINDATE = "1800-01-01"
-CONST_EUTILS_DEFAULT_MAXDATE = date.today().strftime("%Y-%m-%d")
+from datetime import date
 
 
 class DataFetcher:
     """Class to fetch embeddings from OpenSearch in batches."""
 
-    def __init__(self, opensearch_connection, index_name):
+    def __init__(self, 
+                 opensearch_connection, 
+                 index_name,
+                 start_date,
+                 end_date):
         """
         Initialize the DataFetcher.
 
         Args:
             opensearch_connection (OpenSearch): OpenSearch client connection.
             index_name (str): Name of the OpenSearch index.
-            start_date (str): Start date in 'YYYY-MM-DD' format.
-            end_date (str): End date in 'YYYY-MM-DD' format.
         """
         self.client = opensearch_connection
         self.os_index_name = index_name
+        self.start_date = start_date
+        self.end_date = end_date
 
-    def fetch_embeddings(self, start_date, end_date):
+    def fetch_embeddings(self):
         """
         Generator function to fetch embeddings from OpenSearch in batches.
 
@@ -56,8 +57,8 @@ class DataFetcher:
                         {
                             "range": {
                                 "articleDate": {
-                                    "gte": start_date,
-                                    "lte": end_date,
+                                    "gte": self.start_date,
+                                    "lte": self.end_date,
                                 }
                             }
                         }
@@ -70,8 +71,8 @@ class DataFetcher:
         # Execute the initial search request
         response = self.client.search(
             index=self.os_index_name,
-            scroll="10m",
-            size=5000,
+            scroll="5m",
+            size=1000,
             body=search_params,
         )
 
@@ -99,11 +100,14 @@ class DataFetcher:
                                     "journal:title": doc["_source"].get(
                                         "journal:title"
                                     ),
+                                    "keywords:name": doc["_source"].get(
+                                        "keywords:name"
+                                    ),
                                     "meshTerms": doc["_source"].get("meshTerms"),
                                     "chemicals": doc["_source"].get("chemicals"),
-                                    "authors.name": doc["_source"].get("authors.name"),
-                                    "authors.affiliation": doc["_source"].get(
-                                        "authors.affiliation"
+                                    "authors:name": doc["_source"].get("authors:name"),
+                                    "authors:affiliation": doc["_source"].get(
+                                        "authors:affiliation"
                                     ),
                                     "abstract_chunk": doc["_source"].get(
                                         "abstract_chunk"
@@ -132,5 +136,5 @@ class DataFetcher:
             self.client.clear_scroll(scroll_id=scroll_id)
             pbar.close()
             logging.info(
-                f"Processing completed for the date range: {start_date} to {end_date}"
+                f"Processing completed for the date range: {self.start_date} to {self.end_date}"
             )
