@@ -12,43 +12,44 @@ import { nodes, links, load10k, loadLables, getNodeColor, ClustersTree, getAssoc
 // Other 
 import '../app.css';
 import type { Node, Link, Cluster } from '$lib/types';
-import { DragSelect } from '$lib/components/graph/DragSelect';
+//import { DragSelect } from '$lib/components/graph/DragSelect';
+// import { dragSelection } from './components/graph/D3DragSelection';
 import { get, writable } from 'svelte/store';
-import { dragSelection } from './components/graph/D3DragSelection';
+
 
 // Useful global variables
 let graph: Cosmograph<Node, Link>;
 let timeline: CosmographTimeline<Node>;
 
-const BATCH_SIZE:number = 10000;
-const MAX_SIZE:number = 100000;
+const BATCH_SIZE:number = 10000; 
+const MAX_SIZE:number = 100000; // TODO: make this dynamic
 const BATCH_NUMBER_START:number = 5
 const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START*BATCH_SIZE;
+const HOVERED_NODE_SIZE:number = 0.5
 let $batch_number= writable<number>(BATCH_NUMBER_START);
 let $update_number=writable<number>(1);
 export const INITIAL_FITVIEW:[[number,number],[number,number]] = [[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]];
 export let selectedNodes = writable<Node[]>([]);
-export let DateRange = writable<[Date,Date]>(undefined)
 
-export let selectMultipleNodes= writable<boolean>(false);
+export let SelectedDateRange = writable<[Date,Date]>(undefined);
+export let SelectedSearchQuery = writable<string>('');
+export let SelectedCluster = writable<string>('');
+
+export let selectMultipleClusters= writable<boolean>(false); // TODO: change to multiple Cluster selection
 export let selectNodeRange: boolean = false;
-let drag_select: boolean = false;
+
+//let drag_select: boolean = false;
 let hoveredNodeId = writable<string>("")
 
 
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
 
 const handleNodeClick = async (clickedNode: Node) => {
-	if (!selectMultipleNodes && clickedNode) {
+	if (clickedNode && !isFilteringActive()) {
 		showLabelsfor([clickedNode] as Node[]);
-		graph.focusNode(clickedNode);
 		graph.selectNode(clickedNode);
 		setSelectedNodes([clickedNode])
-	} else if (selectMultipleNodes && clickedNode) {
-		selectedNodes.update((existingNodes)=>{return [...existingNodes, clickedNode]})
-		graph.selectNodes(get(selectedNodes));
-		showLabelsfor(get(selectedNodes));
-	} else if (!clickedNode) {
+	}  else if (!clickedNode) {
 		unselectNodes();
 	}
 };
@@ -72,25 +73,32 @@ const handleZoomEvent = async () => {
 
 const handleLabelClick = async (node:Node) => {
 	if(node.isClusterNode){
+		SelectedCluster.set(node.id)
+		console.log(get(SelectedCluster))
 		const cluster_ids:string[] = getAssociatedLeafs(node.id)
 		LoadAndSelect(cluster_ids)
-		//updateSelectedNodes([node])		
 	}
 }
 const handleTimelineSelection = async(selection:[Date,Date] | [number,number]) => {
 	
 	if(getRenderedNodes().length !=0){
-		if(selection.length === 2 && selection[0] instanceof Date && selection[1] instanceof Date){DateRange.set(selection)}
+		if(selection.length === 2 && selection[0] instanceof Date && selection[1] instanceof Date){SelectedDateRange.set(selection)}
 		// TODO: update range also from opensearch
 		const nodesToSelect:Node[]=getRenderedNodes().filter(node => 
 			node.date != undefined && new Date(node.date) >= selection[0] && new Date(node.date) <= selection[1])
-		setSelectedNodes(nodesToSelect)
+			
+		if (getSelectedNodes().length == 0)	{
+
+			setSelectedNodes(nodesToSelect)
+		}
+		else {
+			conditionalSelectNodes(nodesToSelect)
+		 } // TODO: conditional selection
+
 		// TODO: for some reason the graph selection only appears,
 		// when the user clicks outside the blue timeline selection box!
 		// so setting the selection to [0,0] emulates that
 		timeline.setSelection([0,0])
-
-		
 	}
 
 }
@@ -111,8 +119,9 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	hoveredNodeRingColor: '#2463EB',
 	disableSimulation: true,
 	renderLinks: false,
+	initialZoomLevel: 100,
 	scaleNodesOnZoom: true,
-	fitViewByNodesInRect:INITIAL_FITVIEW,
+	// fitViewByNodesInRect:INITIAL_FITVIEW,
 	showDynamicLabels: false,
 	showHoveredNodeLabel: false,
 	showTopLabels: true,
@@ -130,7 +139,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		hoveredNodeId.set(hoveredNode.id);  // Track the hovered node by ID
 		const main_frame = document.getElementById('main-graph');
 		main_frame.style.cursor = "pointer"
-		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? 0.1 : 0.01)
+		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.01)
 
 		updateGraphConfig(GraphConfig);  // Update the graph configuration to reflect the new node size
 	  },
@@ -138,7 +147,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	  // Reset node size when mouse leaves the node
 	  onNodeMouseOut() {
 		hoveredNodeId.set("")  // Reset the hovered node
-		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? 0.1 : 0.01)
+		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.01)
 		updateGraphConfig(GraphConfig);  // Update the graph configuration to reset the node size
 		const main_frame = document.getElementById('main-graph');
 		main_frame.style.cursor = "default"
@@ -146,16 +155,16 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	// onZoom(){console.log(graph.getZoomLevel())},
 
 	// TODO: DRAG SELECT DOESN'T WORK!
-	onMouseMove() {
-		if (drag_select) {
-			const container = document.getElementById('main-frame');
-			const containerCanvas = container?.querySelector('canvas') as HTMLCanvasElement;
+	// onMouseMove() {
+	// 	if (drag_select) {
+	// 		const container = document.getElementById('main-frame');
+	// 		const containerCanvas = container?.querySelector('canvas') as HTMLCanvasElement;
 
-			if (containerCanvas) {
-				selectionArea = new DragSelect(containerCanvas)
-			}
-		}
-	},
+	// 		if (containerCanvas) {
+	// 			selectionArea = new DragSelect(containerCanvas)
+	// 		}
+	// 	}
+	// },
 	onZoomStart(e, userDriven){
 		const ZoomLevel:number = graph.getZoomLevel() || 10
 		if (ZoomLevel < 200){
@@ -167,9 +176,9 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		}
 		updateGraphConfig(GraphConfig)
 		
-		if(userDriven && e.sourceEvent.type != "mousedown"){		
+/* 		if(userDriven && e.sourceEvent.type != "mousedown"){		
 			handleZoomEvent()
-		}
+		} */
 	},
 	onNodesFiltered(filteredNodes) {
 		console.log("Filtered Nodes: ")
@@ -215,24 +224,24 @@ export function createTimeline() {
 }
 
 // control buttons functions
-export function toggleMultipleNodesMode() {
+export function toggleMultipleClustersMode() {
 	selectMultipleNodes.update((value) => !value);
 	selectNodeRange = false;
 }
 
-export function toggleSelectNodeRange() {
-	selectNodeRange = !selectNodeRange;
-}
-export function toggleDragSelection() {
-	drag_select = !drag_select;
-	const main_frame = document.getElementById('main-graph');
-	if (drag_select) {
-		main_frame.style.cursor = 'crosshair';
-	} else {
-		main_frame.style.cursor = 'default';
-		unselectNodes();
-	}
-}
+// export function toggleSelectNodeRange() {
+// 	selectNodeRange = !selectNodeRange;
+// }
+// export function toggleDragSelection() {
+// 	drag_select = !drag_select;
+// 	const main_frame = document.getElementById('main-graph');
+// 	if (drag_select) {
+// 		main_frame.style.cursor = 'crosshair';
+// 	} else {
+// 		main_frame.style.cursor = 'default';
+// 		unselectNodes();
+// 	}
+// }
 
 /* ====================================== Graph Methods ====================================== */
 
@@ -279,13 +288,15 @@ export function unselectNodes() {
 	selectedNodes.set([]);
 	graph.unselectNodes();
 	showLabelsfor([])
-	DateRange.set(undefined)
+	SelectedDateRange.set(undefined)
+	SelectedSearchQuery.set("")
+	SelectedCluster.set("")
 }
 
 export function getSelectedNodes() {
 	return get(selectedNodes)
 	// return graph.getSelectedNodes();
-	
+
 }
 
 export function getRenderedNodes(){
@@ -311,8 +322,11 @@ export function updateSelectedNodes(thenodes:Node[]){
 	
 }
 
-export function updateTimelineData(){
-
+export function conditionalSelectNodes(theNodes:Node[]){
+	// get the matches
+	const newNodes = new Set(theNodes.map(node => node.id))
+	const nodesToShowonGraph = getSelectedNodes().filter(node => newNodes.has(node.id))
+	setSelectedNodes(nodesToShowonGraph)
 }
 
 export function fitViewofGraph(){
@@ -329,19 +343,12 @@ function showLabelsfor(nodes: Node[]) {
 	}
 }
 
-
-// Graph filters
-
-function applyDateFilter(startDate: Date, endDate: Date) {
-	const dateFilter = graph.addNodesFilter();
-	console.dir(dateFilter)
-	dateFilter.setAccessor((node) => node.isClusterNode && node.date ? 
-	new Date(node.date).getTime(): new Date("2024-01-01").getTime());
-	const startTimestamp = startDate.getTime();
-	const endTimestamp = endDate.getTime();
-	dateFilter.applyFilter((d) => d != undefined && d as number >= startTimestamp  && d as number <= endTimestamp);
-	
+export function isFilteringActive():boolean{
+	if (get(SelectedDateRange) != undefined || get(SelectedSearchQuery) != "" ||
+	get(SelectedCluster) != "" ) return true
+	return false
 }
+
 
 	
 

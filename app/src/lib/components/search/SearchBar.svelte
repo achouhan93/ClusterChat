@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { Search } from 'lucide-svelte';
-	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes } from '$lib/graph';
+	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes, SelectedSearchQuery, conditionalSelectNodes, unselectNodes } from '$lib/graph';
 	import type { Node } from '$lib/types';
+
+	
 
 	async function fetchSearchQueryAnswer(search_query:string, search_accessor:string){
 		/* Requests OpenSearch and fetches to 10k nodes */
@@ -23,6 +25,13 @@
 		const searchAccessor = formData.get('search-accessor') as string;
 
 		if (!searchQuery) return;
+		if ($SelectedSearchQuery != "") unselectNodes()
+		
+		SelectedSearchQuery.set(searchQuery)
+
+		// clear the input 
+		const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
+		search_bar_input.value = '';
 
 		// send to opensearch and get the top 10k
 		const data = await fetchSearchQueryAnswer(searchQuery, searchAccessor);
@@ -30,16 +39,16 @@
 		if (Array.isArray(data)){
 			const nodeIdsToSelect:Set<string> = new Set(data.map(item => item._id));
 			if(getSelectedNodes()?.length ===0 && getSelectedNodes() != undefined){
-			// get all nodes with these ids
-			const nodesToSelect:Node[] = getRenderedNodes().filter(node => nodeIdsToSelect.has(node.id))
-			
-			// updates the nodes to render
-			updateNodes(nodesToSelect)
-			updateGraphData()
-			setSelectedNodes(nodesToSelect)
+				// get all nodes with these ids
+				const nodesToSelect:Node[] = getRenderedNodes().filter(node => nodeIdsToSelect.has(node.id))
+				
+				// updates the nodes to render
+				updateNodes(nodesToSelect)
+				updateGraphData()
+				setSelectedNodes(nodesToSelect)
 			} else if (getSelectedNodes() != undefined && getSelectedNodes() != null && getSelectedNodes()?.length != 0) {
 				const nodesToSelect:Node[] = getSelectedNodes().filter(node => nodeIdsToSelect.has(node.id))
-				setSelectedNodes(nodesToSelect)
+				conditionalSelectNodes(nodesToSelect)
 			}
 
 		}
@@ -54,7 +63,7 @@
 	<form on:submit|preventDefault={handleSearch}>
 		<div class="search-bar-elems">
 		<input
-		id="search-query"
+		id="search-bar-input"
 		autocomplete="off"
 		type="textarea"
 		placeholder="Search..."
@@ -87,11 +96,11 @@
 	input:focus-visible {
 		transition: none !important;
 	}
-	#search-query {
+	#search-bar-input {
 		width: 75%;
 		background-color: var(--surface-3-light);
 	}
-	#search-query:focus-visible {
+	#search-bar-input:focus-visible {
 		background-color: var(--surface-4-light);
 		animation: var(--animation-scale-up) forwards;
 	}

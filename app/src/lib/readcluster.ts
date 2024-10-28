@@ -4,7 +4,7 @@ import type { Node, Link, Cluster } from '$lib/types';
 import { writable, get } from 'svelte/store';
 import { formatDate } from './utils';
 import { interpolateRgb } from "d3";
-import { updateSelectedNodes, updateGraphData } from './graph';
+import {getSelectedNodes, setSelectedNodes, conditionalSelectNodes } from './graph';
 
 const nodes= writable<Node[]>([]);
 let links=writable<Link[]>([])
@@ -183,7 +183,12 @@ async function fetchDocumentIds(cluster_ids:string[]){
 		return [...existingNodes, ...uniqueNewNodes];
 	});
 		// update selectednodes
-		updateSelectedNodes(newNodes)
+
+		if (getSelectedNodes().length == 0){
+			setSelectedNodes(newNodes)
+		} else {
+			conditionalSelectNodes(newNodes)
+		}
 
 }
 
