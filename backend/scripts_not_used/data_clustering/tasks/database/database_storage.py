@@ -19,7 +19,7 @@ class StorageManager:
         Args:
             opensearch_connection (OpenSearch): OpenSearch client connection.
         """
-        self.intermediate_path = config.INTERMEDIATE_STORAGE_PATH
+        self.intermediate_path = config.MODEL_PATH
         os.makedirs(self.intermediate_path, exist_ok=True)
         self.client = opensearch_connection
 
@@ -131,9 +131,9 @@ class StorageManager:
             node, parent_id = nodes_to_process.pop(0)
             node_id = self.store_node(node, parent_id)
             for subcluster in node.subclusters_:
-                if hasattr(subcluster, 'child_') and subcluster.child_ is not None:
+                if hasattr(subcluster, "child_") and subcluster.child_ is not None:
                     nodes_to_process.append((subcluster.child_, node_id))
-    
+
     def store_node(self, node, parent_id):
         # Define data structure for node storage
         node_data = {
@@ -142,10 +142,10 @@ class StorageManager:
             "_source": {
                 "parent_id": parent_id,
                 "centroid": node.centroid_.tolist(),
-                "n_points": node.n_samples_
-            }
+                "n_points": node.n_samples_,
+            },
         }
         # Store node and get node_id from response
         response = helpers.bulk(self.client, [node_data])
-        node_id = response[1][0]['index']['_id']
-        return node_id   
+        node_id = response[1][0]["index"]["_id"]
+        return node_id

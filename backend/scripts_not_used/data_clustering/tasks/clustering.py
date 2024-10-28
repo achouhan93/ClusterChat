@@ -33,10 +33,10 @@ class ClusteringModel:
         """
         if self.method == "BIRCH":
             self.model = Birch(
-                threshold=5.0, #0.5
-                branching_factor=300, #50
-                n_clusters=100, #None
-                compute_labels=True #False
+                threshold=5.0,  # 0.5
+                branching_factor=300,  # 50
+                n_clusters=100,  # None
+                compute_labels=True,  # False
             )
 
             batch_count = 0
@@ -46,7 +46,9 @@ class ClusteringModel:
                 self.model.partial_fit(reduced_batch)
                 batch_count += 1
                 if batch_count % save_interval == 0:
-                    self.storage_manager.save_intermediate("clusterer.joblib", self.model)
+                    self.storage_manager.save_intermediate(
+                        "clusterer.joblib", self.model
+                    )
 
         elif self.method == "HDBSCAN":
             # Collect data for HDBSCAN fitting

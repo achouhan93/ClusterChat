@@ -19,12 +19,7 @@ class Document:
 
 class ragChat:
     def __init__(
-        self,
-        vector_store,
-        prompt_object,
-        prompt_vars,
-        embedding_model,
-        model_config
+        self, vector_store, prompt_object, prompt_vars, embedding_model, model_config
     ) -> None:
         """
         Initializes a ragChat object with specified configurations for text retrieval and generation.
@@ -46,7 +41,7 @@ class ragChat:
             temperature=model_config.get("temperature", 0.1),
             huggingfacehub_api_token=self.hf_auth,
             repetition_penalty=model_config.get("repetition_penalty", 1.2),
-            stop_sequences=model_config.get("stop_sequences", ["</s>"])
+            stop_sequences=model_config.get("stop_sequences", ["</s>"]),
         )
 
         self.llama_prompt = PromptTemplate(
@@ -54,50 +49,6 @@ class ragChat:
         )
         self.llm_chain = self.llama_prompt | self.llm
         log.info("ragChat initialized successfully.")
-
-    # def vector_augment_prompt(self, query, top_k_value, document_ids):
-    #     """
-    #     Augments a query prompt with retrieved knowledge based on top-k similarity search.
-    #     """
-    #     query_list = [query]
-
-    #     try:
-    #         # Encoding the query and searching for the most relevant vector
-    #         embed_query = self.embed_model.encode(
-    #             query_list, show_progress_bar=False
-    #         ).tolist()
-
-    #         max_tokens_for_knowledge = (
-    #             self.max_context
-    #             - len(self.tokenizer.encode(query))
-    #             - len(self.tokenizer.encode(self.prompt))
-    #             - 100
-    #         )
-
-    #         log.info("Performing similarity search for top-k results.")
-
-    #         results = self.index.similarity_search_with_score_by_vector(
-    #             embedding=embed_query[0],
-    #             space_type="cosineSimilarity",
-    #             search_type="painless_scripting",
-    #             k=top_k_value,
-    #             vector_field="pubmed_bert_vector",
-    #             text_field="abstract_chunk",
-    #             request_timeout=10,
-    #             pre_filter={"terms": {"documentID":document_ids}}
-    #         )
-
-    #         source_knowledge, retrieved_ids = self.process_results(
-    #             results, max_tokens_for_knowledge
-    #         )
-    #         log.info(
-    #             f"Knowledge augmented successfully. Retrieved {len(retrieved_ids)} IDs."
-    #         )
-    #         return source_knowledge, retrieved_ids
-    #     except Exception as e:
-    #         logging.error(f"Failed to augment prompt: {e}")
-    #         raise
-
 
     def process_results(self, results, max_tokens_for_knowledge):
         """
@@ -128,7 +79,7 @@ class ragChat:
             updated_knowledge = (
                 source_knowledge + ("\n" if source_knowledge else "") + text
             )
-            
+
             new_tokens_num = len(self.tokenizer.encode(updated_knowledge))
             if new_tokens_num > max_tokens_for_knowledge:
                 logging.warning("Token limit reached, stopping knowledge accumulation.")
@@ -139,7 +90,6 @@ class ragChat:
 
         unique_ids = list(set(retrieved_ids))
         return source_knowledge, unique_ids[:5]
-    
 
     def vector_augment_prompt_api(self, query, top_k_value, document_ids):
         """
@@ -167,24 +117,16 @@ class ragChat:
                     "script_score": {
                         "query": {
                             "bool": {
-                                "filter": [
-                                    {
-                                        "terms": {
-                                            "documentID": document_ids
-                                        }
-                                    }
-                                ]
+                                "filter": [{"terms": {"documentID": document_ids}}]
                             }
                         },
                         "script": {
-                            "source": "cosineSimilarity(params.query_value, doc[\"pubmed_bert_vector\"]) + 1.0",
-                            "params": {
-                                "query_value": embed_query[0]
-                            }
-                        }
+                            "source": 'cosineSimilarity(params.query_value, doc["pubmed_bert_vector"]) + 1.0',
+                            "params": {"query_value": embed_query[0]},
+                        },
                     }
                 },
-                "_source": ["abstract_chunk", "documentID", "abstract_chunk_id"],
+                "_source": ["abstract_chunk", "documentID"],
             }
 
             results = self.index.client.search(
@@ -197,7 +139,9 @@ class ragChat:
             updated_results = [
                 (
                     Document(
-                        page_content=hit["_source"]["abstract_chunk"],  # Adjust field names
+                        page_content=hit["_source"][
+                            "abstract_chunk"
+                        ],
                         metadata=hit["_source"],
                     ),
                     hit["_score"],
@@ -208,7 +152,7 @@ class ragChat:
             source_knowledge, retrieved_ids = self.process_results(
                 updated_results, max_tokens_for_knowledge
             )
-            
+
             return source_knowledge, retrieved_ids
         except Exception as e:
             logging.error(f"Failed to augment prompt: {e}")

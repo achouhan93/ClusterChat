@@ -1,8 +1,9 @@
 import utils
 from opensearchpy import OpenSearch
 
+
 # Postgres and OpenSearch configuration details
-CONFIG = utils.loadConfigFromEnv()
+CONFIG = utils.load_config_from_env()
 
 
 def opensearch_connection():

@@ -21,7 +21,7 @@ class ragLoader:
             verify_certs=True,
             ssl_assert_hostname=False,
             ssl_show_warn=False,
-            engine="lucene"
+            engine="lucene",
         )
 
         return docsearch
