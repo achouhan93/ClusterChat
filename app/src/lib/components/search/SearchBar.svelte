@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Search } from 'lucide-svelte';
-	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes, SelectedSearchQuery, conditionalSelectNodes, unselectNodes } from '$lib/graph';
+	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes, SelectedSearchQuery, conditionalSelectNodes, unselectNodes, document_specific } from '$lib/graph';
 	import type { Node } from '$lib/types';
 
 	
@@ -18,6 +18,7 @@
 	}
 
 	async function handleSearch(event: Event) {
+		if (document_specific){
 		const form = event.currentTarget as HTMLFormElement;
 		const formData = new FormData(form);
 
@@ -52,7 +53,9 @@
 			}
 
 		}
-
+	} else {
+		alert("Change to Document Specific!")
+	}
 		
 	}
 

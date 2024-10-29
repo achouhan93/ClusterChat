@@ -4,13 +4,14 @@ import type { Node, Link, Cluster } from '$lib/types';
 import { writable, get } from 'svelte/store';
 import { formatDate } from './utils';
 import { interpolateRgb } from "d3";
-import {getSelectedNodes, setSelectedNodes, conditionalSelectNodes } from './graph';
+import {updateGraphData } from './graph';
 
 const nodes= writable<Node[]>([]);
 let links=writable<Link[]>([])
 const dataloaded = writable(false);
 export let allClusters=writable<Cluster[]>([]);
-export let ClustersTree:{[depth: number]: string[]};
+export let ClustersTree=writable<{[depth: number]: string[]}>([])
+export let ColorPalette:Record<string,string>
 
 export function getNodeColor(x: number, y: number, fitView: [[number, number], [number, number]], opacity:number): string {
     // Destructure fitView coordinates
@@ -28,6 +29,22 @@ export function getNodeColor(x: number, y: number, fitView: [[number, number], [
     const mixedColor = interpolateRgb(colorX, colorY)(0.4);  // Combine them at 50% mix, feel free to adjust
 	const rgbValues = mixedColor.match(/\d+/g)!.map(Number); // Extract RGB values as an array of numbers
     return  `rgba(${rgbValues[0]}, ${rgbValues[1]}, ${rgbValues[2]}, ${opacity})`;
+}
+
+function generateClusterColors(clusterIds: string[]): Record<string, string> {
+    const colors: Record<string, string> = {};
+    const totalClusters = clusterIds.length;
+
+    // Use HSL to generate distinct colors by varying the hue
+    clusterIds.forEach((clusterId, index) => {
+        const hue = (index * 360 / totalClusters) % 360; // Spread hues around the color wheel
+        const saturation = 60; // Keep saturation consistent for vibrancy
+        const lightness = 50; // Keep lightness consistent for balance
+
+        colors[clusterId] = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    });
+
+    return colors;
 }
 
 function createDepthClusterDict(clusters: Cluster[]): { [key: number]: string[] } {
@@ -62,6 +79,7 @@ function createDepthClusterDict(clusters: Cluster[]): { [key: number]: string[] 
 			// Optionally return an empty array if no clusters are found
 			return [];
 		}
+		
 
 export async function getLabelsfromOpenSearch(){
 	const response = await fetch(`api/opensearch/cluster`);
@@ -96,11 +114,14 @@ export async function getLabelsfromOpenSearch(){
 			// Append new nodes to the existing ones
 			return [...existingNodes, ...clusterLabelNodes];
 		  });
+		  
+		 
 		
 	}
 	// TODO: save tree of depth and clusters
 	if(get(allClusters).length != 0)
-	ClustersTree = createDepthClusterDict(get(allClusters));
+	ClustersTree.set(createDepthClusterDict(get(allClusters)));
+	ColorPalette = generateClusterColors(get(allClusters).map(c => c.id))
 }
 
 /* function getClusterDepth(cluster_id:string){
@@ -125,8 +146,7 @@ if (Array.isArray(data)) {
 			isClusterNode: false,
 			cluster: item._source.cluster_id,
 			date: item._source.date,//formatDate(item._source.date), // Assuming date will be set later
-			color: getNodeColor(item._source.x,item._source.y,
-				[[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]],0.9),
+			color: ColorPalette[item._source.cluster_id]
 		} satisfies Node
 ));
 	const newLinks:Link[] = data.map(item => (
@@ -168,7 +188,7 @@ async function fetchDocumentIds(cluster_ids:string[]){
 			isClusterNode: false,
 			cluster: item._source.cluster_id,
 			date: item._source.date,//formatDate(item._source.date), // Assuming date will be set later
-			color: getNodeColor(item._source.x,item._source.y,[[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]],0.6),
+			color: ColorPalette[item._source.cluster_id],
 		} satisfies Node
 	));
 	
@@ -182,17 +202,12 @@ async function fetchDocumentIds(cluster_ids:string[]){
 	
 		return [...existingNodes, ...uniqueNewNodes];
 	});
-		// update selectednodes
+		updateGraphData()
 
-		if (getSelectedNodes().length == 0){
-			setSelectedNodes(newNodes)
-		} else {
-			conditionalSelectNodes(newNodes)
-		}
 
 }
 
-async function LoadAndSelect(cluster_ids:string[]){
+async function LoadNodesByCluster(cluster_ids:string[]){
 	await fetchDocumentIds(cluster_ids)
 }
 
@@ -205,5 +220,5 @@ async function loadLables(){
 	await getLabelsfromOpenSearch();
 }
 
-export { nodes, links, dataloaded, load10k, loadLables,LoadAndSelect };
+export { nodes, links, dataloaded, load10k, loadLables,LoadNodesByCluster };
 
