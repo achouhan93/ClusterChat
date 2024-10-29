@@ -5,6 +5,9 @@ import numpy as np
 import os
 from utils import load_config_from_env
 import argparse
+import pickle
+from sklearn.utils import shuffle
+from umap import UMAP
 
 CONFIG = load_config_from_env()
 
@@ -60,17 +63,47 @@ def main():
             )
 
             # Step 2: Process BERTopic models
-            (
-                merged_topics,
-                merged_topic_embeddings_array,
-                topic_label,
-                topic_description,
-                topic_words,
-            ) = process_models(model_path)           
+            merged_topics_path = os.path.join(model_path, "merged_topics.pkl")
+            topic_label_path = os.path.join(model_path, "topic_label.pkl")
+            topic_description_path = os.path.join(model_path, "topic_description.pkl")
+            topic_words_path = os.path.join(model_path, "topic_words.pkl")
+            merged_embeddings_path = os.path.join(model_path, "merged_topic_embeddings_array.npy")
+
+            if all(os.path.exists(path) for path in [merged_topics_path, topic_label_path, topic_description_path, topic_words_path, merged_embeddings_path]):
+                logging.info("Existing processed data found. Loading from files.")
+                with open(merged_topics_path, 'rb') as f:
+                    merged_topics = pickle.load(f)
+                with open(topic_label_path, 'rb') as f:
+                    topic_label = pickle.load(f)
+                with open(topic_description_path, 'rb') as f:
+                    topic_description = pickle.load(f)
+                with open(topic_words_path, 'rb') as f:
+                    topic_words = pickle.load(f)
+                merged_topic_embeddings_array = np.load(merged_embeddings_path) 
+            else:
+                (
+                    merged_topics,
+                    merged_topic_embeddings_array,
+                    topic_label,
+                    topic_description,
+                    topic_words,
+                ) = process_models(model_path)           
 
             # Step 3: Load UMAP model
             logging.info(f"Loading the trained UMAP model")
-            umap_model = joblib.load(os.path.join(model_path, "umap_2_components.joblib"))
+            umap_path = os.path.join(model_path, "umap_2_components.joblib")
+
+            if os.path.exists(umap_path):
+                logging.info("Existing UMAP model found. Loading from files.")
+                with open(umap_path, 'rb') as f:
+                    umap_model = joblib.load(f)
+            else:
+                embeddings = shuffle(merged_topic_embeddings_array, random_state=42)
+                umap_model = UMAP(n_components=2, n_jobs=1, random_state=42)
+                # Fit UMAP on topic embeddings only
+                umap_model.fit(embeddings)
+                joblib.dump(umap_model, os.path.join(model_path, "umap_2_components.joblib"))
+
             logging.info(f"Loading the UMAP model completed")
 
             # Step 4: Build hierarchy
@@ -81,7 +114,7 @@ def main():
                 topic_description,
                 topic_words,
                 umap_model,
-                depth=9,
+                model_path
             )
 
             # Step 5: Index clusters into OpenSearch
