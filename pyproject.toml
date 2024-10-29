@@ -28,6 +28,8 @@ bertopic = "^0.16.4"
 fastapi = "^0.115.2"
 uvicorn = "^0.32.0"
 opensearch-py = "^2.7.1"
+langchain-openai = "^0.2.3"
+lark = "^1.2.2"
 
 
 [build-system]

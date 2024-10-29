@@ -9,7 +9,7 @@ FINAL_DIM = 2
 DIMENSIONALITY_REDUCTION_METHOD = "IncrementalPCA"  # Options: 'UMAP', 'IncrementalPCA'
 CLUSTERING_METHOD = "BIRCH"  # Options: 'HDBSCAN', 'BIRCH'
 
-INTERMEDIATE_STORAGE_PATH = "./intermediate_results/"
+MODEL_PATH = "./intermediate_results/"
 
 # Index names
 CLUSTER_INFO_INDEX_NAME = (

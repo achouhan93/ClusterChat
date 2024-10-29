@@ -43,7 +43,7 @@ def opensearch_connection():
 
     return os
 
-def fetch_sample_embeddings(client, index_name, sample_size=1000000, batch_size=5000):
+def fetch_sample_embeddings(client, index_name, sample_size=1000000, batch_size=10000):
     """
     Fetch a sample of embeddings from OpenSearch.
 
@@ -123,14 +123,14 @@ def fit_umap_models(embeddings, output_dir):
 
     # UMAP model for 50 components
     print("Training UMAP model with 50 components...")
-    umap_50 = umap.UMAP(n_components=50, n_jobs=-1, random_state=42)
+    umap_50 = umap.UMAP(n_components=50, n_jobs=1, random_state=42)
     embeddings_50 = umap_50.fit_transform(embeddings)
     joblib.dump(umap_50, os.path.join(output_dir, "umap_50_components.joblib"))
     print("UMAP model with 50 components saved.")
 
     # UMAP model for 2 components
     print("Training UMAP model with 2 components...")
-    umap_2 = umap.UMAP(n_components=2, n_jobs=-1, random_state=42)
+    umap_2 = umap.UMAP(n_components=2, n_jobs=1, random_state=42)
     embeddings_2 = umap_2.fit_transform(embeddings_50)  # Transform 50D reduced embeddings to 2D
     joblib.dump(umap_2, os.path.join(output_dir, "umap_2_components.joblib"))
     print("UMAP model with 2 components saved.")
