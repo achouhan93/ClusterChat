@@ -5,7 +5,7 @@
 
 	// utils
 	import { splitTextIntoLines } from '$lib/utils';
-	import { getSelectedNodes } from '$lib/graph';
+	import { getSelectedNodes, document_specific } from '$lib/graph';
 	import type { Node, ChatQuestion } from '$lib/types';
 
 	// svelte
@@ -17,7 +17,7 @@
 
 	let isLoading = writable<boolean>(false);
 	let messages = writable<{ question: string; answer: string }[]>([]);
-	let document_specific = writable(true);
+	
 
 	async function toggleQAoption() {
 		document_specific.update((value) => !value);
@@ -69,7 +69,7 @@
 		if (!selectedNodes) return
 		let payload: ChatQuestion = {
 			question: userMessage,
-			question_type: $document_specific? "document-specific" : "corpus-based", // TODO: make it dropdown list of options
+			question_type: $document_specific? "supporting_information" : "corpus-based", // TODO: make it dropdown list of options
 			document_ids: selectedNodes.map((node) => (node.isClusterNode ? '' : (node.id as string)))
 		};
 		// fetch chat completion

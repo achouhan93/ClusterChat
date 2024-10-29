@@ -8,7 +8,7 @@
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
 	// import ClusterView from '$lib/components/cluster/ClusterView.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
-	import { toggleMultipleNodesMode, toggleDragSelection, fitViewofGraph, selectMultipleNodes } from '$lib/graph';
+	import { toggleMultipleClustersMode, fitViewofGraph, selectMultipleClusters } from '$lib/graph';
 	import { onMount } from 'svelte';
 	import { dataloaded } from '$lib/readcluster';
 	import InfoView from '$lib/components/graph/InfoView.svelte';
@@ -32,12 +32,12 @@
 			<SearchBar />
 		</div>
 		<div class="control-buttons">
-			<button id="multiple-node-btn" class={$selectMultipleNodes ? "btn active" : "btn"} on:click={toggleMultipleNodesMode}
+			<button id="multiple-node-btn" class={$selectMultipleClusters ? "btn active" : "btn"} on:click={toggleMultipleClustersMode}
 				><SquareStack /></button
 			>
-			<button id="select-node-range-btn" class="btn" on:click={toggleDragSelection}
+			<!-- <button id="select-node-range-btn" class="btn" on:click={toggleDragSelection}
 				><SquareDashedMousePointer /></button
-			>
+			> -->
 			<button class="btn" on:click={fitViewofGraph}>
 				<BoxSelect />
 			</button>

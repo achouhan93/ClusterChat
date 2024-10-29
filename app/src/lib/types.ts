@@ -12,7 +12,7 @@
 export type Node = {
 	id: string;
 	title: string | 'No Title';
-	cluster: number;
+	cluster: string;
 	isClusterNode: boolean | false;
 	x: number;
 	y: number;
@@ -38,6 +38,6 @@ export type Link = {
 
 export type ChatQuestion = {
 	question: string | '';
-	question_type: 'document-specific' | 'corpus-based';
+	question_type: 'supporting_information' | 'corpus-based';
 	document_ids: string[] | [];
 };
