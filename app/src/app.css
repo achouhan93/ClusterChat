@@ -52,19 +52,61 @@ body {
 	text-align: center;
 	border-radius: var(--radius-drawn-1);
 }
-.cosmograph-cluster-label {
+
+/* Label sizes for different depths from smallest to largest */
+.cosmograph-cluster-label-0 {
 	background-color: rgba(255, 255, 255, 0.2);
-	font-size: var(--font-size-3) !important;
+	font-size: 6px !important;
+	max-width: 30ch;
+}
+.cosmograph-cluster-label-1 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: 10px !important;
+	max-width: 30ch;
+}
+
+.cosmograph-cluster-label-2 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: var(--size-px-3) !important;
+	max-width: 30ch;
+}
+.cosmograph-cluster-label-3 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: var(--size-px-4) !important;
+	max-width: 30ch;
+}
+.cosmograph-cluster-label-4 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: var(--size-px-5) !important;
+	max-width: 30ch;
+}
+.cosmograph-cluster-label-5 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: var(--size-px-6) !important;
+	max-width: 30ch;
+}
+.cosmograph-cluster-label-6 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: var(--size-px-7) !important;
+	max-width: 30ch;
+}
+.cosmograph-cluster-label-7 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: var(--size-px-8) !important;
+	max-width: 30ch;
+}
+.cosmograph-cluster-label-8 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: var(--size-px-9) !important;
 	max-width: 30ch;
 }
 
 .cosmograph-timeline {
-	--cosmograph-timeline-background: var(--surface-1-dark);
-	--cosmograph-timeline-text-color: var(--text-1-dark);
+	--cosmograph-timeline-background: var(--surface-4-light);
+	--cosmograph-timeline-text-color: black;
 	--cosmograph-timeline-selection-color: #2463eb;
 	--cosmograph-timeline-bar-color: #4a5c79;
 	--cosmograph-timeline-selection-opacity: 0.5;
-	opacity: 0.9;
 }
 
 body {

@@ -30,16 +30,17 @@ export function getNodeColor(x: number, y: number, fitView: [[number, number], [
 	const rgbValues = mixedColor.match(/\d+/g)!.map(Number); // Extract RGB values as an array of numbers
     return  `rgba(${rgbValues[0]}, ${rgbValues[1]}, ${rgbValues[2]}, ${opacity})`;
 }
-
 function generateClusterColors(clusterIds: string[]): Record<string, string> {
     const colors: Record<string, string> = {};
     const totalClusters = clusterIds.length;
 
-    // Use HSL to generate distinct colors by varying the hue
     clusterIds.forEach((clusterId, index) => {
-        const hue = (index * 360 / totalClusters) % 360; // Spread hues around the color wheel
-        const saturation = 60; // Keep saturation consistent for vibrancy
-        const lightness = 50; // Keep lightness consistent for balance
+        // Vary hue with a larger step for better contrast
+        const hue = (index * 137.5) % 360; // 137.5 ensures good distribution of colors
+
+        // Alternate saturation and lightness for additional contrast
+        const saturation = (index % 2 === 0) ? 70 : 50; // Alternates between 70% and 50%
+        const lightness = (index % 2 === 0) ? 45 : 55; // Alternates between 45% and 55%
 
         colors[clusterId] = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     });
@@ -82,7 +83,7 @@ function createDepthClusterDict(clusters: Cluster[]): { [key: number]: string[] 
 		
 
 export async function getLabelsfromOpenSearch(){
-	const response = await fetch(`api/opensearch/cluster`);
+	const response = await fetch(`/api/opensearch/cluster`);
 	const data = await response.json()
 	
 	if(Array.isArray(data)){
@@ -105,7 +106,7 @@ export async function getLabelsfromOpenSearch(){
 				y: item._source.y,
 				isClusterNode: true,
 				cluster : item._source.path,
-				date: undefined,
+				date: item._source.depth,
 				color: "#fff",
 			}
 		));
@@ -202,7 +203,7 @@ async function fetchDocumentIds(cluster_ids:string[]){
 	
 		return [...existingNodes, ...uniqueNewNodes];
 	});
-		updateGraphData()
+		// updateGraphData()
 
 
 }

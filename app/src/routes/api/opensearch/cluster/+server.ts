@@ -30,6 +30,6 @@ export async function GET({ params }) {
 		return new Response(JSON.stringify(response.body.hits.hits));
 	} catch (error) {
 		console.error('Error:', error);
-		return new Response('Error', { status: 404 });
+		return new Response(`Error: ${error}`, { status: 404 });
 	}
 }

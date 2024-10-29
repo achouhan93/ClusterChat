@@ -59,11 +59,11 @@ let showMoreAbstract:boolean = false;
     }
     
     function getClusterInformationFromNode(node:Node):string[]{
-        const cluster_id:string = node.cluster as unknown as string
-        const clusterinfo:Cluster = get(allClusters).find(cluster =>  cluster.id === cluster_id)
-        const clusterLinage: string[] = clusterinfo.path.split("/")
-        const foundClusters = get(allClusters).filter(cluster => clusterLinage.includes(cluster.id))
-        foundClusters.sort(cluster => cluster.depth)
+        const cluster_id:string = node.cluster
+        const clusterinfo:Cluster = get(allClusters).find(cluster =>  cluster.id === cluster_id && cluster.isLeaf)
+        const clusterLinage = new Set(clusterinfo.path.split("/")/* .slice(-3) */)
+        const foundClusters = get(allClusters).filter(cluster => clusterLinage.has(cluster.id))
+        foundClusters.sort((c1,c2) => c2.depth - c1.depth)
         const foundClusterName: string[] = foundClusters.map(c => c.label)
         return foundClusterName
     }
@@ -91,7 +91,7 @@ let showMoreAbstract:boolean = false;
     <h4>Node Information</h4>
     <div class="node-info-list">
 
-        {#if $toShow.length !=0}
+        {#if $toShow.length !=0 && !$toShow[$currentPage -1].isClusterNode}
             {#if $toShow.length > 1}
             <div class="pagation-btns">
                 <button class="pagation-btn" on:click={handleLeftClick}><ChevronLeft/></button>
@@ -100,7 +100,7 @@ let showMoreAbstract:boolean = false;
             </div>
             {/if}
 
-            {#if $SelectedDateRange != undefined || $SelectedSearchQuery != "" || $SelectedCluster != ""}
+            {#if  ($SelectedDateRange != undefined || $SelectedSearchQuery != "" || $SelectedCluster != "")}
             <div class="filter-tags">
                 {#if $SelectedDateRange != undefined}
                 <div class="selected-date-range">

@@ -16,7 +16,7 @@ export type Node = {
 	isClusterNode: boolean | false;
 	x: number;
 	y: number;
-	date: Date | undefined;
+	date: Date | number | undefined;
 	color: string | '#000';
 };
 
@@ -38,6 +38,6 @@ export type Link = {
 
 export type ChatQuestion = {
 	question: string | '';
-	question_type: 'supporting_information' | 'corpus-based';
-	document_ids: string[] | [];
+	question_type: 'document-specific' | 'corpus-based';
+	supporting_information: string[] | [];
 };
