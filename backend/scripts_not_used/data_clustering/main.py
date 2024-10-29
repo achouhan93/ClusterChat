@@ -152,8 +152,6 @@ def main(argv=None):
                 reduced_embeddings = reducer.transform(embeddings_batch)
                 reducer_2d.fit_partial(reduced_embeddings)
 
-            # TODO: Store intermediate results of IncrementalPCA for 2D
-
             # Now, transform and store results
             for embeddings_batch, ids_batch in data_fetcher.fetch_embeddings():
                 reduced_embeddings = reducer.transform(embeddings_batch)

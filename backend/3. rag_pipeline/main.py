@@ -6,6 +6,7 @@ import logging
 import json
 import utils
 import os
+from typing import List
 
 from tasks.database import database_connection
 from pipeline import Processor
@@ -51,7 +52,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # frontend URL
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,7 +62,7 @@ app.add_middleware(
 class QuestionRequest(BaseModel):
     question: str
     question_type: str  # 'corpus-based' or 'document-specific'
-    document_ids: list = []  # List of document IDs
+    supporting_information: List[str] = []
 
 
 class AnswerResponse(BaseModel):
@@ -81,19 +82,14 @@ def ask_question(request: QuestionRequest):
 
         # Use the processor to generate the answer
         if request.question_type == "corpus-specific":
-            if not request.corpus_specific:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Missing 'corpus_specific' field for corpus-specific queries.",
-                )
-
-            # answer, sources = processor.process_corpus_specific_request(
-            #     question=request.question
-            # )
+            answer, sources = processor.process_corpus_specific_request(
+                question=request.question,
+                cluster_information=request.supporting_information
+            )
         else:
             answer, sources = processor.process_api_request(
                 question=request.question,
-                document_ids=request.document_ids,
+                document_ids=request.supporting_information,
             )
 
         return AnswerResponse(answer=answer, sources=sources)
