@@ -3,6 +3,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 import logging
 from openai import OpenAI
 from utils import load_config_from_env
+import pickle
+import os
+from time import sleep
+import math
 
 CONFIG = load_config_from_env()
 log = logging.getLogger(__name__)
@@ -55,6 +59,21 @@ def get_cluster_description(child_labels, child_descriptions):
     return description
 
 
+def save_checkpoint(checkpoint_path, checkpoint_data):
+    """Saves the current checkpoint data to a file."""
+    with open(checkpoint_path, 'wb') as f:
+        pickle.dump(checkpoint_data, f)
+    log.info(f"Checkpoint saved at {checkpoint_path}.")
+
+
+def load_checkpoint(checkpoint_path):
+    """Loads checkpoint data from a file."""
+    with open(checkpoint_path, 'rb') as f:
+        checkpoint_data = pickle.load(f)
+    log.info(f"Checkpoint loaded from {checkpoint_path}.")
+    return checkpoint_data
+
+
 def build_custom_hierarchy(
     merged_topic_embeddings_array,
     merged_topics,
@@ -62,44 +81,58 @@ def build_custom_hierarchy(
     topic_description,
     topic_words,
     umap_model,
-    depth=9,
+    model_path
 ):
     """
     Build a hierarchy of clusters up to a specified depth.
     At each level, clusters are merged into pairs to achieve the desired depth.
     """
-    log.info(f"Building the topic hierarchy started")
-    # Initialize clusters
-    clusters = {}
-    cluster_embeddings = {}
-    current_topic_ids = list(merged_topics.keys())
+    depth = math.ceil(math.log2(len(merged_topics)))
+    
+    checkpoint_path = os.path.join(model_path, "checkpoint.pkl")
+    log.info(f"Building the topic hierarchy started of depth {depth}")
+    # Initialize or load checkpoint
+    if os.path.exists(checkpoint_path):
+        checkpoint = load_checkpoint(checkpoint_path)
+        clusters = checkpoint['clusters']
+        cluster_embeddings = checkpoint['cluster_embeddings']
+        current_depth = checkpoint['current_depth']
+        current_clusters = checkpoint['current_clusters']
+    else:
+        clusters = {}
+        cluster_embeddings = {}
+        current_topic_ids = list(merged_topics.keys())
 
-    for i, tid in enumerate(current_topic_ids):
-        clusters[str(tid)] = {
-            "cluster_id": str(tid),
-            "label": topic_label[tid],
-            "topic_information": merged_topics[tid],
-            "topic_words": topic_words[tid],  # Store associated topic words
-            "description": topic_description[tid],
-            "is_leaf": True,
-            "depth": 0,
-            "path": str(tid),
-            "x": float(0),  # Placeholder, will be updated later
-            "y": float(0),  # Placeholder, will be updated later
-            "children": [],
-        }
-        cluster_embeddings[str(tid)] = merged_topic_embeddings_array[i]
+        for i, tid in enumerate(current_topic_ids):
+            clusters[str(tid)] = {
+                "cluster_id": str(tid),
+                "label": topic_label[tid],
+                "topic_information": merged_topics[tid],
+                "topic_words": topic_words[tid],  # Store associated topic words
+                "description": topic_description[tid],
+                "is_leaf": True,
+                "depth": 0,
+                "path": str(tid),
+                "x": float(0),  # Placeholder, will be updated later
+                "y": float(0),  # Placeholder, will be updated later
+                "children": [],
+            }
+            cluster_embeddings[str(tid)] = merged_topic_embeddings_array[i]
 
-    # Apply UMAP to get x and y coordinates
-    topic_umap_embeddings = umap_model.transform(merged_topic_embeddings_array)
-    for i, tid in enumerate(current_topic_ids):
-        clusters[str(tid)]["x"] = float(topic_umap_embeddings[i][0])
-        clusters[str(tid)]["y"] = float(topic_umap_embeddings[i][1])
+        # Apply UMAP to get x and y coordinates
+        topic_umap_embeddings = umap_model.transform(merged_topic_embeddings_array)
+        for i, tid in enumerate(current_topic_ids):
+            clusters[str(tid)]["x"] = float(topic_umap_embeddings[i][0])
+            clusters[str(tid)]["y"] = float(topic_umap_embeddings[i][1])
 
-    # Sort current_clusters in descending order of topic IDs
-    current_clusters = list(clusters.keys())
+        # Sort current_clusters in descending order of topic IDs
+        current_clusters = list(clusters.keys())
+        current_depth = 1 # Initialize the depth at 1
+    
+    # Process each depth level
+    for depth_level in range(current_depth, depth + 1):
+        log.info(f"Processing depth level {depth_level}")
 
-    for current_depth in range(1, depth + 1):
         new_clusters = []
         num_clusters = len(current_clusters)
         i = 0
@@ -120,6 +153,8 @@ def build_custom_hierarchy(
                 combined_description = get_cluster_description(
                     child_labels, child_descriptions
                 )
+
+                sleep(2)
 
                 # Merge clusters cid_i and cid_j
                 new_cluster_id = f"cluster_{len(clusters)}"
@@ -170,6 +205,16 @@ def build_custom_hierarchy(
             # Reached the root
             break
 
+        # Save checkpoint after each depth level
+        checkpoint_data = {
+            'clusters': clusters,
+            'cluster_embeddings': cluster_embeddings,
+            'current_depth': depth_level + 1,
+            'current_clusters': current_clusters
+        }
+        save_checkpoint(checkpoint_path, checkpoint_data)
+        log.info(f"Checkpoint saved at depth level {depth_level}")
+
     # Calculate pairwise similarity for each cluster in final structure
     similarity_matrix = cosine_similarity(np.array(list(cluster_embeddings.values())))
     cluster_ids = list(cluster_embeddings.keys())
@@ -184,5 +229,18 @@ def build_custom_hierarchy(
                 )
     
     log.info(f"Building the topic hierarchy completed")
+    
+    with open(os.path.join(model_path, "clusters.pkl"), 'wb') as f:
+        pickle.dump(clusters, f)
+
+    with open(os.path.join(model_path, "cluster_embeddings.pkl"), 'wb') as f:
+        pickle.dump(cluster_embeddings, f) 
+
+    log.info(f"Final clusters saved as clusters.pkl and embeddings saved at cluster_embeddings.pkl")
+
+    # Optionally, remove the checkpoint file as processing is complete
+    if os.path.exists(checkpoint_path):
+        os.remove(checkpoint_path)
+        log.info(f"Checkpoint file {checkpoint_path} removed after successful processing.")       
 
     return clusters, cluster_embeddings
