@@ -11,11 +11,7 @@ from datetime import date
 class DataFetcher:
     """Class to fetch embeddings from OpenSearch in batches."""
 
-    def __init__(self, 
-                 opensearch_connection, 
-                 index_name,
-                 start_date,
-                 end_date):
+    def __init__(self, opensearch_connection, index_name, start_date, end_date):
         """
         Initialize the DataFetcher.
 

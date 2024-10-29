@@ -41,7 +41,7 @@ def index_documents(
     document_index_name,
     data_fetcher,
     umap_model,
-    merged_topic_embeddings_array
+    merged_topic_embeddings_array,
 ):
     """
     Fetches documents, assigns clusters, transforms embeddings, and indexes them into OpenSearch.
@@ -99,7 +99,9 @@ def index_documents(
             # Index in batches to OpenSearch
             if len(document_actions) >= 1000:
                 bulk(os_connection, document_actions)
-                log.info(f"Inserted {len(document_actions)} document information in OpenSearch")
+                log.info(
+                    f"Inserted {len(document_actions)} document information in OpenSearch"
+                )
                 document_actions = []
 
         # Index any remaining documents in the current batch
