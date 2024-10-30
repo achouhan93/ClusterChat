@@ -23,7 +23,7 @@ let timeline: CosmographTimeline<Node>;
 
 const BATCH_SIZE:number = 10000; 
 const MAX_SIZE:number = 100000; // TODO: make this dynamic
-const BATCH_NUMBER_START:number = 10
+const BATCH_NUMBER_START:number = 10 // TO CHANGE BEFORE PUSH
 const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START*BATCH_SIZE;
 const HOVERED_NODE_SIZE:number = 0.5
 let $batch_number= writable<number>(BATCH_NUMBER_START);
@@ -76,8 +76,9 @@ const handleZoomEvent = async () => {
 const handleLabelClick = async (node:Node) => {
 	if(node.isClusterNode){
 		SelectedCluster.set(node.id)
-		const cluster_ids:string[] = getAssociatedLeafs(node.id)
-
+		console.log(`Selected Cluster Id: ${node.id}`)
+		const cluster_ids:string[] = getAssociatedLeafs(node.id,node.title)
+		console.log(cluster_ids)
 		LoadNodesByCluster(cluster_ids)
 
 		// get all the rendered nodes and filter the ones that have the cluster ids

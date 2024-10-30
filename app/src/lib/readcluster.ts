@@ -66,12 +66,12 @@ function createDepthClusterDict(clusters: Cluster[]): { [key: number]: string[] 
 	return depthClusterDict;
   }
 
-  export function getAssociatedLeafs(cluster_id: string): string[] {
+  export function getAssociatedLeafs(cluster_id: string, cluster_label:string): string[] {
     const currentallClusters: Cluster[] = get(allClusters);
 			if (currentallClusters.length != 0) {
 				// Use filter to get clusters that match the condition, and map to extract the id.
 				let leafClusters: string[] = currentallClusters
-					.filter(cluster => cluster.isLeaf && cluster.path.includes(cluster_id))
+					.filter(cluster => (cluster.isLeaf && cluster.path.split("/").includes(cluster_id)) || (cluster.isLeaf && cluster.label === cluster_label))
 					.map(cluster => cluster.id);
 					// console.dir(leafClusters)
 				return leafClusters; 
