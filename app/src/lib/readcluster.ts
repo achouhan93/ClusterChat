@@ -10,6 +10,7 @@ const nodes= writable<Node[]>([]);
 let links=writable<Link[]>([])
 const dataloaded = writable(false);
 export let allClusters=writable<Cluster[]>([]);
+export let allClusterNodes=writable<Node[]>([])
 export let ClustersTree=writable<{[depth: number]: string[]}>([])
 export let ColorPalette:Record<string,string>
 
@@ -115,6 +116,8 @@ export async function getLabelsfromOpenSearch(){
 			// Append new nodes to the existing ones
 			return [...existingNodes, ...clusterLabelNodes];
 		  });
+
+		allClusterNodes.set(clusterLabelNodes)
 		  
 		 
 		

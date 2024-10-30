@@ -1,7 +1,7 @@
 <script lang="ts">
 	// style
 	import 'open-props/buttons';
-	import { Send, LoaderPinwheel, File, ChartScatter,RotateCw } from 'lucide-svelte';
+	import { Send, LoaderPinwheel, File, ChartScatter,RotateCw, X } from 'lucide-svelte';
 
 	// utils
 	import { splitTextIntoLines } from '$lib/utils';
@@ -17,7 +17,7 @@
 	//import { API_URL } from '$env/static/public';
 
 	let isLoading = writable<boolean>(false);
-	let messages = writable<{ question: string; answer: string; sources:Source[] }[]>([]);
+	let messages = writable<{ question: string; answer: string; sources:string[] }[]>([]);
 	let TimeOutTryAgain = writable<boolean>(false);
 	let currentFoundSources = writable<Source[]>([])
 	let payload: ChatQuestion;
@@ -76,6 +76,10 @@
 		});
 	}
 
+	async function handleClearChat(){
+		messages.set([])
+	}
+
 	async function handleTryAgain() {
 		
 		try {
@@ -85,12 +89,11 @@
 			const fastData = await chatCompletion.json();
 			const textContent = fastData.answer;
 			const formattedText = splitTextIntoLines(textContent, 25);
-			let foundSources:Source[] = []
-			if(fastData.sources.length != 0) fetchSourceInfo(fastData.sources)
-			else currentFoundSources.set([])
+			// if(fastData.sources.length != 0) fetchSourceInfo(fastData.sources)
+			// else currentFoundSources.set([])
 			messages.update((msgs) => {
 				msgs[msgs.length - 1].answer = formattedText; // Set the answer
-				 msgs[msgs.length -1].sources =  get(currentFoundSources) || [];
+				msgs[msgs.length -1].sources =  (fastData.sources.length != 0 && get(document_specific)) ? fastData.sources.slice(0,3) : [];
 				return msgs;
 			});
 			
@@ -133,11 +136,11 @@
 			const fastData = await chatCompletion.json();
 			const textContent = fastData.answer;
 			const formattedText = splitTextIntoLines(textContent, 25);
-			if(fastData.sources.length != 0) fetchSourceInfo(fastData.sources)
-			else currentFoundSources.set([])
+			// if(fastData.sources.length != 0) fetchSourceInfo(fastData.sources)
+			// else currentFoundSources.set([])
 			messages.update((msgs) => {
 				msgs[msgs.length - 1].answer = formattedText; // Set the answer
-				 msgs[msgs.length -1].sources =  get(currentFoundSources) || [];
+				msgs[msgs.length -1].sources =  (fastData.sources.length != 0 && get(document_specific)) ? fastData.sources.slice(0,3) : [];
 				return msgs;
 			});
 
@@ -182,8 +185,8 @@
 					<div class="sources-list">
 						{#each message.sources as doc_source}
 						<SourceCards
-							title = {doc_source.title}
-							source = {`https://pubmed.ncbi.nlm.nih.gov/${doc_source.id}`}
+							title = {doc_source}
+							source = {`https://pubmed.ncbi.nlm.nih.gov/${doc_source}`}
 						/>
 					{/each}
 					</div>
@@ -207,6 +210,9 @@
 
 		<!-- Input field and send button -->
 		<form on:submit|preventDefault={handleSendMessage}>
+			<button type="button" class="clear-chat-btn" on:click|stopPropagation={handleClearChat} title='Clear Chat'
+			><X/></button
+			>
 			<input
 				id="chat-input"
 				autocomplete="off"
@@ -255,6 +261,7 @@
 		width: 100%;
 		padding: var(--size-2);
 		background-color: var(--surface-3-light);
+		z-index: 3;
 	}
 	form {
 		display: inline-flex;
@@ -329,7 +336,6 @@
 	button {
 		box-shadow: none;
 		text-shadow: none;
-		color: var(--text-1-dark);
 	}
 
 	.toggle-container {
@@ -377,5 +383,10 @@
 		flex-direction: row;
 		gap: var(--size-2);
 		flex-wrap: nowrap;
+	}
+	.clear-chat-btn {
+		background-color: var(--blue-4);
+		color: var(--text-1-dark);
+		width: fit-content;
 	}
 </style>

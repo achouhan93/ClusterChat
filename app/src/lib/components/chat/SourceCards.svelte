@@ -25,7 +25,7 @@
     justify-content: space-between;
     align-items: baseline;      /* Center items vertically */
     padding: var(--size-1);
-    width: 20%;
+    max-width: 30%;
     border: 1px solid var(--blue-5);
     border-radius: 8px;
     background-color: var(--blue-2);

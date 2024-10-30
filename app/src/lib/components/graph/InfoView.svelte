@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { selectedNodes, SelectedDateRange, SelectedSearchQuery, SelectedCluster, unselectNodes} from "$lib/graph";
-    import { ChevronRight, ChevronLeft, X } from "lucide-svelte";
+    import { ChevronRight, ChevronLeft, X, ExternalLink } from "lucide-svelte";
     import { get, readable,writable } from 'svelte/store';
     import type { Node, Cluster } from "$lib/types";
 	import { allClusters, ClustersTree } from "$lib/readcluster";
@@ -64,7 +64,7 @@ let showMoreAbstract:boolean = false;
         const clusterLinage = new Set(clusterinfo.path.split("/")/* .slice(-3) */)
         const foundClusters = get(allClusters).filter(cluster => clusterLinage.has(cluster.id))
         foundClusters.sort((c1,c2) => c2.depth - c1.depth)
-        const foundClusterName: string[] = foundClusters.map(c => c.label)
+        const foundClusterName: string[] = foundClusters.map(c => ` ${c.label}`)
         return foundClusterName
     }
 
@@ -124,13 +124,29 @@ let showMoreAbstract:boolean = false;
                 <button class="clear-btn" on:click={handleClearTags}><X/></button>
             </div>
             {/if}
+
+            <div class="info-field">
+                <span class="info-field-title">Pubmed ID</span>
+                <div class="info-field-content">
+                    <a href={`https://pubmed.ncbi.nlm.nih.gov/${$toShow[$currentPage - 1].id}`} target="_blank" rel="noopener noreferrer"
+                    >{$toShow[$currentPage -1].id} <sup><ExternalLink size="12"/></sup></a
+                    ></div>            
+            </div>
+            <div class="info-field">
+                <span class="info-field-title">Cluster</span>
+                <div class="info-field-content">
+                    {getClusterInformationFromNode($toShow[$currentPage -1])}
+                </div>        
+            </div>
+    
+
         <div class="info-field">
-            <span class="info-field-title">title</span>
+            <span class="info-field-title">Title</span>
             <div class="info-field-content">{$toShow[$currentPage -1].title}</div>            
         </div>
 
         <div class="info-field">
-            <span class="info-field-title">abstract</span>
+            <span class="info-field-title">Abstract</span>
             <div class="info-field-content {showMoreAbstract ? '' : 'collapsed'}">{$abstract}</div>
             <button class="toggle-button" on:click={toggleShowMoreAbstract}>
                 {showMoreAbstract ? 'Read Less' : 'Read More'}
@@ -138,17 +154,7 @@ let showMoreAbstract:boolean = false;
         </div>
 
         <div class="info-field">
-            <span class="info-field-title">cluster</span>
-            <div class="info-field-content {showMoreCluster ? '' : 'collapsed'}">
-                {getClusterInformationFromNode($toShow[$currentPage -1])}
-            </div>        
-            <button class="toggle-button" on:click={toggleShowMoreCluster}>
-                {showMoreCluster ? 'Read Less' : 'Read More'}
-            </button>
-        </div>
-
-        <div class="info-field">
-            <span class="info-field-title">date</span>
+            <span class="info-field-title">Date</span>
             <div class="info-field-content">{$toShow[$currentPage -1].date}</div>            
         </div>
         {/if}
@@ -185,6 +191,10 @@ let showMoreAbstract:boolean = false;
         color: var(--text-1-light);
         background-color: var(--surface-4-light);
         border-radius: var(--radius-2);
+    }
+    .info-field-content a{
+        display: flex;
+        color: var(--blue-5);
     }
     .info-field-content.collapsed {
         overflow-y: hidden; /* Allows vertical scrolling */

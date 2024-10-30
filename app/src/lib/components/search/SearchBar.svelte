@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Search } from 'lucide-svelte';
-	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes, SelectedSearchQuery, conditionalSelectNodes, unselectNodes, document_specific } from '$lib/graph';
+	import { Search, X } from 'lucide-svelte';
+	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes, SelectedSearchQuery, conditionalSelectNodes, unselectNodes, document_specific, selectedNodes } from '$lib/graph';
 	import type { Node } from '$lib/types';
+	import { getClusterNodes, setSelectedNodesOnGraph } from '$lib/graph';
 
 	
 
@@ -17,6 +18,12 @@
 		}
 	}
 
+	async function handleClearSearch (){
+		// clear the input 
+		const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
+		search_bar_input.value = '';
+		SelectedSearchQuery.set('')
+	}
 	async function handleSearch(event: Event) {
 		if (document_specific){
 		const form = event.currentTarget as HTMLFormElement;
@@ -30,9 +37,6 @@
 		
 		SelectedSearchQuery.set(searchQuery)
 
-		// clear the input 
-		const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
-		search_bar_input.value = '';
 
 		// send to opensearch and get the top 10k
 		const data = await fetchSearchQueryAnswer(searchQuery, searchAccessor);
@@ -42,14 +46,16 @@
 			if(getSelectedNodes()?.length ===0 && getSelectedNodes() != undefined){
 				// get all nodes with these ids
 				const nodesToSelect:Node[] = getRenderedNodes().filter(node => nodeIdsToSelect.has(node.id))
-				
-				// updates the nodes to render
-				updateNodes(nodesToSelect)
-				updateGraphData()
-				setSelectedNodes(nodesToSelect)
+				selectedNodes.set(nodesToSelect)
+				const graphNodesToSelect = nodesToSelect.concat(getClusterNodes())
+				setSelectedNodesOnGraph(graphNodesToSelect)
+
 			} else if (getSelectedNodes() != undefined && getSelectedNodes() != null && getSelectedNodes()?.length != 0) {
+				// TODO
 				const nodesToSelect:Node[] = getSelectedNodes().filter(node => nodeIdsToSelect.has(node.id))
-				conditionalSelectNodes(nodesToSelect)
+				selectedNodes.set(nodesToSelect)
+				const nodesToShowonGraph = nodesToSelect.concat(getClusterNodes())
+				setSelectedNodesOnGraph(nodesToShowonGraph)
 			}
 
 		}
@@ -65,6 +71,9 @@
 
 	<form on:submit|preventDefault={handleSearch}>
 		<div class="search-bar-elems">
+		<button type="button" class="clear-search-btn" on:click|stopPropagation={handleClearSearch} title='Clear Chat'
+		><X size="48"/></button
+		>
 		<input
 		id="search-bar-input"
 		autocomplete="off"
@@ -124,8 +133,16 @@
 		text-align-last: center; /* For modern browsers to center the selected option */
 		width: fit-content;
 		padding: var(--size-3);
+		border: 1px solid #ccc;
 		
 		/* Optional: Add some padding to ensure the text is vertically centered
 		line-height: 1.5; */
+	}
+	.clear-search-btn {
+		background-color: var(--blue-4);
+		color: var(--text-1-dark);
+		width: fit-content;
+		box-shadow: none;
+		border: none;
 	}
 </style>

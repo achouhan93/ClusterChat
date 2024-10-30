@@ -6,7 +6,7 @@ import type {
 
 import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
-import { nodes, links, load10k, loadLables, getNodeColor, getAssociatedLeafs, LoadNodesByCluster, ClustersTree, ColorPalette, allClusters } from './readcluster';
+import { nodes, links, load10k, loadLables, getNodeColor, getAssociatedLeafs, LoadNodesByCluster, allClusters, allClusterNodes, ClustersTree } from './readcluster';
 
 
 // Other 
@@ -23,7 +23,7 @@ let timeline: CosmographTimeline<Node>;
 
 const BATCH_SIZE:number = 10000; 
 const MAX_SIZE:number = 100000; // TODO: make this dynamic
-const BATCH_NUMBER_START:number = 10 // TO CHANGE BEFORE PUSH
+const BATCH_NUMBER_START:number = 2 // TO CHANGE BEFORE PUSH
 const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START*BATCH_SIZE;
 const HOVERED_NODE_SIZE:number = 0.5
 let $batch_number= writable<number>(BATCH_NUMBER_START);
@@ -33,7 +33,7 @@ export let selectedNodes = writable<Node[]>([]);
 
 export let SelectedDateRange = writable<[Date,Date]>(undefined);
 export let SelectedSearchQuery = writable<string>('');
-export let SelectedCluster = writable<string>('');
+export let SelectedCluster = writable<string>([]);
 
 export let selectMultipleClusters= writable<boolean>(false); // TODO: change to multiple Cluster selection
 export let hierachicalLabels = writable<boolean>(false);
@@ -46,7 +46,7 @@ export let document_specific = writable(true);
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
 
 const handleNodeClick = async (clickedNode: Node) => {
-	if (clickedNode && !isFilteringActive() && document_specific) {
+	if (clickedNode && !isFilteringActive() && get(document_specific)) {
 		showLabelsfor([clickedNode] as Node[]);
 		graph.selectNode(clickedNode);
 		setSelectedNodes([clickedNode])
@@ -108,10 +108,18 @@ const handleTimelineSelection = async(selection:[Date,Date] | [number,number]) =
 			
 		if (getSelectedNodes().length == 0)	{
 
-			setSelectedNodes(nodesToSelect)
+			//setSelectedNodes(nodesToSelect)
+			selectedNodes.set(nodesToSelect)
+			const graphNodesToSelect = nodesToSelect.concat(get(allClusterNodes))
+			graph.selectNodes(graphNodesToSelect)
 		}
 		else {
-			conditionalSelectNodes(nodesToSelect)
+			// TODO
+			const nodesToSelectSet = new Set(nodesToSelect.map(node => node.id))
+			const nodesToShowonGraph = getSelectedNodes().filter(node => nodesToSelectSet.has(node.id))
+			selectedNodes.set(nodesToShowonGraph)
+			const graphNodesToSelect = nodesToShowonGraph.concat(get(allClusterNodes))
+			graph.selectNodes(graphNodesToSelect)
 		 } 
 
 		// TODO: for some reason the graph selection only appears,
@@ -120,6 +128,38 @@ const handleTimelineSelection = async(selection:[Date,Date] | [number,number]) =
 		timeline.setSelection([0,0])
 	}
 
+}
+
+const handleOnZoomStartHierarchical = async () => {
+		const ZoomLevel:number = graph.getZoomLevel() || 10
+		let ClusterLabelsToShow:string[]=[]
+		if (ZoomLevel < 150){
+			ClusterLabelsToShow =  [4,5,6,7].map(index => get(ClustersTree)[index]).flat();
+		} else if(ZoomLevel > 150 && ZoomLevel < 250) {
+			ClusterLabelsToShow =  [5,6,7].map(index => get(ClustersTree)[index]).flat();
+		} else if (ZoomLevel > 250 && ZoomLevel < 600) {
+			ClusterLabelsToShow =  [3,4,5].map(index => get(ClustersTree)[index]).flat();	
+		} else if (ZoomLevel > 600) {
+			ClusterLabelsToShow =  [1,2,3].map(index => get(ClustersTree)[index]).flat();	
+		}
+		GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow)
+		updateGraphConfig(GraphConfig)
+		console.log(ZoomLevel)
+}
+
+const handleOnZoomStartTopLabel = () => {
+	const ZoomLevel:number = graph.getZoomLevel() || 10
+	let ClusterLabelsToShow:string[]=[]
+	if (ZoomLevel < 200){
+		GraphConfig.showTopLabelsLimit = 6
+	} else if(ZoomLevel > 200 && ZoomLevel < 600) {
+		GraphConfig.showTopLabelsLimit = Math.floor(ZoomLevel /10)
+	} else if (ZoomLevel > 600) {
+		GraphConfig.showTopLabelsLimit = get(allClusters).length	
+	}
+	GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow)
+	updateGraphConfig(GraphConfig)
+	console.log(ZoomLevel)
 }
 
 /* ====================================== Config for the Graph and Timeline ====================================== */
@@ -156,12 +196,13 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	},
 	  // Scale node on hover
 	  onNodeMouseOver(hoveredNode) {
-		hoveredNodeId.set(hoveredNode.id);  // Track the hovered node by ID
-		const main_frame = document.getElementById('main-graph');
-		main_frame.style.cursor = "pointer"
-		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.01)
-
-		updateGraphConfig(GraphConfig);  // Update the graph configuration to reflect the new node size
+		if(hoveredNode){
+			hoveredNodeId.set(hoveredNode.id);  // Track the hovered node by ID
+			const main_frame = document.getElementById('main-graph');
+			main_frame.style.cursor = "pointer"
+			GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.01)
+			updateGraphConfig(GraphConfig);  // Update the graph configuration to reflect the new node size
+		} 
 	  },
 	  
 	  // Reset node size when mouse leaves the node
@@ -268,11 +309,28 @@ export function createTimeline() {
 
 // control buttons functions
 export function toggleMultipleClustersMode() {
+
 	selectMultipleClusters.update((value) => !value);
-	selectNodeRange = false;
+	
 }
 export function toggleHierachicalLabels(){
-	
+	if (get(hierachicalLabels))
+	{
+		GraphConfig.showTopLabels = true
+		GraphConfig.showTopLabelsLimit= 10
+		GraphConfig.showTopLabelsValueKey = "isClusterNode"
+		GraphConfig.nodeLabelClassName = (node:Node) => node.isClusterNode ? 'cosmograph-cluster-label' : 'cosmograph-node-label'
+		GraphConfig.onZoomStart = handleOnZoomStartTopLabel
+	}
+	else {
+		GraphConfig.showTopLabels = false
+		GraphConfig.showTopLabelsLimit= undefined
+		GraphConfig.showTopLabelsValueKey = undefined
+		GraphConfig.nodeLabelClassName = (node: Node) => node.isClusterNode ? `cosmograph-cluster-label-${node.date}` : 'cosmograph-node-label'
+		GraphConfig.onZoomStart = handleOnZoomStartHierarchical
+	}
+	updateGraphConfig(GraphConfig)
+	hierachicalLabels.update((value) => !value)
 }
 
 // export function toggleSelectNodeRange() {
@@ -334,7 +392,9 @@ export function unselectNodes() {
 	selectedNodes.set([]);
 	graph.unselectNodes();
 	SelectedDateRange.set(undefined)
-	SelectedSearchQuery.set("")
+	const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
+	search_bar_input.value = '';
+	SelectedSearchQuery.set('')
 	SelectedCluster.set("")
 }
 
@@ -342,6 +402,10 @@ export function getSelectedNodes() {
 	return get(selectedNodes)
 	// return graph.getSelectedNodes();
 
+}
+
+export function getClusterNodes(){
+	return get(allClusterNodes)
 }
 
 export function getRenderedNodes(){
@@ -353,6 +417,10 @@ export function setSelectedNodes(nodes:Node[]){
 	selectedNodes.set(nodes)
 	graph.selectNodes(get(selectedNodes))
 	//graph.addNodesFilter()
+}
+
+export function setSelectedNodesOnGraph(nodes:Node[]){
+	graph.selectNodes(nodes)
 }
 
 export function updateSelectedNodes(thenodes:Node[]){
@@ -401,31 +469,3 @@ export function getClusterNodesByClusterIds(cluster_ids:string[]):Node[]{
 }
 
 
-
-// const SearchConfig: CosmographSearchInputConfig<Node> = {
-// 	accessors: [
-// 		{ label: 'ID', accessor: (node: Node) => node.id }
-// 		// one for the abstracts
-// 	],
-// 	placeholder: 'Find documents...',
-// 	ordering: {
-// 		order: ['ID'],
-// 		include: ['ID']
-// 	},
-// 	maxVisibleItems: 10,
-// 	onSelectResult(clickedNode) {
-// 		handleNodeClick(clickedNode as Node);
-// 	},
-// 	onSearch(foundMatches) {
-// 		showLabelsfor(foundMatches as Node[]);
-// 	},
-// 	onEnter(input, accessor) {
-// 		showLabelsfor([])
-// 	},
-// };
-
-// export function createSearchBar() {
-// 	const searchContainer = document.getElementById('main-search-bar') as HTMLDivElement;
-// 	const search = new CosmographSearch<Node, Link>(graph, searchContainer);
-// 	search.setConfig(SearchConfig);
-// }
