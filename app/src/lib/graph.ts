@@ -23,7 +23,7 @@ let timeline: CosmographTimeline<Node>;
 
 const BATCH_SIZE:number = 10000; 
 const MAX_SIZE:number = 100000; // TODO: make this dynamic
-const BATCH_NUMBER_START:number = 2 // TO CHANGE BEFORE PUSH
+const BATCH_NUMBER_START:number = 10 // TO CHANGE BEFORE PUSH
 const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START*BATCH_SIZE;
 const HOVERED_NODE_SIZE:number = 0.5
 let $batch_number= writable<number>(BATCH_NUMBER_START);
@@ -317,6 +317,7 @@ export function toggleHierachicalLabels(){
 	if (get(hierachicalLabels))
 	{
 		GraphConfig.showTopLabels = true
+		GraphConfig.showLabelsFor = undefined
 		GraphConfig.showTopLabelsLimit= 10
 		GraphConfig.showTopLabelsValueKey = "isClusterNode"
 		GraphConfig.nodeLabelClassName = (node:Node) => node.isClusterNode ? 'cosmograph-cluster-label' : 'cosmograph-node-label'
