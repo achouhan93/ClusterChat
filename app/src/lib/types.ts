@@ -38,6 +38,11 @@ export type Link = {
 
 export type ChatQuestion = {
 	question: string | '';
-	question_type: 'document-specific' | 'corpus-based';
+	question_type: 'document-specific' | 'corpus-specific';
 	supporting_information: string[] | [];
 };
+
+export type Source = {
+	id: string 
+	title:string
+}

@@ -6,7 +6,7 @@ import type {
 
 import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
-import { nodes, links, load10k, loadLables, getNodeColor, getAssociatedLeafs, LoadNodesByCluster, ClustersTree, ColorPalette } from './readcluster';
+import { nodes, links, load10k, loadLables, getNodeColor, getAssociatedLeafs, LoadNodesByCluster, ClustersTree, ColorPalette, allClusters } from './readcluster';
 
 
 // Other 
@@ -36,12 +36,12 @@ export let SelectedSearchQuery = writable<string>('');
 export let SelectedCluster = writable<string>('');
 
 export let selectMultipleClusters= writable<boolean>(false); // TODO: change to multiple Cluster selection
+export let hierachicalLabels = writable<boolean>(false);
 export let selectNodeRange: boolean = false;
 
 //let drag_select: boolean = false;
 let hoveredNodeId = writable<string>("")
 export let document_specific = writable(true);
-
 
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
 
@@ -131,8 +131,10 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	nodeSize: (node: Node) => 0.01,
 	nodeColor: (node: Node) => node.color,
 	nodeLabelAccessor: (node: Node) => node.title,
-	nodeLabelClassName: (node: Node) => node.isClusterNode ? `cosmograph-cluster-label-${node.date}` : 'cosmograph-node-label', // getNodeLabelClassName
-	nodeLabelColor: (node:Node) => node.isClusterNode ? '#808080' : "#fff",
+	//nodeLabelClassName: (node: Node) => node.isClusterNode ? `cosmograph-cluster-label-${node.date}` : 'cosmograph-node-label', // getNodeLabelClassName
+	nodeLabelClassName: (node:Node) => node.isClusterNode ? 'cosmograph-cluster-label' : 'cosmograph-node-label',
+	nodeLabelColor: (node:Node) => node.isClusterNode? getNodeColor(node.x,node.y,INITIAL_FITVIEW,1) : '#fff',
+	// nodeLabelColor: (node:Node) => node.isClusterNode ? '#808080' : "#fff",
 	hoveredNodeLabelColor: (node:Node) => node.isClusterNode? '#000': node.color,
 	hoveredNodeLabelClassName: 'cosmograph-hovered-node-label',
 	hoveredNodeRingColor: '#2463EB',
@@ -142,11 +144,9 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	// fitViewByNodesInRect:INITIAL_FITVIEW,
 	showDynamicLabels: false,
 	showHoveredNodeLabel: false,
-	initialZoomLevel: 100,
-	//showLabelsFor: getClusterNodesByClusterIds(ClustersTree["5"]),
-	// showTopLabels: true,
-	// showTopLabelsLimit: 10,
-	// showTopLabelsValueKey: "isClusterNode",
+	showTopLabels: true,
+	showTopLabelsLimit: 10,
+	showTopLabelsValueKey: "isClusterNode",
 	
 	// Selection Event handled with button Click
 	onClick(clickedNode) {handleNodeClick(clickedNode as Node);},
@@ -185,16 +185,31 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	// 	}
 	// },
 	onZoomStart(e, userDriven){
+
+		// const ZoomLevel:number = graph.getZoomLevel() || 10
+		// let ClusterLabelsToShow:string[]=[]
+		// if (ZoomLevel < 150){
+		// 	ClusterLabelsToShow =  [4,5,6,7].map(index => get(ClustersTree)[index]).flat();
+		// } else if(ZoomLevel > 150 && ZoomLevel < 250) {
+		// 	ClusterLabelsToShow =  [5,6,7].map(index => get(ClustersTree)[index]).flat();
+		// } else if (ZoomLevel > 250 && ZoomLevel < 600) {
+		// 	ClusterLabelsToShow =  [3,4,5].map(index => get(ClustersTree)[index]).flat();	
+		// } else if (ZoomLevel > 600) {
+		// 	ClusterLabelsToShow =  [1,2,3].map(index => get(ClustersTree)[index]).flat();	
+		// }
+		// GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow)
+		// updateGraphConfig(GraphConfig)
+		// console.log(ZoomLevel)
+
+
 		const ZoomLevel:number = graph.getZoomLevel() || 10
 		let ClusterLabelsToShow:string[]=[]
-		if (ZoomLevel < 150){
-			ClusterLabelsToShow =  [4,5,6,7].map(index => get(ClustersTree)[index]).flat();
-		} else if(ZoomLevel > 150 && ZoomLevel < 250) {
-			ClusterLabelsToShow =  [5,6,7].map(index => get(ClustersTree)[index]).flat();
-		} else if (ZoomLevel > 250 && ZoomLevel < 600) {
-			ClusterLabelsToShow =  [3,4,5].map(index => get(ClustersTree)[index]).flat();	
+		if (ZoomLevel < 200){
+			GraphConfig.showTopLabelsLimit = 6
+		} else if(ZoomLevel > 200 && ZoomLevel < 600) {
+			GraphConfig.showTopLabelsLimit = Math.floor(ZoomLevel /10)
 		} else if (ZoomLevel > 600) {
-			ClusterLabelsToShow =  [1,2,3].map(index => get(ClustersTree)[index]).flat();	
+			GraphConfig.showTopLabelsLimit = get(allClusters).length	
 		}
 		GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow)
 		updateGraphConfig(GraphConfig)
@@ -219,7 +234,9 @@ const TimelineConfig: CosmographTimelineInputConfig<Node> = {
 	//axisTickHeight: 30,
 	filterType: "nodes",
 	formatter(d) {
-		return new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+		// TO CHANGE FOR 4M
+		//return new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+		return "";
 	},
 	onSelection(selection) {
 		if(selection){
@@ -252,6 +269,9 @@ export function createTimeline() {
 export function toggleMultipleClustersMode() {
 	selectMultipleClusters.update((value) => !value);
 	selectNodeRange = false;
+}
+export function toggleHierachicalLabels(){
+	
 }
 
 // export function toggleSelectNodeRange() {

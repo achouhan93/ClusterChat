@@ -29,17 +29,6 @@ body {
 	color: var(--text-1-light)
 }
 
-/* .cosmograph-search {
-	--cosmograph-search-list-background: var(--surface-dark-3);
-	--cosmograph-search-font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-		'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-	--cosmograph-search-input-background: var(--surface-dark-3);
-	--cosmograph-search-mark-background: #2463eb;
-	--cosmograph-search-accessor-background: #2463eb;
-	--cosmograph-search-interactive-background: #1d4dd6;
-	--cosmograph-search-hover-color: #2463eb;
-} */
-
 .cosmograph-node-label,
 .cosmograph-hovered-node-label {
 	background-color: var(--surface-4-dark);
@@ -51,6 +40,12 @@ body {
 	//opacity: 0.9;
 	text-align: center;
 	border-radius: var(--radius-drawn-1);
+}
+
+.cosmograph-cluster-label {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: var(--size-6) !important;
+	max-width: 30ch;
 }
 
 /* Label sizes for different depths from smallest to largest */
@@ -102,13 +97,12 @@ body {
 }
 
 .cosmograph-timeline {
-	--cosmograph-timeline-background: var(--surface-4-light);
-	--cosmograph-timeline-text-color: black;
-	--cosmograph-timeline-selection-color: #2463eb;
-	--cosmograph-timeline-bar-color: #4a5c79;
-	--cosmograph-timeline-selection-opacity: 0.5;
+    --cosmograph-timeline-background: var(--surface-3-light);
+    --cosmograph-timeline-selection-color: #2463EB;
+    --cosmograph-timeline-bar-color: var(--gray-6);
+    --cosmograph-timeline-selection-opacity: 0.5;
+	/* --cosmograph-timeline-axis-color: black */
 }
-
 body {
 	font-family: sans-serif;
 	margin: 0px;

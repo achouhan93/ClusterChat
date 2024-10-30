@@ -4,11 +4,10 @@
 	import 'open-props/normalize';
 	import 'open-props/buttons';
 	import 'open-props/animations';
-	import { SquareStack, SquareDashedMousePointer, LoaderCircle, BoxSelect } from 'lucide-svelte';
+	import { Combine, BringToFront, LoaderCircle, BoxSelect } from 'lucide-svelte';
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
-	// import ClusterView from '$lib/components/cluster/ClusterView.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
-	import { toggleMultipleClustersMode, fitViewofGraph, selectMultipleClusters } from '$lib/graph';
+	import { toggleMultipleClustersMode, toggleHierachicalLabels,  fitViewofGraph, selectMultipleClusters } from '$lib/graph';
 	import { onMount } from 'svelte';
 	import { dataloaded } from '$lib/readcluster';
 	import InfoView from '$lib/components/graph/InfoView.svelte';
@@ -32,22 +31,18 @@
 			<SearchBar />
 		</div>
 		<div class="control-buttons">
-			<button id="multiple-node-btn" class={$selectMultipleClusters ? "btn active" : "btn"} on:click={toggleMultipleClustersMode}
-				><SquareStack /></button
+			<button id="multiple-node-btn" class={$selectMultipleClusters ? "btn active" : "btn"} on:click={toggleMultipleClustersMode} title="Multiple Cluster Selection"
+			><Combine /></button
 			>
-			<!-- <button id="select-node-range-btn" class="btn" on:click={toggleDragSelection}
-				><SquareDashedMousePointer /></button
-			> -->
-			<button class="btn" on:click={fitViewofGraph}>
-				<BoxSelect />
-			</button>
+			<button id="hierachical-label" class="btn" on:click={toggleHierachicalLabels} title="Toggle Hierarchical Cluster Label"
+			><BringToFront/></button
+			>
+			<button id="fitview-btn" class="btn" on:click={fitViewofGraph} title = "Fit View of Graph"
+			><BoxSelect /></button
+			>
 		</div>
-
-		<div id="chat-interface"><ChatInterface /></div>
-		<div id="info-view"><InfoView/></div>
-		<!-- <div id="cluster-view">
-			<ClusterView/>
-		</div> -->
+			<div id="chat-interface"><ChatInterface /></div>
+			<div id="info-view"><InfoView/></div>
 		<div id="main-timeline" class="cosmograph-timeline"></div>
 	{/if}
 	<slot />
@@ -65,14 +60,13 @@
 	#main-frame {
 		display: grid;
 		grid-template-columns: 35% 15% 25% 25%;
-		grid-template-rows: 15% 45% 30% 10%;
+		grid-template-rows: minmax(15%, auto) minmax(40%, auto) minmax(35%, auto) minmax(10%, auto);
 		grid-template-areas:
-			'chat control-btns . search-bar'
+			'chat control-btns search-bar search-bar'
 			'chat . . .'
 			'info . . .'
 			'info timeline timeline timeline';
 	}
-
 	#main-search-bar {
 		grid-area: search-bar;
 		height: 100%;
@@ -97,19 +91,6 @@
 		overflow-y: auto;
 		overflow-x: hidden;
 	}
-	/* #cluster-view {
-		grid-area: cluster-view;
-		z-index: 2;
-		color: var(--text-1-light);
-		max-width: fit-content;
-		overflow-y: auto;
-		background-color: rgb(255, 255, 255);
-		opacity: 0%;
-		box-shadow: inset;
-		display: flex;
-		flex-wrap: wrap;
-		flex-direction: column;
-	} */
 	#multiple-node-btn.active{
 		background-color: var(--surface-1-dark);
 	}

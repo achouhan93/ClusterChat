@@ -6,26 +6,45 @@
 	// utils
 	import { splitTextIntoLines } from '$lib/utils';
 	import { getSelectedNodes, document_specific } from '$lib/graph';
-	import type { Node, ChatQuestion } from '$lib/types';
+	import type { Node, ChatQuestion, Source } from '$lib/types';
+	import SourceCards from './SourceCards.svelte';
 
 	// svelte
-	import { writable } from 'svelte/store';
+	import { get, writable } from 'svelte/store';
 	import { afterUpdate } from 'svelte';
 
 	// env
 	//import { API_URL } from '$env/static/public';
 
 	let isLoading = writable<boolean>(false);
-	let messages = writable<{ question: string; answer: string }[]>([]);
+	let messages = writable<{ question: string; answer: string; sources:Source[] }[]>([]);
 	let TimeOutTryAgain = writable<boolean>(false);
+	let currentFoundSources = writable<Source[]>([])
 	let payload: ChatQuestion;
 
+	async function fetchSourceInfo(doc_ids:string[]){
+		const response = await fetch('/api/opensearch/findtitle', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
 
+        body: JSON.stringify({ doc_ids }) // Send the array in the request body as JSON
+    });
+	const data = await response.json();
+	const foundSources:Source[] = data.map(item  => (
+		{
+			id: item._source.document_id,
+			title: item._source.title
+		} satisfies Source
+	))
+	currentFoundSources.set(foundSources)
+	}
 
-	async function fetchChatAnswerWithTimeout(payload: ChatQuestion, timeout = 10000) {
+	async function fetchChatAnswerWithTimeout(payload: ChatQuestion, timeout = 15000) {
 	// Timeout promise that rejects after the specified time
 	const timeoutPromise = new Promise<null>((_, reject) =>
-		setTimeout(() => reject(new Error("Request timed out after 10 seconds")), timeout)
+		setTimeout(() => reject(new Error("Request timed out after 15 seconds")), timeout)
 	);
 
 	// Fetch request with a timeout
@@ -66,11 +85,15 @@
 			const fastData = await chatCompletion.json();
 			const textContent = fastData.answer;
 			const formattedText = splitTextIntoLines(textContent, 25);
-			console.log(formattedText);
+			let foundSources:Source[] = []
+			if(fastData.sources.length != 0) fetchSourceInfo(fastData.sources)
+			else currentFoundSources.set([])
 			messages.update((msgs) => {
 				msgs[msgs.length - 1].answer = formattedText; // Set the answer
+				 msgs[msgs.length -1].sources =  get(currentFoundSources) || [];
 				return msgs;
 			});
+			
 		} catch (error){
 			TimeOutTryAgain.set(true)
 			console.error(error)
@@ -87,7 +110,7 @@
 		const formattedUserInput = splitTextIntoLines(InputMessage, 30);
 		const userMessage: string = formattedUserInput;
 
-		messages.update((msgs) => [...msgs, { question: userMessage, answer: '' }]);
+		messages.update((msgs) => [...msgs, { question: userMessage, answer: '', sources:[] }]);
 
 		// clear input after sending message
 		const chat_input = document.getElementById('chat-input') as HTMLInputElement;
@@ -98,7 +121,7 @@
 		if (!selectedNodes) return
 		payload = {
 			question: InputMessage,
-			question_type: $document_specific? "document-specific" : "corpus-based", // TODO: make it dropdown list of options
+			question_type: $document_specific? "document-specific" : "corpus-specific", // TODO: make it dropdown list of options
 			supporting_information: selectedNodes.map((node) => (node.isClusterNode ? '' : (node.id as string)))
 		};
 		
@@ -110,11 +133,15 @@
 			const fastData = await chatCompletion.json();
 			const textContent = fastData.answer;
 			const formattedText = splitTextIntoLines(textContent, 25);
-			console.log(formattedText);
+			if(fastData.sources.length != 0) fetchSourceInfo(fastData.sources)
+			else currentFoundSources.set([])
 			messages.update((msgs) => {
 				msgs[msgs.length - 1].answer = formattedText; // Set the answer
+				 msgs[msgs.length -1].sources =  get(currentFoundSources) || [];
 				return msgs;
 			});
+
+			
 
 		} catch (error) {
 			TimeOutTryAgain.set(true)	
@@ -124,6 +151,12 @@
 
 		$isLoading = false;	
 	}
+	function truncateText(text: string, maxLength: number): string {
+    if (text.length <= maxLength) {
+        return text;
+    }
+    return text.slice(0, maxLength) + "..."; // Truncate and add ellipsis
+}
 	afterUpdate(() => {
 		// Scroll to the bottom of the message container after each update
 		scrollToBottom(document.querySelector('.scroll-area') as HTMLDivElement);
@@ -150,6 +183,16 @@
 					<p>
 						{message.answer}
 					</p>
+					{#if message.sources.length != 0}
+					<div class="sources-list">
+						{#each message.sources as doc_source}
+						<SourceCards
+							title = {truncateText(doc_source.title,20)}
+							source = {`https://pubmed.ncbi.nlm.nih.gov/${doc_source.id}`}
+						/>
+					{/each}
+					</div>
+					{/if}
 				</div>
 			{/if}
 		{/each}
@@ -212,6 +255,7 @@
 		flex-direction: column;
 		grid-area: input-field;
 		align-items: center;
+		justify-content: flex-end;
 		height: 100%;
 		width: 100%;
 		padding: var(--size-2);
@@ -301,7 +345,7 @@
 
 	/* Buttons styling */
 	.toggle-button {
-		padding: var(--size-1);
+		padding: var(--size-4);
 		border: 1px solid #ccc;
 		border-radius: 4px;
 		background-color: #f0f0f0;
@@ -331,5 +375,12 @@
 		border: none;
 		border-radius: 4px;
 		cursor: pointer;
+	}
+	.sources-list {
+		margin-top: var(--size-3);
+		display:inline-flex;
+		flex-direction: row;
+		gap: var(--size-2);
+		flex-wrap: nowrap;
 	}
 </style>

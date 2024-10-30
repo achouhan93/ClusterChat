@@ -100,19 +100,17 @@
 		transition: none !important;
 	}
 	#search-bar-input {
-		width: 75%;
+		width: 100%;
 		background-color: var(--surface-3-light);
 	}
 	#search-bar-input:focus-visible {
 		background-color: var(--surface-4-light);
-		animation: var(--animation-scale-up) forwards;
 	}
 	/* #search-query:hover {
 		
 	} */
 	#search-accessor {
-		/* background-color: var(--surface-2-light); */
-		/* color: var(--text-1-light); */
+
 		background-color: #007bff;
 		color: white;
 		height: 100%;
