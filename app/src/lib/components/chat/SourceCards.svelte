@@ -1,13 +1,20 @@
 <script lang="ts">
     export let title:string, source:string
     import pubmed from '$lib/assets/pubmed.png'
+
+    function truncateText(text: string, maxLength: number): string {
+    if (text.length <= maxLength) {
+        return text;
+    }
+    return text.slice(0, maxLength) + "..."; // Truncate and add ellipsis
+}
 </script>
 
 
 
-        <a href={source} class="card" target="_blank" rel="noopener noreferrer">
+        <a title={title} href={source} class="card" target="_blank" rel="noopener noreferrer">
             <div class="card-index"><img class="scale-img" src={pubmed} alt=""></div>
-            <div class="card-title">{title}</div>
+            <div class="card-title">{truncateText(title,15)}</div>
         </a>
 
 

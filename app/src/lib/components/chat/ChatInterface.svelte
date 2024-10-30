@@ -151,12 +151,7 @@
 
 		$isLoading = false;	
 	}
-	function truncateText(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
-        return text;
-    }
-    return text.slice(0, maxLength) + "..."; // Truncate and add ellipsis
-}
+
 	afterUpdate(() => {
 		// Scroll to the bottom of the message container after each update
 		scrollToBottom(document.querySelector('.scroll-area') as HTMLDivElement);
@@ -187,7 +182,7 @@
 					<div class="sources-list">
 						{#each message.sources as doc_source}
 						<SourceCards
-							title = {truncateText(doc_source.title,20)}
+							title = {doc_source.title}
 							source = {`https://pubmed.ncbi.nlm.nih.gov/${doc_source.id}`}
 						/>
 					{/each}
