@@ -84,7 +84,7 @@ def ask_question(request: QuestionRequest):
         if request.question_type == "corpus-specific":
             answer, sources = processor.process_corpus_specific_request(
                 question=request.question,
-                cluster_information=request.supporting_information
+                cluster_information=request.supporting_information,
             )
         else:
             answer, sources = processor.process_api_request(

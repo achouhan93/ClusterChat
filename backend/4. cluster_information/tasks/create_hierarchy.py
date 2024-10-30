@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 # Initialize OpenAI client
 client = OpenAI(api_key=CONFIG["OPENAI_API_KEY"])
 
+
 def get_cluster_label(child_labels):
     prompt = f"Generate a concise and informative label of two words for a cluster that combines the following topics: {', '.join(child_labels)}."
     # Call the OpenAI API
@@ -61,14 +62,14 @@ def get_cluster_description(child_labels, child_descriptions):
 
 def save_checkpoint(checkpoint_path, checkpoint_data):
     """Saves the current checkpoint data to a file."""
-    with open(checkpoint_path, 'wb') as f:
+    with open(checkpoint_path, "wb") as f:
         pickle.dump(checkpoint_data, f)
     log.info(f"Checkpoint saved at {checkpoint_path}.")
 
 
 def load_checkpoint(checkpoint_path):
     """Loads checkpoint data from a file."""
-    with open(checkpoint_path, 'rb') as f:
+    with open(checkpoint_path, "rb") as f:
         checkpoint_data = pickle.load(f)
     log.info(f"Checkpoint loaded from {checkpoint_path}.")
     return checkpoint_data
@@ -81,23 +82,23 @@ def build_custom_hierarchy(
     topic_description,
     topic_words,
     umap_model,
-    model_path
+    model_path,
 ):
     """
     Build a hierarchy of clusters up to a specified depth.
     At each level, clusters are merged into pairs to achieve the desired depth.
     """
     depth = math.ceil(math.log2(len(merged_topics)))
-    
+
     checkpoint_path = os.path.join(model_path, "checkpoint.pkl")
     log.info(f"Building the topic hierarchy started of depth {depth}")
     # Initialize or load checkpoint
     if os.path.exists(checkpoint_path):
         checkpoint = load_checkpoint(checkpoint_path)
-        clusters = checkpoint['clusters']
-        cluster_embeddings = checkpoint['cluster_embeddings']
-        current_depth = checkpoint['current_depth']
-        current_clusters = checkpoint['current_clusters']
+        clusters = checkpoint["clusters"]
+        cluster_embeddings = checkpoint["cluster_embeddings"]
+        current_depth = checkpoint["current_depth"]
+        current_clusters = checkpoint["current_clusters"]
     else:
         clusters = {}
         cluster_embeddings = {}
@@ -127,8 +128,8 @@ def build_custom_hierarchy(
 
         # Sort current_clusters in descending order of topic IDs
         current_clusters = list(clusters.keys())
-        current_depth = 1 # Initialize the depth at 1
-    
+        current_depth = 1  # Initialize the depth at 1
+
     # Process each depth level
     for depth_level in range(current_depth, depth + 1):
         log.info(f"Processing depth level {depth_level}")
@@ -207,10 +208,10 @@ def build_custom_hierarchy(
 
         # Save checkpoint after each depth level
         checkpoint_data = {
-            'clusters': clusters,
-            'cluster_embeddings': cluster_embeddings,
-            'current_depth': depth_level + 1,
-            'current_clusters': current_clusters
+            "clusters": clusters,
+            "cluster_embeddings": cluster_embeddings,
+            "current_depth": depth_level + 1,
+            "current_clusters": current_clusters,
         }
         save_checkpoint(checkpoint_path, checkpoint_data)
         log.info(f"Checkpoint saved at depth level {depth_level}")
@@ -227,20 +228,24 @@ def build_custom_hierarchy(
                 clusters[cluster_id_i]["pairwise_similarity"][cluster_id_j] = (
                     similarity_matrix[i, j]
                 )
-    
+
     log.info(f"Building the topic hierarchy completed")
-    
-    with open(os.path.join(model_path, "clusters.pkl"), 'wb') as f:
+
+    with open(os.path.join(model_path, "clusters.pkl"), "wb") as f:
         pickle.dump(clusters, f)
 
-    with open(os.path.join(model_path, "cluster_embeddings.pkl"), 'wb') as f:
-        pickle.dump(cluster_embeddings, f) 
+    with open(os.path.join(model_path, "cluster_embeddings.pkl"), "wb") as f:
+        pickle.dump(cluster_embeddings, f)
 
-    log.info(f"Final clusters saved as clusters.pkl and embeddings saved at cluster_embeddings.pkl")
+    log.info(
+        f"Final clusters saved as clusters.pkl and embeddings saved at cluster_embeddings.pkl"
+    )
 
     # Optionally, remove the checkpoint file as processing is complete
     if os.path.exists(checkpoint_path):
         os.remove(checkpoint_path)
-        log.info(f"Checkpoint file {checkpoint_path} removed after successful processing.")       
+        log.info(
+            f"Checkpoint file {checkpoint_path} removed after successful processing."
+        )
 
     return clusters, cluster_embeddings

@@ -13,6 +13,7 @@ CONFIG = load_config_from_env()
 
 # TODO: Add timing during processing of each step
 
+
 def main():
     try:
         if not os.path.exists(CONFIG["CLUSTER_TALK_LOG_PATH"]):
@@ -56,10 +57,10 @@ def main():
             start_date, end_date = args.clusterinformation
 
             data_fetcher = DataFetcher(
-                opensearch_connection=os_connection, 
+                opensearch_connection=os_connection,
                 index_name=os_index,
                 start_date=start_date,
-                end_date=end_date
+                end_date=end_date,
             )
 
             # Step 2: Process BERTopic models
@@ -67,19 +68,30 @@ def main():
             topic_label_path = os.path.join(model_path, "topic_label.pkl")
             topic_description_path = os.path.join(model_path, "topic_description.pkl")
             topic_words_path = os.path.join(model_path, "topic_words.pkl")
-            merged_embeddings_path = os.path.join(model_path, "merged_topic_embeddings_array.npy")
+            merged_embeddings_path = os.path.join(
+                model_path, "merged_topic_embeddings_array.npy"
+            )
 
-            if all(os.path.exists(path) for path in [merged_topics_path, topic_label_path, topic_description_path, topic_words_path, merged_embeddings_path]):
+            if all(
+                os.path.exists(path)
+                for path in [
+                    merged_topics_path,
+                    topic_label_path,
+                    topic_description_path,
+                    topic_words_path,
+                    merged_embeddings_path,
+                ]
+            ):
                 logging.info("Existing processed data found. Loading from files.")
-                with open(merged_topics_path, 'rb') as f:
+                with open(merged_topics_path, "rb") as f:
                     merged_topics = pickle.load(f)
-                with open(topic_label_path, 'rb') as f:
+                with open(topic_label_path, "rb") as f:
                     topic_label = pickle.load(f)
-                with open(topic_description_path, 'rb') as f:
+                with open(topic_description_path, "rb") as f:
                     topic_description = pickle.load(f)
-                with open(topic_words_path, 'rb') as f:
+                with open(topic_words_path, "rb") as f:
                     topic_words = pickle.load(f)
-                merged_topic_embeddings_array = np.load(merged_embeddings_path) 
+                merged_topic_embeddings_array = np.load(merged_embeddings_path)
             else:
                 (
                     merged_topics,
@@ -87,7 +99,7 @@ def main():
                     topic_label,
                     topic_description,
                     topic_words,
-                ) = process_models(model_path)           
+                ) = process_models(model_path)
 
             # Step 3: Load UMAP model
             logging.info(f"Loading the trained UMAP model")
@@ -95,14 +107,16 @@ def main():
 
             if os.path.exists(umap_path):
                 logging.info("Existing UMAP model found. Loading from files.")
-                with open(umap_path, 'rb') as f:
+                with open(umap_path, "rb") as f:
                     umap_model = joblib.load(f)
             else:
                 embeddings = shuffle(merged_topic_embeddings_array, random_state=42)
                 umap_model = UMAP(n_components=2, n_jobs=1, random_state=42)
                 # Fit UMAP on topic embeddings only
                 umap_model.fit(embeddings)
-                joblib.dump(umap_model, os.path.join(model_path, "umap_2_components.joblib"))
+                joblib.dump(
+                    umap_model, os.path.join(model_path, "umap_2_components.joblib")
+                )
 
             logging.info(f"Loading the UMAP model completed")
 
@@ -114,12 +128,14 @@ def main():
                 topic_description,
                 topic_words,
                 umap_model,
-                model_path
+                model_path,
             )
 
             # Step 5: Index clusters into OpenSearch
             create_cluster_index(os_connection, cluster_index_name)
-            index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddings)
+            index_clusters(
+                os_connection, cluster_index_name, clusters, cluster_embeddings
+            )
 
             # Step 6: Update cluster paths in OpenSearch
             update_cluster_paths(os_connection, cluster_index_name)
@@ -133,7 +149,7 @@ def main():
                 document_index_name,
                 data_fetcher,
                 umap_model,
-                merged_topic_embeddings_array
+                merged_topic_embeddings_array,
             )
 
             logging.info("Clustering and indexing pipeline completed successfully.")

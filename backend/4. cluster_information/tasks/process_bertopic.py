@@ -14,6 +14,7 @@ CONFIG = load_config_from_env()
 # Initialize OpenAI client
 client = OpenAI(api_key=CONFIG["OPENAI_API_KEY"])
 
+
 def list_bertopic_models(model_path):
     """Lists all BERTopic models stored in the given path."""
     model_files = []
@@ -65,14 +66,14 @@ def get_topic_description(topic_words):
 
 def save_checkpoint(checkpoint_path, checkpoint_data):
     """Saves the current checkpoint data to a file."""
-    with open(checkpoint_path, 'wb') as f:
+    with open(checkpoint_path, "wb") as f:
         pickle.dump(checkpoint_data, f)
     log.info(f"Checkpoint saved at {checkpoint_path}.")
 
 
 def load_checkpoint(checkpoint_path):
     """Loads checkpoint data from a file."""
-    with open(checkpoint_path, 'rb') as f:
+    with open(checkpoint_path, "rb") as f:
         checkpoint_data = pickle.load(f)
     log.info(f"Checkpoint loaded from {checkpoint_path}.")
     return checkpoint_data
@@ -84,14 +85,14 @@ def process_models(model_path):
     # Initialize or load checkpoint
     if os.path.exists(checkpoint_path):
         checkpoint = load_checkpoint(checkpoint_path)
-        merged_topics = checkpoint['merged_topics']
-        merged_topic_embeddings = checkpoint['merged_topic_embeddings']
-        topic_id_to_index = checkpoint['topic_id_to_index']
-        current_topic_id = checkpoint['current_topic_id']
-        topic_label = checkpoint['topic_label']
-        topic_description = checkpoint['topic_description']
-        topic_words = checkpoint['topic_words']
-        processed_models = checkpoint['processed_models']
+        merged_topics = checkpoint["merged_topics"]
+        merged_topic_embeddings = checkpoint["merged_topic_embeddings"]
+        topic_id_to_index = checkpoint["topic_id_to_index"]
+        current_topic_id = checkpoint["current_topic_id"]
+        topic_label = checkpoint["topic_label"]
+        topic_description = checkpoint["topic_description"]
+        topic_words = checkpoint["topic_words"]
+        processed_models = checkpoint["processed_models"]
     else:
         # Initialize variables
         merged_topics = {}
@@ -114,7 +115,9 @@ def process_models(model_path):
     # Process models one at a time to minimize memory usage
     for model_num, path in enumerate(models_to_process, start=1):
         try:
-            log.info(f"Processing Started for model {model_num + 1}/{len(model_paths)}: {path}")
+            log.info(
+                f"Processing Started for model {model_num + 1}/{len(model_paths)}: {path}"
+            )
 
             # Load the model
             model = BERTopic.load(path)
@@ -165,45 +168,49 @@ def process_models(model_path):
             del batch_topic_embeddings
             del batch_topic_id_to_index
             gc.collect()
-            
+
             # Update processed models
             processed_models.append(path)
 
             # Save checkpoint after processing each model
             checkpoint_data = {
-                'merged_topics': merged_topics,
-                'merged_topic_embeddings': merged_topic_embeddings,
-                'topic_id_to_index': topic_id_to_index,
-                'current_topic_id': current_topic_id,
-                'topic_label': topic_label,
-                'topic_description': topic_description,
-                'topic_words': topic_words,
-                'processed_models': processed_models
+                "merged_topics": merged_topics,
+                "merged_topic_embeddings": merged_topic_embeddings,
+                "topic_id_to_index": topic_id_to_index,
+                "current_topic_id": current_topic_id,
+                "topic_label": topic_label,
+                "topic_description": topic_description,
+                "topic_words": topic_words,
+                "processed_models": processed_models,
             }
 
             save_checkpoint(checkpoint_path, checkpoint_data)
 
-            log.info(f"Processing Completed for model {model_num + 1}/{len(model_paths)}: {path}")
+            log.info(
+                f"Processing Completed for model {model_num + 1}/{len(model_paths)}: {path}"
+            )
         except Exception as e:
             log.error(f"Error processing model {path}: {e}")
             log.error("Saving checkpoint before exiting.")
             # Save the current state before exiting
             checkpoint_data = {
-                'merged_topics': merged_topics,
-                'merged_topic_embeddings': merged_topic_embeddings,
-                'topic_id_to_index': topic_id_to_index,
-                'current_topic_id': current_topic_id,
-                'topic_label': topic_label,
-                'topic_description': topic_description,
-                'topic_words': topic_words,
-                'processed_models': processed_models
+                "merged_topics": merged_topics,
+                "merged_topic_embeddings": merged_topic_embeddings,
+                "topic_id_to_index": topic_id_to_index,
+                "current_topic_id": current_topic_id,
+                "topic_label": topic_label,
+                "topic_description": topic_description,
+                "topic_words": topic_words,
+                "processed_models": processed_models,
             }
             save_checkpoint(checkpoint_path, checkpoint_data)
             log.info("Exiting the script due to errors.")
             raise  # Re-raise the exception after saving checkpoint
 
-    log.info("Processing for all models completed and topics are merged with topic information")
-    
+    log.info(
+        "Processing for all models completed and topics are merged with topic information"
+    )
+
     # Save the final merged_topic_embeddings_array
     merged_topic_embeddings_array = np.array(merged_topic_embeddings, dtype=np.float32)
     final_npy_path = os.path.join(model_path, "merged_topic_embeddings_array.npy")
@@ -211,20 +218,22 @@ def process_models(model_path):
     log.info(f"Final merged_topic_embeddings_array.npy saved at {final_npy_path}.")
 
     # Optionally, save other merged data for future use
-    with open(os.path.join(model_path, "merged_topics.pkl"), 'wb') as f:
+    with open(os.path.join(model_path, "merged_topics.pkl"), "wb") as f:
         pickle.dump(merged_topics, f)
-    with open(os.path.join(model_path, "topic_label.pkl"), 'wb') as f:
+    with open(os.path.join(model_path, "topic_label.pkl"), "wb") as f:
         pickle.dump(topic_label, f)
-    with open(os.path.join(model_path, "topic_description.pkl"), 'wb') as f:
+    with open(os.path.join(model_path, "topic_description.pkl"), "wb") as f:
         pickle.dump(topic_description, f)
-    with open(os.path.join(model_path, "topic_words.pkl"), 'wb') as f:
+    with open(os.path.join(model_path, "topic_words.pkl"), "wb") as f:
         pickle.dump(topic_words, f)
     log.info("All merged topic information saved as pickle files.")
 
     # Optionally, remove the checkpoint file as processing is complete
     if os.path.exists(checkpoint_path):
         os.remove(checkpoint_path)
-        log.info(f"Checkpoint file {checkpoint_path} removed after successful processing.")
+        log.info(
+            f"Checkpoint file {checkpoint_path} removed after successful processing."
+        )
 
     return (
         merged_topics,

@@ -3,6 +3,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 def update_cluster_paths(os_connection, cluster_index_name):
     """
     Updates the 'path' field for each cluster in the OpenSearch index,
@@ -94,4 +95,3 @@ def update_cluster_paths(os_connection, cluster_index_name):
     # Execute bulk update
     bulk(os_connection, actions)
     log.info("Cluster paths updated successfully.")
-

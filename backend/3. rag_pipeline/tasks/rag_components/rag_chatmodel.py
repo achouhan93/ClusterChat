@@ -139,9 +139,7 @@ class ragChat:
             updated_results = [
                 (
                     Document(
-                        page_content=hit["_source"][
-                            "abstract_chunk"
-                        ],
+                        page_content=hit["_source"]["abstract_chunk"],
                         metadata=hit["_source"],
                     ),
                     hit["_score"],
