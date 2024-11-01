@@ -23,7 +23,7 @@ let timeline: CosmographTimeline<Node>;
 
 const BATCH_SIZE:number = 10000; 
 const MAX_SIZE:number = 100000; // TODO: make this dynamic
-const BATCH_NUMBER_START:number = 2 // TO CHANGE BEFORE PUSH
+const BATCH_NUMBER_START:number = 10 // TO CHANGE BEFORE PUSH
 const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START*BATCH_SIZE;
 const HOVERED_NODE_SIZE:number = 0.5
 let $batch_number= writable<number>(BATCH_NUMBER_START);
@@ -41,6 +41,7 @@ export let selectNodeRange: boolean = false;
 
 //let drag_select: boolean = false;
 let hoveredNodeId = writable<string>("")
+export let hNode = writable<Node>();
 export let document_specific = writable(true);
 
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
@@ -133,14 +134,17 @@ const handleTimelineSelection = async(selection:[Date,Date] | [number,number]) =
 const handleOnZoomStartHierarchical = async () => {
 		const ZoomLevel:number = graph.getZoomLevel() || 10
 		let ClusterLabelsToShow:string[]=[]
-		if (ZoomLevel < 150){
-			ClusterLabelsToShow =  [4,5,6,7].map(index => get(ClustersTree)[index]).flat();
-		} else if(ZoomLevel > 150 && ZoomLevel < 250) {
+		if (ZoomLevel < 30){
+			ClusterLabelsToShow =  [7,8].map(index => get(ClustersTree)[index]).flat();
+		}
+		else if (ZoomLevel > 30 && ZoomLevel < 150){
+			ClusterLabelsToShow =  [6,7].map(index => get(ClustersTree)[index]).flat();
+		} else if(ZoomLevel > 150 && ZoomLevel < 200) {
 			ClusterLabelsToShow =  [5,6,7].map(index => get(ClustersTree)[index]).flat();
-		} else if (ZoomLevel > 250 && ZoomLevel < 600) {
-			ClusterLabelsToShow =  [3,4,5].map(index => get(ClustersTree)[index]).flat();	
+		} else if (ZoomLevel > 200 && ZoomLevel < 600) {
+			ClusterLabelsToShow =  [3,4,5,6].map(index => get(ClustersTree)[index]).flat();	
 		} else if (ZoomLevel > 600) {
-			ClusterLabelsToShow =  [1,2,3].map(index => get(ClustersTree)[index]).flat();	
+			ClusterLabelsToShow =  [0,1,2,3,4,5].map(index => get(ClustersTree)[index]).flat();	
 		}
 		GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow)
 		updateGraphConfig(GraphConfig)
@@ -197,6 +201,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	  // Scale node on hover
 	  onNodeMouseOver(hoveredNode) {
 		if(hoveredNode){
+			hNode.set(hoveredNode)
 			hoveredNodeId.set(hoveredNode.id);  // Track the hovered node by ID
 			const main_frame = document.getElementById('main-graph');
 			main_frame.style.cursor = "pointer"
@@ -208,6 +213,8 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	  // Reset node size when mouse leaves the node
 	  onNodeMouseOut() {
 		hoveredNodeId.set("")  // Reset the hovered node
+		hNode.set(undefined)
+		if(get(hNode) === undefined) console.log("Node Not Hovered")
 		GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.01)
 		updateGraphConfig(GraphConfig);  // Update the graph configuration to reset the node size
 		const main_frame = document.getElementById('main-graph');
@@ -321,14 +328,14 @@ export function toggleHierachicalLabels(){
 		GraphConfig.showTopLabelsLimit= 10
 		GraphConfig.showTopLabelsValueKey = "isClusterNode"
 		GraphConfig.nodeLabelClassName = (node:Node) => node.isClusterNode ? 'cosmograph-cluster-label' : 'cosmograph-node-label'
-		GraphConfig.onZoomStart = handleOnZoomStartTopLabel
+		GraphConfig.onZoom = handleOnZoomStartTopLabel
 	}
 	else {
 		GraphConfig.showTopLabels = false
 		GraphConfig.showTopLabelsLimit= undefined
 		GraphConfig.showTopLabelsValueKey = undefined
 		GraphConfig.nodeLabelClassName = (node: Node) => node.isClusterNode ? `cosmograph-cluster-label-${node.date}` : 'cosmograph-node-label'
-		GraphConfig.onZoomStart = handleOnZoomStartHierarchical
+		GraphConfig.onZoom = handleOnZoomStartHierarchical
 	}
 	updateGraphConfig(GraphConfig)
 	hierachicalLabels.update((value) => !value)

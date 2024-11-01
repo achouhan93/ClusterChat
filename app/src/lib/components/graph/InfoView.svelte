@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { selectedNodes, SelectedDateRange, SelectedSearchQuery, SelectedCluster, unselectNodes} from "$lib/graph";
+	import { selectedNodes, SelectedDateRange, SelectedSearchQuery, SelectedCluster, unselectNodes, hNode} from "$lib/graph";
     import { ChevronRight, ChevronLeft, X, ExternalLink } from "lucide-svelte";
     import { get, readable,writable } from 'svelte/store';
     import type {Node, Cluster, InfoPanel } from "$lib/types";
@@ -107,9 +107,20 @@ let showMoreAbstract:boolean = false;
 
     })
 
+    hNode.subscribe(n =>{
+        if(n!== undefined){
+            NodesToShow.set([$hNode])
+            console.log("Got the hovered Node")
+        }
+    } )
+
 
     // TODO: update
     $: if ($NodesToShow.length !=0) {fetchInfoPanelByNode(get(NodesToShow)[$currentPage -1]) }
+    // $: if($hNode != undefined){
+    //     NodesToShow.set([$hNode])
+    //     console.log("Got the hovered Node")
+    // }
 
 </script>
 
