@@ -89,11 +89,14 @@ let showMoreAbstract:boolean = false;
         const foundClusters = theClusters.filter(cluster => clusterLinage.has(cluster.id))
         foundClusters.sort((c1,c2) => c2.depth - c1.depth)
         const foundClusterName: string[] = foundClusters.map(c => c.label)
+        if($SelectedCluster != ""){
+            const selected_cluster:Cluster  = theClusters.find(cluster => cluster.id === $SelectedCluster)
+            return getClusterRange(foundClusterName,selected_cluster.label)
+        } else {
+            return getClusterRange(foundClusterName,clusterinfo.label)
+        }
 
-        const selected_cluster:Cluster = theClusters.find(cluster => cluster.id === $SelectedCluster)
-        return getClusterRange(foundClusterName,selected_cluster.label)
     }
-
     selectedNodes.subscribe(newnodes =>{
         NodesToShow.set(newnodes)
         if($selectedNodes.length == 0){
@@ -174,7 +177,12 @@ let showMoreAbstract:boolean = false;
             <div class="info-field">
                 <span class="info-field-title">Cluster</span>
                 <div class="info-field-content">
-                    {$currentInfoPanel.cluster_top}
+                    <ul class="topic-list">
+                        {#each $currentInfoPanel.cluster_top ?? [] as topic,index}
+                            <li class="topic-item-{index}">   {topic}</li>
+                        {/each}
+                    </ul>
+                    
                 </div>        
             </div>
 
@@ -312,6 +320,28 @@ let showMoreAbstract:boolean = false;
         border:none;
         box-shadow: none;
     }
-    
+    .topic-list {
+        list-style-type: none; /* Remove default bullet points */
+        padding-left: 1.5em; /* Indent the items */
+        font-size: smaller;
+    }
+
+    .topic-item-0:before {
+        content: "• "; /* Add bullet manually */
+        color: darkred; /* Adjust color as you like */
+
+    }
+    .topic-item-1:before {
+        content: "•• "; /* Add bullet manually */
+        color: darkred; /* Adjust color as you like */
+
+    }
+
+    .topic-item-2:before {
+        content: "••• "; /* Add bullet manually */
+        color: darkred; /* Adjust color as you like */
+
+    }
+
 
 </style>
