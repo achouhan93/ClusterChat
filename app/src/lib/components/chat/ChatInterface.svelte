@@ -159,6 +159,7 @@
 		// Scroll to the bottom of the message container after each update
 		scrollToBottom(document.querySelector('.scroll-area') as HTMLDivElement);
 	});
+	
 </script>
 
 <div class="chat-side">

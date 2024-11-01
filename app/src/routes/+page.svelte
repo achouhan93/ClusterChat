@@ -12,11 +12,67 @@
 	import { dataloaded } from '$lib/readcluster';
 	import InfoView from '$lib/components/graph/InfoView.svelte';
 
+	let isResizingVertical = false;
+    let isResizingHorizontal = false;
+	let initialInfoHeight = 40; // Default info height percentage
+	let initialMousePositionY = 0;
+
+
+    function handleVerticalResizeStart(event: MouseEvent) {
+        isResizingVertical = true;
+        document.body.style.cursor = "ew-resize";
+		document.documentElement.classList.add("smooth-resize");
+    }
+
+    function handleHorizontalResizeStart(event: MouseEvent) {
+        isResizingHorizontal = true;
+        document.body.style.cursor = "ns-resize";
+		document.documentElement.classList.add("smooth-resize");
+
+    	initialMousePositionY = event.clientY;
+    	initialInfoHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--info-height")) || 40;
+    }
+
+    function handleMouseMove(event: MouseEvent) {
+        if (isResizingVertical) {
+            // Calculate width as a percentage of the viewport width
+            const newChatWidth = (event.clientX / window.innerWidth) * 100;
+            const clampedChatWidth = Math.min(40, Math.max(30, newChatWidth)); // Restrict between 20% and 40%
+            document.documentElement.style.setProperty("--chat-width", `${clampedChatWidth}%`);
+        }
+
+		if (isResizingHorizontal) {
+        // Calculate the vertical delta from the starting position
+        const deltaY = event.clientY - initialMousePositionY;
+        
+        // Adjust the pane height based on the delta
+        const newInfoHeight = initialInfoHeight + (deltaY / window.innerHeight) * 100;
+        
+        // Clamp the new height within the desired range
+        const clampedInfoHeight = Math.max(20, Math.min(50, newInfoHeight));
+        
+        // Apply the new height
+        document.documentElement.style.setProperty("--info-height", `${clampedInfoHeight}%`);
+    }
+    }
+
+    function handleMouseUp() {
+        isResizingVertical = false;
+        isResizingHorizontal = false;
+        document.body.style.cursor = "default";
+    }
+
+
 	onMount(async () => {
 		$dataloaded = true;
 		const { createGraph, createTimeline } = await import('$lib/graph');
 		createGraph();
 		createTimeline();
+
+		// Resizable Handles
+		window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+
 	});
 </script>
 
@@ -41,8 +97,29 @@
 			><BoxSelect /></button
 			>
 		</div>
-			<div id="chat-interface"><ChatInterface /></div>
-			<div id="info-view"><InfoView/></div>
+
+			<div id="chat-interface" ><ChatInterface /></div>
+
+			<div id="info-view" >
+				<div
+				class="resize-handle-horizontal"
+				role="button"
+				tabindex="0"
+				on:mousedown={handleHorizontalResizeStart}
+				aria-label="Resize sidebar"
+			></div>
+			<InfoView/></div>
+			<!-- <div
+			class="resize-handle-vertical"
+			role="button"
+			tabindex="0"
+			on:mousedown={handleVerticalResizeStart}
+			aria-label="Resize sidebar"
+		></div> -->
+
+
+
+
 		<div id="main-timeline" class="cosmograph-timeline"></div>
 	{/if}
 	<slot />
@@ -59,8 +136,9 @@
 	}
 	#main-frame {
 		display: grid;
-		grid-template-columns: 35% 15% 25% 25%;
-		grid-template-rows: minmax(15%, auto) minmax(40%, auto) minmax(35%, auto) minmax(10%, auto);
+		/* grid-template-columns: var(--chat-width, 35%) minmax(auto,15%) minmax(auto,25%) minmax(auto,25%); */
+		grid-template-columns: var(--chat-width) minmax(150px, 20%) 1fr 1fr;
+		grid-template-rows: 15% var(--info-height)  1fr 10%;
 		grid-template-areas:
 			'chat control-btns search-bar search-bar'
 			'chat . . .'
@@ -82,6 +160,7 @@
 		z-index: 2;
 		border-bottom: solid 1px #fff;
 		height: 100%;
+		transition: width 0.2s ease-in-out;
 	}
 	#info-view {
 		grid-area: info;
@@ -90,6 +169,7 @@
 		background-color: var(--surface-3-light);
 		overflow-y: auto;
 		overflow-x: hidden;
+		transition: height 0.2s ease-in-out;
 	}
 	#multiple-node-btn.active{
 		background-color: var(--surface-1-dark);
@@ -127,4 +207,27 @@
 		box-shadow: none;
 		border: none;
 	}
+
+	    /* Resize Handles */
+		.resize-handle-vertical {
+        grid-column: 2;
+        cursor: col-resize;
+        background-color: #ccc;
+        width: 5px;
+        height: 100%;
+        z-index: 3;
+		position: absolute;
+    }
+
+    .resize-handle-horizontal {
+        grid-row: 3;
+        cursor: row-resize;
+        background-color: #ccc;
+        height: 3px;
+        width: 100%;
+        z-index: 3;
+    }
+	.smooth-resize {
+        transition: none;
+    }
 </style>
