@@ -46,3 +46,14 @@ export type Source = {
 	id: string 
 	title:string
 }
+
+export type InfoPanel = {
+	pubmed_id: string | "";
+	title: string;
+	abstract: string;
+	date: Date | number | undefined;
+	cluster_top: string[];
+	authors_name: string[];
+	journal_title: string;
+	keywords: string[];
+}

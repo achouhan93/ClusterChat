@@ -2,14 +2,15 @@
 	import { selectedNodes, SelectedDateRange, SelectedSearchQuery, SelectedCluster, unselectNodes} from "$lib/graph";
     import { ChevronRight, ChevronLeft, X, ExternalLink } from "lucide-svelte";
     import { get, readable,writable } from 'svelte/store';
-    import type { Node, Cluster } from "$lib/types";
+    import type {Node, Cluster, InfoPanel } from "$lib/types";
 	import { allClusters, ClustersTree } from "$lib/readcluster";
 
 
-    let toShow= writable<Node[]>([])
+    let NodesToShow= writable<Node[]>([])
     let abstract = writable<string>("");
     let currentPage = writable<number>(1)
     let pageCount = writable<number>(0)
+    let currentInfoPanel = writable<InfoPanel>([])
   
 let showMoreCluster: boolean = false;
 let showMoreAbstract:boolean = false;
@@ -37,14 +38,26 @@ let showMoreAbstract:boolean = false;
         unselectNodes()
     }
 
-   async function fetchAbstractById(id:string):Promise<string>{
-        const response = await fetch(`/api/opensearch/findabstract/${id}`)
+
+
+    async function fetchInfoPanelByNode(node:Node){
+        // getting ["abstract","authors:name","keywords:name","journal:title"]
+        // have pubmed id, title, cluster id, date
+        const response = await fetch(`/api/opensearch/infoview/${node.id}`)
         const data = await response.json()
-        return data[0]._source.abstract
-    }
-    async function updateAbstract(nodeId: string) {
-        const abstractText = await fetchAbstractById(nodeId); // Wait for the result
-        abstract.set(abstractText); // Set the resolved value in the store
+        console.log(data)
+        const currentInfo:InfoPanel[] = data.map(item => ({
+            pubmed_id: item._id, // change to node.id after test
+            title: node.title,
+            abstract: item._source.abstract,
+            date: node.date || undefined,
+            cluster_top: getClusterInformationFromNode(node),
+            authors_name: item._source["authors:name"],
+            journal_title: item._source["journal:title"],
+            keywords: item._source["keywords:name"]
+        } satisfies InfoPanel
+    ));
+        currentInfoPanel.set(currentInfo[0])
     }
 
     function getClusterLabelById(cluster_id:string){
@@ -57,19 +70,32 @@ let showMoreAbstract:boolean = false;
         return `${date[0].toLocaleString('en-US', { month: 'short' })} ${date[0].getDate()} -  
         ${date[1].toLocaleString('en-US', { month: 'short' })} ${date[1].getDate()}, ${date[1].getFullYear()}`
     }
+    function getClusterRange(cluster_path:string[],searchCluster:string):string[]{
+        const index = cluster_path.indexOf(searchCluster)
+        if(index === 0){
+            return [cluster_path[0],cluster_path[1], cluster_path[2]]
+        } else if (index === 1){
+            return [cluster_path[1], cluster_path[2],cluster_path[3] ]
+        }
+        return [cluster_path[index -2],cluster_path[index -1], cluster_path[index]]
+    }
+
     
     function getClusterInformationFromNode(node:Node):string[]{
         const cluster_id:string = node.cluster
-        const clusterinfo:Cluster = get(allClusters).find(cluster =>  cluster.id === cluster_id && cluster.isLeaf)
+        const theClusters:Cluster[] = get(allClusters)
+        const clusterinfo:Cluster = theClusters.find(cluster =>  cluster.id === cluster_id && cluster.isLeaf)
         const clusterLinage = new Set(clusterinfo.path.split("/")/* .slice(-3) */)
-        const foundClusters = get(allClusters).filter(cluster => clusterLinage.has(cluster.id))
+        const foundClusters = theClusters.filter(cluster => clusterLinage.has(cluster.id))
         foundClusters.sort((c1,c2) => c2.depth - c1.depth)
-        const foundClusterName: string[] = foundClusters.map(c => ` ${c.label}`)
-        return foundClusterName
+        const foundClusterName: string[] = foundClusters.map(c => c.label)
+
+        const selected_cluster:Cluster = theClusters.find(cluster => cluster.id === $SelectedCluster)
+        return getClusterRange(foundClusterName,selected_cluster.label)
     }
 
     selectedNodes.subscribe(newnodes =>{
-        toShow.set(newnodes)
+        NodesToShow.set(newnodes)
         if($selectedNodes.length == 0){
             pageCount.set(0)
         } else {
@@ -79,11 +105,8 @@ let showMoreAbstract:boolean = false;
     })
 
 
-    $: if ($toShow.length !=0) {updateAbstract(get(toShow)[$currentPage -1]?.id) }
-
-
-    // TODO: make pagation actually work
-    // TODO: update the nodes in the background after showing 
+    // TODO: update
+    $: if ($NodesToShow.length !=0) {fetchInfoPanelByNode(get(NodesToShow)[$currentPage -1]) }
 
 </script>
 
@@ -91,8 +114,8 @@ let showMoreAbstract:boolean = false;
     <h4>Node Information</h4>
     <div class="node-info-list">
 
-        {#if $toShow.length !=0 && !$toShow[$currentPage -1].isClusterNode}
-            {#if $toShow.length > 1}
+        {#if $NodesToShow.length !=0 && !$NodesToShow[$currentPage -1].isClusterNode}
+            {#if $NodesToShow.length > 1}
             <div class="pagation-btns">
                 <button class="pagation-btn" on:click={handleLeftClick}><ChevronLeft/></button>
                 <button class="pagation-btn" on:click={handleRightClick}><ChevronRight/></button>
@@ -128,35 +151,54 @@ let showMoreAbstract:boolean = false;
             <div class="info-field">
                 <span class="info-field-title">Pubmed ID</span>
                 <div class="info-field-content">
-                    <a href={`https://pubmed.ncbi.nlm.nih.gov/${$toShow[$currentPage - 1].id}`} target="_blank" rel="noopener noreferrer"
-                    >{$toShow[$currentPage -1].id} <sup><ExternalLink size="12"/></sup></a
+                    <a href={`https://pubmed.ncbi.nlm.nih.gov/${$currentInfoPanel.pubmed_id}`} target="_blank" rel="noopener noreferrer"
+                    >{$currentInfoPanel.pubmed_id} <sup><ExternalLink size="12"/></sup></a
                     ></div>            
             </div>
+       
+            <div class="info-field">
+                <span class="info-field-title">Title</span>
+                <div class="info-field-content">{$currentInfoPanel.title}</div>            
+            </div>
+
+            <div class="info-field">
+                <span class="info-field-title">Abstract</span>
+                <div class="info-field-content {showMoreAbstract ? '' : 'collapsed'}"
+                >{$currentInfoPanel.abstract}</div
+                >
+                <button class="toggle-button" on:click={toggleShowMoreAbstract}>
+                    {showMoreAbstract ? 'Read Less' : 'Read More'}
+                </button>
+            </div>
+
             <div class="info-field">
                 <span class="info-field-title">Cluster</span>
                 <div class="info-field-content">
-                    {getClusterInformationFromNode($toShow[$currentPage -1])}
+                    {$currentInfoPanel.cluster_top}
                 </div>        
             </div>
-    
 
-        <div class="info-field">
-            <span class="info-field-title">Title</span>
-            <div class="info-field-content">{$toShow[$currentPage -1].title}</div>            
-        </div>
+            <div class="info-field">
+                <span class="info-field-title">Date</span>
+                <div class="info-field-content">{$currentInfoPanel.date}</div>            
+            </div>
 
-        <div class="info-field">
-            <span class="info-field-title">Abstract</span>
-            <div class="info-field-content {showMoreAbstract ? '' : 'collapsed'}">{$abstract}</div>
-            <button class="toggle-button" on:click={toggleShowMoreAbstract}>
-                {showMoreAbstract ? 'Read Less' : 'Read More'}
-            </button>
-        </div>
 
-        <div class="info-field">
-            <span class="info-field-title">Date</span>
-            <div class="info-field-content">{$toShow[$currentPage -1].date}</div>            
-        </div>
+            <div class="info-field">
+                <span class="info-field-title">Author's Names</span>
+                <div class="info-field-content">{$currentInfoPanel.authors_name}</div>            
+            </div>
+
+            <div class="info-field">
+                <span class="info-field-title">Journal Title</span>
+                <div class="info-field-content">{$currentInfoPanel.journal_title}</div>            
+            </div>
+
+            <div class="info-field">
+                <span class="info-field-title">Keywords</span>
+                <div class="info-field-content">{$currentInfoPanel.keywords}</div>            
+            </div>
+
         {/if}
     </div>
 </div>
