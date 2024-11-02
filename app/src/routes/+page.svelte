@@ -12,17 +12,17 @@
 	import { dataloaded } from '$lib/readcluster';
 	import InfoView from '$lib/components/graph/InfoView.svelte';
 
-	let isResizingVertical = false;
+	//let isResizingVertical = false;
     let isResizingHorizontal = false;
 	let initialInfoHeight = 40; // Default info height percentage
 	let initialMousePositionY = 0;
 
 
-    function handleVerticalResizeStart(event: MouseEvent) {
-        isResizingVertical = true;
-        document.body.style.cursor = "ew-resize";
-		document.documentElement.classList.add("smooth-resize");
-    }
+    // function handleVerticalResizeStart(event: MouseEvent) {
+    //     isResizingVertical = true;
+    //     document.body.style.cursor = "ew-resize";
+	// 	document.documentElement.classList.add("smooth-resize");
+    // }
 
     function handleHorizontalResizeStart(event: MouseEvent) {
         isResizingHorizontal = true;
@@ -34,12 +34,12 @@
     }
 
     function handleMouseMove(event: MouseEvent) {
-        if (isResizingVertical) {
-            // Calculate width as a percentage of the viewport width
-            const newChatWidth = (event.clientX / window.innerWidth) * 100;
-            const clampedChatWidth = Math.min(40, Math.max(30, newChatWidth)); // Restrict between 20% and 40%
-            document.documentElement.style.setProperty("--chat-width", `${clampedChatWidth}%`);
-        }
+        // if (isResizingVertical) {
+        //     // Calculate width as a percentage of the viewport width
+        //     const newChatWidth = (event.clientX / window.innerWidth) * 100;
+        //     const clampedChatWidth = Math.min(40, Math.max(30, newChatWidth)); // Restrict between 20% and 40%
+        //     document.documentElement.style.setProperty("--chat-width", `${clampedChatWidth}%`);
+        // }
 
 		if (isResizingHorizontal) {
         // Calculate the vertical delta from the starting position
@@ -57,7 +57,7 @@
     }
 
     function handleMouseUp() {
-        isResizingVertical = false;
+        //isResizingVertical = false;
         isResizingHorizontal = false;
         document.body.style.cursor = "default";
     }
@@ -69,11 +69,19 @@
 		createGraph();
 		createTimeline();
 
-		// Resizable Handles
-		window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("mouseup", handleMouseUp);
-
 	});
+
+	onMount(() => {
+				// Resizable Handles
+				window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+		return () => {
+            // Cleanup listeners on component unmount
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+	})
+
 </script>
 
 <main id="main-frame">
@@ -137,8 +145,8 @@
 	#main-frame {
 		display: grid;
 		/* grid-template-columns: var(--chat-width, 35%) minmax(auto,15%) minmax(auto,25%) minmax(auto,25%); */
-		grid-template-columns: var(--chat-width) minmax(150px, 20%) 1fr 1fr;
-		grid-template-rows: 15% var(--info-height)  1fr 10%;
+		grid-template-columns: max(35%) minmax(150px, 20%) 1fr 1fr;
+		grid-template-rows: 15% var(--info-height,40%)  1fr max(10%);
 		grid-template-areas:
 			'chat control-btns search-bar search-bar'
 			'chat . . .'
@@ -152,8 +160,10 @@
 	}
 	#main-timeline {
 		grid-area: timeline;
+		min-height: 0;
 		height: 100%;
 		z-index: 2;
+		
 	}
 	#chat-interface {
 		grid-area: chat;

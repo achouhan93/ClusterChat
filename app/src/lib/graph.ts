@@ -23,7 +23,7 @@ let timeline: CosmographTimeline<Node>;
 
 const BATCH_SIZE:number = 10000; 
 const MAX_SIZE:number = 100000; // TODO: make this dynamic
-const BATCH_NUMBER_START:number = 0.00001// TO CHANGE BEFORE PUSH
+const BATCH_NUMBER_START:number = 2;// TO CHANGE BEFORE PUSH
 const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START*BATCH_SIZE;
 const HOVERED_NODE_SIZE:number = 0.5
 let $batch_number= writable<number>(BATCH_NUMBER_START);
@@ -140,11 +140,11 @@ const handleOnZoomStartHierarchical = async () => {
 		else if (ZoomLevel > 30 && ZoomLevel < 150){
 			ClusterLabelsToShow =  [6,7].map(index => get(ClustersTree)[index]).flat();
 		} else if(ZoomLevel > 150 && ZoomLevel < 200) {
-			ClusterLabelsToShow =  [5,6,7].map(index => get(ClustersTree)[index]).flat();
+			ClusterLabelsToShow =  [4,5,6,7].map(index => get(ClustersTree)[index]).flat();
 		} else if (ZoomLevel > 200 && ZoomLevel < 600) {
 			ClusterLabelsToShow =  [3,4,5,6].map(index => get(ClustersTree)[index]).flat();	
 		} else if (ZoomLevel > 600) {
-			ClusterLabelsToShow =  [0,1,2,3,4,5].map(index => get(ClustersTree)[index]).flat();	
+			ClusterLabelsToShow =  [0,1,2,3,4,5,6].map(index => get(ClustersTree)[index]).flat();	
 		}
 		GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow)
 		updateGraphConfig(GraphConfig)
@@ -186,7 +186,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	disableSimulation: true,
 	renderLinks: false,
 	scaleNodesOnZoom: true,
-	// fitViewByNodesInRect:INITIAL_FITVIEW,
+	fitViewByNodesInRect:INITIAL_FITVIEW,
 	showDynamicLabels: false,
 	showHoveredNodeLabel: false,
 	showTopLabels: true,

@@ -172,10 +172,10 @@
 					{message.question}
 				</p>
 			</div>
-			{#if message.answer === '' && !$TimeOutTryAgain}
+			{#if message.answer === '' && !$TimeOutTryAgain && index === $messages.length-1}
 				<div class="loader"><LoaderPinwheel size={20} /></div>
 
-			{:else if $TimeOutTryAgain}
+			{:else if $TimeOutTryAgain && index === $messages.length-1}
 				<div class="try-again-message"><button on:click={handleTryAgain}>try Again <RotateCw/></button></div>
 			{:else}
 				<div class="message assistant">

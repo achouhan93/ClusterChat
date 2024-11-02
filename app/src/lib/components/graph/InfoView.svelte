@@ -205,7 +205,11 @@ let showMoreAbstract:boolean = false;
 
             <div class="info-field">
                 <span class="info-field-title">Author's Names</span>
-                <div class="info-field-content">{$currentInfoPanel.authors_name}</div>            
+                <div class="info-field-content">        
+                    {#each $currentInfoPanel.authors_name ?? [] as author, index}
+                    {author}{#if index < $currentInfoPanel.authors_name.length - 1},&nbsp{/if}
+                {/each}
+            </div>            
             </div>
 
             <div class="info-field">
