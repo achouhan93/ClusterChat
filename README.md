@@ -19,6 +19,7 @@
   Heidelberg University
   
   Contact us at: [`{chouhan, gertz}@informatik.uni-heidelberg.de`](mailto:chouhan@informatik.uni-heidelberg.de), [`saifeldin.mandour@stud.uni-heidelberg.de`](mailto:saifeldin.mandour@stud.uni-heidelberg.de)
+  
   <a href="https://github.com/achouhan93/ClusterTalk/issues">Report Bug</a> · <a href="https://github.com/achouhan93/ClusterTalk/issues">Request Feature</a>
   </p>
 </div>
@@ -57,7 +58,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Video demonstration: [here]()
+Video demonstration: [here](https://youtu.be/CRaus2J9mF8)
 
 ### Abstract
 Exploratory search of large text corpora is essential in domains like biomedical research, where large amounts of research literature are continuously generated. This paper presents $\textit{ClusterTalk}$ (The demo video and source code are available at: https://github.com/achouhan93/ClusterTalk), a framework for corpus exploration using multi-dimensional exploratory search. Our system integrates document clustering with faceted search, allowing users to interactively refine their exploration and ask corpus and document-level queries. Compared to traditional one-dimensional search approaches like keyword search or clustering, this system improves the discoverability of information by encouraging a deeper interaction with the corpus. We demonstrate the functionality of the $\textit{ClusterTalk}$ framework based on four million PubMed abstracts for the four-year time frame.
