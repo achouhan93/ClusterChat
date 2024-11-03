@@ -232,5 +232,5 @@ We thank the Bundesministerium für Bildung und Forschung
 [issues-shield]: https://img.shields.io/github/issues/achouhan93/ClusterTalk.svg?style=for-the-badge
 [issues-url]: https://github.com/achouhan93/ClusterTalk/issues
 [license-shield]: https://img.shields.io/github/license/achouhan93/ClusterTalk.svg?style=for-the-badge
-[license-url]: https://github.com/achouhan93/ClusterTalk/blob/master/LICENSE
+[license-url]: https://github.com/achouhan93/ClusterTalk/blob/main/LICENSE
 [clustertalk_interface]: images/clustertalkinterface.jpg
