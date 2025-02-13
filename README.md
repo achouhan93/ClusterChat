@@ -1,6 +1,6 @@
 <a name="readme-top"></a>
 [![Contributors][contributors-shield]][contributors-url]
-[![Forks](https://img.shields.io/github/forks/achouhan93/ClusterTalk.svg?style=for-the-badge)](https://github.com/achouhan93/ClusterTalk/forks)
+[![Forks](https://img.shields.io/github/forks/achouhan93/ClusterChat.svg?style=for-the-badge)](https://github.com/achouhan93/ClusterChat/forks)
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
@@ -8,10 +8,10 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/achouhan93/ClusterTalk">
+  <a href="https://github.com/achouhan93/ClusterChat">
     <img src="images/exploration.png" alt="Logo" width="80" height="80">
   </a>
-  <h3 align="center">ClusterTalk: Corpus Exploration Framework using Multi-Dimensional Exploratory Search</h3>
+  <h3 align="center">ClusterChat: A Multi-Feature Search for Corpus Exploration</h3>
   
   <p align="center">
   Ashish Chouhan, Saifeldin Mandour, and Michael Gertz 
@@ -20,7 +20,7 @@
   
   Contact us at: [`{chouhan, gertz}@informatik.uni-heidelberg.de`](mailto:chouhan@informatik.uni-heidelberg.de), [`saifeldin.mandour@stud.uni-heidelberg.de`](mailto:saifeldin.mandour@stud.uni-heidelberg.de)
   
-  <a href="https://github.com/achouhan93/ClusterTalk/issues">Report Bug</a> · <a href="https://github.com/achouhan93/ClusterTalk/issues">Request Feature</a>
+  <a href="https://github.com/achouhan93/ClusterChat/issues">Report Bug</a> · <a href="https://github.com/achouhan93/ClusterChat/issues">Request Feature</a>
   </p>
 </div>
 
@@ -61,13 +61,13 @@
 Video demonstration: [here](https://youtu.be/CRaus2J9mF8)
 
 ### Abstract
-Exploratory search of large text corpora is essential in domains like biomedical research, where large amounts of research literature are continuously generated. This paper presents $\textit{ClusterTalk}$ (The demo video and source code are available at: https://github.com/achouhan93/ClusterTalk), a framework for corpus exploration using multi-dimensional exploratory search. Our system integrates document clustering with faceted search, allowing users to interactively refine their exploration and ask corpus and document-level queries. Compared to traditional one-dimensional search approaches like keyword search or clustering, this system improves the discoverability of information by encouraging a deeper interaction with the corpus. We demonstrate the functionality of the $\textit{ClusterTalk}$ framework based on four million PubMed abstracts for the four-year time frame.
+Exploring large-scale text corpora presents a significant challenge in biomedical, academic, and legal research, where vast amounts of documents are continuously published. Traditional search methodologies, i.e., keyword and vector-based approaches, often retrieve documents in isolation, limiting users’ ability to understand corpus-wide trends and relationships. We present $\textit{ClusterChat}$ (The demo video and source code are available at: https://github.com/achouhan93/ClusterChat), an open-source system for corpus exploration that integrates cluster-based organization with multi-feature search capabilities. Unlike conventional systems, $\textit{ClusterChat}$ enables dynamic and interactive discovery through its combination of cluster organization, lexical search, timeline-driven exploration, and corpus/document question answering. Thus, enabling efficient real-time corpus exploration. We validate the system with two case studies on a four-million-abstract PubMed dataset, demonstrating that $\textit{ClusterChat}$ enhances corpus exploration by delivering context-aware insights while maintaining scalability and responsiveness on large-scale datasets.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Project Structure
 
-The $\textit{ClusterTalk}$ framework provides a web-based tool for exploring [PubMed abstracts](https://pubmed.ncbi.nlm.nih.gov/), utilizing backend components for document clustering and retrieval-augmented generation (RAG). It employs [BERTopic](https://maartengr.github.io/BERTopic/index.html) and [LangChain](https://www.langchain.com/) for backend processing, with [Cosmograph](https://cosmograph.app/) used for interactive visualizations in the frontend. This setup supports both faceted search on abstracts and natural language query capabilities for enhanced corpus navigation.
+The $\textit{ClusterChat}$ framework provides a web-based tool for exploring [PubMed abstracts](https://pubmed.ncbi.nlm.nih.gov/), utilizing backend components for document clustering and retrieval-augmented generation (RAG). It employs [BERTopic](https://maartengr.github.io/BERTopic/index.html) and [LangChain](https://www.langchain.com/) for backend processing, with [Cosmograph](https://cosmograph.app/) used for interactive visualizations in the frontend. This setup supports both faceted search on abstracts and natural language query capabilities for enhanced corpus navigation.
 
 ### Backend
 
@@ -81,7 +81,7 @@ The $\textit{ClusterTalk}$ framework provides a web-based tool for exploring [Pu
 
 ### Frontend
 
-![Figure 1: Overview of the ClusterTalk interface][clustertalk_interface] <p align="center">_Figure 1: Overview of the ClusterTalk interface. The interface includes four main features: 1) a chat functionality panel on the top-left for asking corpus and document-level queries; 2) a metadata information panel on the bottom-left for displaying metadata information of the selected documents; 3) a central cluster visualization map showing research topics like “Cancer Treatment” and “Genetic Disorders”; 4) a faceted search panel at top for keyword search on `Title` and `Abstract` text._</p>
+![Figure 1: Overview of the ClusterChat interface][clusterchat_interface] <p align="center">_Figure 1: Overview of the ClusterChat interface. The interface includes four main features: 1) a chat functionality panel on the top-left for asking corpus and document-level queries; 2) a metadata information panel on the bottom-left for displaying metadata information of the selected documents; 3) a central cluster visualization map showing research topics like “Cancer Treatment” and “Genetic Disorders”; 4) a faceted search panel at top for keyword search on `Title` and `Abstract` text._</p>
 
 **Folder:** `app/`
 
@@ -98,12 +98,12 @@ The $\textit{ClusterTalk}$ framework provides a web-based tool for exploring [Pu
 
 Clone the repository by executing the below command
   ```sh
-  git clone https://github.com/achouhan93/ClusterTalk.git
+  git clone https://github.com/achouhan93/ClusterChat.git
   ```
 
 Navigate to the cloned repository folder
   ```sh
-  cd ClusterTalk
+  cd ClusterChat
   ```
 
 Once the repository is successfully cloned and user navigated to the folder.
@@ -147,8 +147,8 @@ CLUSTER_TALK_OPENSEARCH_HOST="your_opensearch_host_name"
 CLUSTER_TALK_OPENSEARCH_SOURCE_INDEX="frameintell_pubmed"
 CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_COMPLETE="frameintell_pubmed_abstract_embeddings"
 CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_SENTENCE="frameintell_pubmed_sentence_embeddings"
-CLUSTER_TALK_CLUSTER_INFORMATION_INDEX="frameintell_clustertalk_clusterinformation"
-CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX="frameintell_clustertalk_documentinformation"
+CLUSTER_TALK_CLUSTER_INFORMATION_INDEX="frameintell_clusterchat_clusterinformation"
+CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX="frameintell_clusterchat_documentinformation"
 
 # HuggingFace Key
 HUGGINGFACE_AUTH_KEY = "your-huggingface-api-key"
@@ -223,14 +223,14 @@ We thank the Bundesministerium für Bildung und Forschung
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/achouhan93/ClusterTalk.svg?style=for-the-badge
-[contributors-url]: https://github.com/achouhan93/ClusterTalk/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/achouhan93/ClusterTalk.svg?style=for-the-badge
-[forks-url]: https://github.com/achouhan93/ClusterTalk/forks
-[stars-shield]: https://img.shields.io/github/stars/achouhan93/ClusterTalk.svg?style=for-the-badge
-[stars-url]: https://github.com/achouhan93/ClusterTalk/stargazers
-[issues-shield]: https://img.shields.io/github/issues/achouhan93/ClusterTalk.svg?style=for-the-badge
-[issues-url]: https://github.com/achouhan93/ClusterTalk/issues
-[license-shield]: https://img.shields.io/github/license/achouhan93/ClusterTalk.svg?style=for-the-badge
-[license-url]: https://github.com/achouhan93/ClusterTalk/blob/main/LICENSE
-[clustertalk_interface]: images/clustertalkinterface.jpg
+[contributors-shield]: https://img.shields.io/github/contributors/achouhan93/ClusterChat.svg?style=for-the-badge
+[contributors-url]: https://github.com/achouhan93/ClusterChat/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/achouhan93/ClusterChat.svg?style=for-the-badge
+[forks-url]: https://github.com/achouhan93/ClusterChat/forks
+[stars-shield]: https://img.shields.io/github/stars/achouhan93/ClusterChat.svg?style=for-the-badge
+[stars-url]: https://github.com/achouhan93/ClusterChat/stargazers
+[issues-shield]: https://img.shields.io/github/issues/achouhan93/ClusterChat.svg?style=for-the-badge
+[issues-url]: https://github.com/achouhan93/ClusterChat/issues
+[license-shield]: https://img.shields.io/github/license/achouhan93/ClusterChat.svg?style=for-the-badge
+[license-url]: https://github.com/achouhan93/ClusterChat/blob/main/LICENSE
+[clusterchat_interface]: images/clusterchat.jpg
