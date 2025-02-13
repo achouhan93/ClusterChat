@@ -58,7 +58,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Video demonstration: [here](https://youtu.be/CRaus2J9mF8)
+Video demonstration: [here](https://youtu.be/NxxkWOhIRzw)
 
 ### Abstract
 Exploring large-scale text corpora presents a significant challenge in biomedical, academic, and legal research, where vast amounts of documents are continuously published. Traditional search methodologies, i.e., keyword and vector-based approaches, often retrieve documents in isolation, limiting users’ ability to understand corpus-wide trends and relationships. We present $\textit{ClusterChat}$ (The demo video and source code are available at: https://github.com/achouhan93/ClusterChat), an open-source system for corpus exploration that integrates cluster-based organization with multi-feature search capabilities. Unlike conventional systems, $\textit{ClusterChat}$ enables dynamic and interactive discovery through its combination of cluster organization, lexical search, timeline-driven exploration, and corpus/document question answering. Thus, enabling efficient real-time corpus exploration. We validate the system with two case studies on a four-million-abstract PubMed dataset, demonstrating that $\textit{ClusterChat}$ enhances corpus exploration by delivering context-aware insights while maintaining scalability and responsiveness on large-scale datasets.
