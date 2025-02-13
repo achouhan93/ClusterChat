@@ -233,4 +233,4 @@ We thank the Bundesministerium für Bildung und Forschung
 [issues-url]: https://github.com/achouhan93/ClusterChat/issues
 [license-shield]: https://img.shields.io/github/license/achouhan93/ClusterChat.svg?style=for-the-badge
 [license-url]: https://github.com/achouhan93/ClusterChat/blob/main/LICENSE
-[clusterchat_interface]: images/clusterchat.jpg
+[clusterchat_interface]: images/clusterchat.png
