@@ -61,13 +61,13 @@
 Video demonstration: [here](https://youtu.be/NxxkWOhIRzw)
 
 ### Abstract
-Exploring large-scale text corpora presents a significant challenge in biomedical, academic, and legal research, where vast amounts of documents are continuously published. Traditional search methodologies, i.e., keyword and vector-based approaches, often retrieve documents in isolation, limiting users’ ability to understand corpus-wide trends and relationships. We present $\textit{ClusterChat}$ (The demo video and source code are available at: https://github.com/achouhan93/ClusterChat), an open-source system for corpus exploration that integrates cluster-based organization with multi-feature search capabilities. Unlike conventional systems, $\textit{ClusterChat}$ enables dynamic and interactive discovery through its combination of cluster organization, lexical search, timeline-driven exploration, and corpus/document question answering. Thus, enabling efficient real-time corpus exploration. We validate the system with two case studies on a four-million-abstract PubMed dataset, demonstrating that $\textit{ClusterChat}$ enhances corpus exploration by delivering context-aware insights while maintaining scalability and responsiveness on large-scale datasets.
+Exploring large-scale text corpora presents a significant challenge in biomedical, finance, and legal domains, where vast amounts of documents are continuously published. Traditional search methodologies, i.e., keyword-based search, often retrieve documents in isolation, limiting the user's ability to understand corpus-wide trends and relationships. We present $\textit{ClusterChat}$ (The demo video and source code are available at: https://github.com/achouhan93/ClusterChat), an open-source system for corpus exploration that integrates cluster-based organization based on textual embeddings with lexical and semantic search, timeline-driven exploration, and corpus and document-level question answering (QA) as multi-feature search capabilities. We validate the system with two case studies on a four million abstract PubMed dataset, demonstrating that $\textit{ClusterChat}$ enhances corpus exploration by delivering context-aware insights while maintaining scalability and responsiveness on large-scale document collections.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Project Structure
 
-The $\textit{ClusterChat}$ framework provides a web-based tool for exploring [PubMed abstracts](https://pubmed.ncbi.nlm.nih.gov/), utilizing backend components for document clustering and retrieval-augmented generation (RAG). It employs [BERTopic](https://maartengr.github.io/BERTopic/index.html) and [LangChain](https://www.langchain.com/) for backend processing, with [Cosmograph](https://cosmograph.app/) used for interactive visualizations in the frontend. This setup supports both faceted search on abstracts and natural language query capabilities for enhanced corpus navigation.
+The $\textit{ClusterChat}$ framework provides a web-based tool for exploring [PubMed abstracts](https://pubmed.ncbi.nlm.nih.gov/), utilizing backend components for document clustering and retrieval-augmented generation (RAG). It employs [BERTopic](https://maartengr.github.io/BERTopic/index.html) and [LangChain](https://www.langchain.com/) for the backend processing, with [Cosmograph](https://cosmograph.app/) used for interactive visualizations in the frontend. This setup supports both multi-feature search on abstracts and natural language query capabilities for enhanced corpus navigation.
 
 ### Backend
 
@@ -81,13 +81,13 @@ The $\textit{ClusterChat}$ framework provides a web-based tool for exploring [Pu
 
 ### Frontend
 
-![Figure 1: Overview of the ClusterChat interface][clusterchat_interface] <p align="center">_Figure 1: Overview of the ClusterChat interface. The interface includes four main features: 1) a chat functionality panel on the top-left for asking corpus and document-level queries; 2) a metadata information panel on the bottom-left for displaying metadata information of the selected documents; 3) a central cluster visualization map showing research topics like “Cancer Treatment” and “Genetic Disorders”; 4) a faceted search panel at top for keyword search on `Title` and `Abstract` text._</p>
+![Figure 1: Overview of the ClusterChat interface][clusterchat_interface] <p align="center">_Figure 1: Overview of the web-based $\textit{ClusterChat}$ interface. The interface includes four main features: 1) a chat panel on the top-left for corpus and document-level question answering; 2) a metadata information panel on the bottom-left for displaying metadata information of the selected documents; 3) a central cluster visualization map showing research topics like ``Cancer Treatment” and ``Genetic Disorders”; 4) a search panel at the top to perform a lexical and semantic search on ``Abstract'' text and a lexical search on ``Title'' text._</p>
 
 **Folder:** `app/`
 
 1. **Cluster Overview:** Visualizes thematic clusters, like “Cancer Treatment,” and allows for intuitive exploration.
 
-2. **Faceted Search and Filtering:** Filters documents by date, keywords, and clusters, refining corpus exploration.
+2. **Search and Filtering:** Filters documents by date, keywords, semantics, and clusters, refining corpus exploration.
 
 3. **Question-Answering Interface:** Supports document-level and corpus-level queries, allowing users to ask both targeted and broad questions about selected clusters or the entire corpus.
 
