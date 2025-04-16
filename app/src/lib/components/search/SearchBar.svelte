@@ -3,7 +3,7 @@
 	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes, SelectedSearchQuery, conditionalSelectNodes, unselectNodes, document_specific, selectedNodes } from '$lib/graph';
 	import type { Node } from '$lib/types';
 	import { getClusterNodes, setSelectedNodesOnGraph } from '$lib/graph';
-
+	import Toggle from '$lib/components/search/Toggle.svelte';
 	
 
 	async function fetchSearchQueryAnswer(search_query:string, search_accessor:string){
@@ -71,9 +71,11 @@
 
 	<form on:submit|preventDefault={handleSearch}>
 		<div class="search-bar-elems">
-		<button type="button" class="clear-search-btn" on:click|stopPropagation={handleClearSearch} title='Clear Chat'
-		><X size="48"/></button
-		>
+		
+
+		<button type="button" class="clear-search-btn" on:click|stopPropagation={handleClearSearch} title='Clear Chat'>	
+		<X size="48"/></button>
+
 		<input
 		id="search-bar-input"
 		autocomplete="off"
@@ -81,10 +83,13 @@
 		placeholder="Search..."
 		name="search-query"
 	/>
+		<div class="search-options-part">
+			<Toggle/>
 		<select name="search-accessor" id="search-accessor">
 			<option value="abstract">Abstract</option>
 			<option value="title">Title</option>
 		</select>
+	</div>
 	</div>
 	</form>
 
@@ -115,6 +120,9 @@
 	#search-bar-input:focus-visible {
 		background-color: var(--surface-4-light);
 	}
+	#search-bar-input:hover {
+		cursor: text;
+	}
 	/* #search-query:hover {
 		
 	} */
@@ -122,7 +130,8 @@
 
 		background-color: #007bff;
 		color: white;
-		height: 100%;
+		height: 70%;
+		font-size:12px;
 		margin-left: var(--size-2);
 		/* border-radius: var(--size-3); */
 		border-radius: var(--radius-3); 
@@ -140,9 +149,15 @@
 	}
 	.clear-search-btn {
 		background-color: var(--blue-4);
-		color: var(--text-1-dark);
-		width: fit-content;
-		box-shadow: none;
+		color: white;
+		width:fit-content;
+		height: max-content;
 		border: none;
+		align-self: center;
+	}
+	.search-options-part{
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 	}
 </style>
