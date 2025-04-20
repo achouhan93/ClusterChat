@@ -26,8 +26,8 @@ const MAX_SIZE:number = 100000; // TODO: make this dynamic
 const BATCH_NUMBER_START:number = 3;// TO CHANGE BEFORE PUSH
 const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START*BATCH_SIZE;
 const HOVERED_NODE_SIZE:number = 0.5
-let $batch_number= writable<number>(BATCH_NUMBER_START);
-let $update_number=writable<number>(1);
+// let $batch_number= writable<number>(BATCH_NUMBER_START);
+// let $update_number=writable<number>(1);
 export const INITIAL_FITVIEW:[[number,number],[number,number]] = [[10.784323692321777,21.064863204956055],[12.669471740722656,15.152010917663574]];
 export let selectedNodes = writable<Node[]>([]);
 

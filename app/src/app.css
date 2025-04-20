@@ -146,3 +146,7 @@ body {
 	height: 50px;
 	background-color: lightblue;
 }
+
+input:focus-visible {
+	outline:none;
+}

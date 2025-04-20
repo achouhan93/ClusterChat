@@ -321,11 +321,14 @@
 		cursor: pointer;
 		padding: var(--size-1);
 		border-radius: 4px;
-		transition: background-color 0.2s ease;
+		transition: background-color 0.3s ease;
 	}
 
 	.menu-button:hover {
-		background: rgba(255, 255, 255, 0.1);
+		background-color: var(--surface-4-light);
+	}
+	.menu-button:active {
+		background-color: var(--gray-5);
 	}
 	.message {
 		display: flex;
