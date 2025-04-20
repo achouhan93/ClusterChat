@@ -310,6 +310,10 @@ let showMoreAbstract:boolean = false;
         max-width:fit-content;
         background-color: inherit;
         align-self: center;
+        transition: background-color 0.3s ease;
+    }
+    .clear-btn:active {
+        background-color: var(--surface-4-light);
     }
     .toggle-button {
         color: #0073e6;

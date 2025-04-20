@@ -4,12 +4,11 @@
 	import type { Node } from '$lib/types';
 	import { getClusterNodes, setSelectedNodesOnGraph } from '$lib/graph';
 	import Toggle from '$lib/components/search/Toggle.svelte';
-	
 
-	async function fetchSearchQueryAnswer(search_query:string, search_accessor:string){
+	async function fetchSearchQueryAnswer(search_query:string, searchMetadata:string){
 		/* Requests OpenSearch and fetches to 10k nodes */
 		try {
-			const response = await fetch(`/api/opensearch/search/${search_accessor}/${search_query}`);
+			const response = await fetch(`/api/opensearch/search/${searchMetadata.toLowerCase()}/${search_query}`);
 			const data = await response.json();
 			return data
 		} catch(error) {
@@ -30,7 +29,10 @@
 		const formData = new FormData(form);
 
 		const searchQuery = formData.get('search-query') as string;
-		const searchAccessor = formData.get('search-accessor') as string;
+		const searchType = formData.get('search-type') as string;
+		const searchMetadata = formData.get('search-metadata')
+
+		/** different index based on lexical or semantic*/
 
 		if (!searchQuery) return;
 		if ($SelectedSearchQuery != "") unselectNodes()
@@ -39,7 +41,7 @@
 
 
 		// send to opensearch and get the top 10k
-		const data = await fetchSearchQueryAnswer(searchQuery, searchAccessor);
+		const data = await fetchSearchQueryAnswer(searchQuery, searchMetadata);
 
 		if (Array.isArray(data)){
 			const nodeIdsToSelect:Set<string> = new Set(data.map(item => item._id));
@@ -69,7 +71,7 @@
 </script>
 
 
-	<form on:submit|preventDefault={handleSearch}>
+	<form id="search-form" on:submit|preventDefault={handleSearch}>
 		<div class="search-bar-elems">
 		
 
@@ -84,11 +86,20 @@
 		name="search-query"
 	/>
 		<div class="search-options-part">
-			<Toggle/>
-		<select name="search-accessor" id="search-accessor">
-			<option value="abstract">Abstract</option>
-			<option value="title">Title</option>
-		</select>
+			<Toggle
+			form="search-form"
+			name="search-type"
+			button_id="toggle-1"
+			label_1="Semantic"
+			label_2="Lexical"
+			/>
+			<Toggle
+			form="search-form"
+			name="search-metadata"
+			button_id="toggle-2"
+			label_1="Abstract"
+			label_2="Title"
+			/>
 	</div>
 	</div>
 	</form>
@@ -99,7 +110,7 @@
 		display: flex;
 		direction: rows;
 		margin-top: var(--size-3);
-		gap: var(--size-1);
+		gap: var(--size-2);
 		margin-right: var(--size-2);
 	}
 	input {
@@ -109,52 +120,42 @@
 		transition: none !important;
 		margin-left: var(--size-2);
 		padding: var(--size-3);
+
 	}
-	input:focus-visible {
-		transition: none !important;
-	}
+
 	#search-bar-input {
 		width: 100%;
 		background-color: var(--surface-3-light);
+		border-radius: 0% var(--radius-3) var(--radius-3) 0;
+		transition: background-color 0.3s ease;
 	}
 	#search-bar-input:focus-visible {
 		background-color: var(--surface-4-light);
+		border:none;
 	}
 	#search-bar-input:hover {
 		cursor: text;
 	}
-	/* #search-query:hover {
-		
-	} */
-	#search-accessor {
-
-		background-color: #007bff;
-		color: white;
-		height: 70%;
-		font-size:12px;
-		margin-left: var(--size-2);
-		/* border-radius: var(--size-3); */
-		border-radius: var(--radius-3); 
-		/* background-color: #caf1f5; */
-		padding: var(--size-1);
-		/* Center align the text */
-		text-align: center;
-		text-align-last: center; /* For modern browsers to center the selected option */
-		width: fit-content;
-		padding: var(--size-3);
-		border: 1px solid #ccc;
-		
-		/* Optional: Add some padding to ensure the text is vertically centered
-		line-height: 1.5; */
-	}
 	.clear-search-btn {
-		background-color: var(--blue-4);
-		color: white;
-		width:fit-content;
-		height: max-content;
-		border: none;
-		align-self: center;
+	background-color: #dee2e6;
+	color: var(--text-2-light);
+	width: -moz-fit-content;
+	width: fit-content;
+	border: none;
+	transition: background-color 0.3s ease;
+	box-shadow: none;
+	margin-right: -1rem;
+	border-radius: var(--radius-3) 0 0 var(--radius-3);
+	text-shadow: none;
 	}
+	.clear-search-btn:hover {
+		background-color: var(--gray-4);
+	}
+
+	.clear-search-btn:active {
+	background-color: var(--gray-5); /* Change this to any color you want */
+	}
+	
 	.search-options-part{
 		display: flex;
 		flex-direction: column;
