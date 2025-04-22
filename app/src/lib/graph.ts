@@ -36,7 +36,7 @@ export let SelectedSearchQuery = writable<string>('');
 export let SelectedCluster = writable<string>([]);
 
 export let selectMultipleClusters= writable<boolean>(false); // TODO: change to multiple Cluster selection
-export let hierachicalLabels = writable<boolean>(false);
+export let hierarchicalLabels = writable<boolean>(false);
 export let selectNodeRange: boolean = false;
 
 //let drag_select: boolean = false;
@@ -320,8 +320,8 @@ export function toggleMultipleClustersMode() {
 	selectMultipleClusters.update((value) => !value);
 	
 }
-export function toggleHierachicalLabels(){
-	if (get(hierachicalLabels))
+export function toggleHierarchicalLabels(){
+	if (get(hierarchicalLabels))
 	{
 		GraphConfig.showTopLabels = true
 		GraphConfig.showLabelsFor = undefined
@@ -338,7 +338,7 @@ export function toggleHierachicalLabels(){
 		GraphConfig.onZoom = handleOnZoomStartHierarchical
 	}
 	updateGraphConfig(GraphConfig)
-	hierachicalLabels.update((value) => !value)
+	hierarchicalLabels.update((value) => !value)
 }
 
 // export function toggleSelectNodeRange() {

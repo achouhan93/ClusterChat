@@ -4,25 +4,79 @@
 	import 'open-props/normalize';
 	import 'open-props/buttons';
 	import 'open-props/animations';
-	import { Combine, BringToFront, LoaderCircle, BoxSelect } from 'lucide-svelte';
+	import { Combine, BringToFront, LoaderCircle, BoxSelect, Binoculars } from 'lucide-svelte';
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
-	import { toggleMultipleClustersMode, toggleHierachicalLabels,  fitViewofGraph, selectMultipleClusters } from '$lib/graph';
+	import { toggleMultipleClustersMode, toggleHierarchicalLabels,  fitViewofGraph, selectMultipleClusters } from '$lib/graph';
 	import { onMount } from 'svelte';
 	import { dataloaded } from '$lib/readcluster';
 	import InfoView from '$lib/components/graph/InfoView.svelte';
+	import introJs from 'intro.js';
+	import 'intro.js/minified/introjs.min.css';
 
-	//let isResizingVertical = false;
+
+
+
+
+	function startTour() {
+	introJs().setOptions({
+		steps: [
+		{
+			element: document.getElementById('main-graph'),
+			intro: 'This tour will show you all the functionalities of this app.',
+			position: 'center'
+		},
+		{
+			element: document.getElementById('info-view'),
+			intro: 'Here you can see information about each paper you hover over or click',
+			position: 'right'
+		},
+		{
+			element: document.getElementById('chat-interface'),
+			intro: 'Here you can interact with the selected documents',
+			position: 'right'
+		},
+		{
+			element: document.querySelector('.toggle-container'),
+			intro: 'Chat either with the selected Documents or the whole Corpus',
+			position: 'right'
+		},
+		{
+			element: document.querySelector('.menu-button'),
+			intro: 'To start a new Chat session delete the old one',
+			position: 'right'
+		},
+		{
+			element: document.getElementById('main-search-bar'),
+			intro: 'When searching for a specific paper use the search bar',
+			position: 'bottom'
+		},
+		{
+			element: document.querySelector('.search-options-part'),
+			intro: 'You can tailor your query using these options. Semantic Search is only possible on Abstracts.',
+			position: 'bottom'
+		},
+		{
+			element: document.getElementById('main-timeline'),
+			intro: 'To select The documents based on the timeline you perform a drag selection',
+			position: 'top'
+		},
+		{
+			element: document.querySelector(".control-buttons"),
+			intro: 'These buttons allow you to interact with the Graph directly',
+			position: 'right'
+		}
+	]
+		}).start();
+	}
+
+
+
+
     let isResizingHorizontal = false;
 	let initialInfoHeight = 40; // Default info height percentage
 	let initialMousePositionY = 0;
 
-
-    // function handleVerticalResizeStart(event: MouseEvent) {
-    //     isResizingVertical = true;
-    //     document.body.style.cursor = "ew-resize";
-	// 	document.documentElement.classList.add("smooth-resize");
-    // }
 
     function handleHorizontalResizeStart(event: MouseEvent) {
         isResizingHorizontal = true;
@@ -82,6 +136,7 @@
         };
 	})
 
+
 </script>
 
 <main id="main-frame">
@@ -91,24 +146,27 @@
 		<div id="main-graph"> 
 			<svg id="selection-svg"/>
 		</div>
-		<div id="main-search-bar" class="cosmograph-search">
+		<div id="main-search-bar" class="cosmograph-search" >
 			<SearchBar />
 		</div>
 		<div class="control-buttons">
 			<button id="multiple-node-btn" class={$selectMultipleClusters ? "btn active" : "btn"} on:click={toggleMultipleClustersMode} title="Multiple Cluster Selection"
-			><Combine /></button
+			><Combine /> Multiple Cluster Select</button
 			>
-			<button id="hierachical-label" class="btn" on:click={toggleHierachicalLabels} title="Toggle Hierarchical Cluster Label"
-			><BringToFront/></button
+			<button id="hierarchical-label" class="btn" on:click={toggleHierarchicalLabels} title="Toggle Hierarchical Cluster Label"
+			><BringToFront/> Hierarchical Labels</button
 			>
 			<button id="fitview-btn" class="btn" on:click={fitViewofGraph} title = "Fit View of Graph"
-			><BoxSelect /></button
+			><BoxSelect /> Fit View</button
+			>
+			<button id="start-tour-btn" class="btn" on:click={startTour} title= "Start Tour"
+			><Binoculars/>  Tour</button
 			>
 		</div>
 
 			<div id="chat-interface" ><ChatInterface /></div>
 
-			<div id="info-view" >
+			<div id="info-view">
 				<div
 				class="resize-handle-horizontal"
 				role="button"
@@ -216,10 +274,16 @@
 		color: white;
 		box-shadow: none;
 		border: none;
+		text-shadow: none;
+		font-size: 14px;
+		font-weight: 600;
+	}
+	#start-tour-btn {
+		background-color: var(--red-7);
 	}
 
 	    /* Resize Handles */
-		.resize-handle-vertical {
+		/* .resize-handle-vertical {
         grid-column: 2;
         cursor: col-resize;
         background-color: #ccc;
@@ -227,7 +291,7 @@
         height: 100%;
         z-index: 3;
 		position: absolute;
-    }
+    } */
 
     .resize-handle-horizontal {
         grid-row: 3;
@@ -237,7 +301,7 @@
         width: 100%;
         z-index: 3;
     }
-	.smooth-resize {
+	/* .smooth-resize {
         transition: none;
-    }
+    } */
 </style>

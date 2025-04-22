@@ -45,7 +45,7 @@ let showMoreAbstract:boolean = false;
         // have pubmed id, title, cluster id, date
         const response = await fetch(`/api/opensearch/infoview/${node.id}`)
         const data = await response.json()
-        console.log(data)
+
         const currentInfo:InfoPanel[] = data.map(item => ({
             pubmed_id: item._id, // change to node.id after test
             title: node.title,
@@ -110,7 +110,6 @@ let showMoreAbstract:boolean = false;
     hNode.subscribe(n =>{
         if(n!== undefined){
             NodesToShow.set([$hNode])
-            console.log("Got the hovered Node")
         }
     } )
 
