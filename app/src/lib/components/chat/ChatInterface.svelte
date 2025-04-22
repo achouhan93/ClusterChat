@@ -216,13 +216,16 @@
 
 		<!-- Input field and send button -->
 		<form on:submit|preventDefault={handleSendMessage}>
+
+			<!--Feature on Hold-->
 			<!-- <button type="button" class="chat-model-btn" title='Choose Model'
 			><Sparkle size={20}/></button
 			> -->
-			<select name="model-accessor" id="model-accessor">
+			<!-- <select name="model-accessor" id="model-accessor">
 				<option value="mixtral">Mixtral</option>
 				<option value="openai">OpenAI</option>
-			</select>
+			</select> -->
+			
 			<input
 				id="chat-input"
 				autocomplete="off"

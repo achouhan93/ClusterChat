@@ -1,9 +1,13 @@
 <script lang="ts">
-	import { Search, X } from 'lucide-svelte';
+	import { X } from 'lucide-svelte';
 	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes, SelectedSearchQuery, conditionalSelectNodes, unselectNodes, document_specific, selectedNodes } from '$lib/graph';
 	import type { Node } from '$lib/types';
 	import { getClusterNodes, setSelectedNodesOnGraph } from '$lib/graph';
-	import Toggle from '$lib/components/search/Toggle.svelte';
+	import { writable } from 'svelte/store';
+
+
+	let checked_1 =writable<boolean>(false)
+	let checked_2=writable<boolean>(false)
 
 	async function fetchSearchQueryAnswer(search_query:string, searchMetadata:string){
 		/* Requests OpenSearch and fetches to 10k nodes */
@@ -66,6 +70,7 @@
 	}
 		
 	}
+  
 
 
 </script>
@@ -86,20 +91,48 @@
 		name="search-query"
 	/>
 		<div class="search-options-part">
-			<Toggle
+			<input class="toggle-btns" form=search-form type="hidden" name=search-type value={checked_1 ? "Semantic" : "Lexical" }/>
+			<input type="checkbox" id="toggle-1" class="toggleCheckbox" bind:checked={$checked_1}
+			/>
+			<label for="toggle-1" class='toggleContainer'>
+			<div>Lexical</div>   
+			<div>Semantic</div>
+			</label>
+
+			{#if !$checked_1}
+
+			<input class="toggle-btns" form=search-form type="hidden" name=search-metadata value={$checked_2 ? "Abstract" : "Title" }/>
+			<input type="checkbox" id="toggle-2" class="toggleCheckbox" bind:checked={$checked_2}
+			/>
+			<label for="toggle-2" class='toggleContainer'>
+			<div>Title</div>   
+			<div>Abstract</div>
+			</label>
+
+			{:else}
+			<input class="toggle-btns" form=search-form type="hidden" name=search-metadata value="Abstract"/>
+			<input type="checkbox" id="toggle-2" class="toggleCheckbox" checked disabled
+			/>
+			<label for="toggle-2" class='toggleContainer'>
+			<div>Title</div>   
+			<div>Abstract</div>
+			</label>
+			{/if}
+
+			<!-- <Toggle
 			form="search-form"
 			name="search-type"
-			button_id="toggle-1"
+			button_id="semantic-lexical-btn"
 			label_1="Semantic"
-			label_2="Lexical"
+			label_2="Lexical"		
 			/>
 			<Toggle
 			form="search-form"
 			name="search-metadata"
-			button_id="toggle-2"
+			button_id="abstract-title-btn"
 			label_1="Abstract"
 			label_2="Title"
-			/>
+			/> -->
 	</div>
 	</div>
 	</form>
@@ -161,4 +194,58 @@
 		flex-direction: column;
 		align-items: center;
 	}
+
+	.toggleContainer {
+   position: relative;
+   display: grid;
+   grid-template-columns: repeat(2, 1fr);
+   width: max-content;
+   border: 1px solid #f0f0f0;
+   border-radius: 20px;
+   /* background: #343434; */
+   background: white;
+   font-weight: bold;
+   font-size: small;
+   color: #343434;
+   cursor: pointer;
+   margin: var(--size-px-1);
+   width: 100%;
+ }
+ .toggleContainer::before {
+   content: '';
+   position: absolute;
+   width: 50%;
+   height: 100%;
+   left: 0%;
+   border-radius:20px;
+   background: #007bff;
+   transition: all 0.3s;
+ }
+ .toggleCheckbox:checked + .toggleContainer::before {
+    left: 50%;
+ }
+ .toggleContainer div {
+   padding: 6px;
+   text-align: center;
+   z-index: 1;
+ }
+ .toggleCheckbox {
+   display: none;
+ }
+ .toggleCheckbox:checked + .toggleContainer div:first-child{
+   color: var(--text-2-light);
+   transition: color 0.3s;
+ }
+ .toggleCheckbox:checked + .toggleContainer div:last-child{
+   color: white;
+   transition: color 0.3s;
+ }
+ .toggleCheckbox + .toggleContainer div:first-child{
+   color: white;
+   transition: color 0.3s;
+ }
+ .toggleCheckbox + .toggleContainer div:last-child{
+   color: var(--text-2-light);
+   transition: color 0.3s;
+ }
 </style>
