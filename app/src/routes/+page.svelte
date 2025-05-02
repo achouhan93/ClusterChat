@@ -150,17 +150,22 @@
 			<SearchBar />
 		</div>
 		<div class="control-buttons">
-			<button id="multiple-node-btn" class={$selectMultipleClusters ? "btn active" : "btn"} on:click={toggleMultipleClustersMode} title="Multiple Cluster Selection"
-			><Combine /> Multiple Cluster Select</button
+			<button id="multiple-node-btn" class={$selectMultipleClusters ? "btn rollout-button active" : "btn rollout-button"} on:click={toggleMultipleClustersMode} title="Multiple Cluster Selection"
+			><span class="icon"><Combine/></span
+			><span class="label">Multiple Cluster Select</span></button
 			>
-			<button id="hierarchical-label" class="btn" on:click={toggleHierarchicalLabels} title="Toggle Hierarchical Cluster Label"
-			><BringToFront/> Hierarchical Labels</button
+			<button id="hierarchical-label" class="btn rollout-button" on:click={toggleHierarchicalLabels} title="Toggle Hierarchical Cluster Label"
+			><span class="icon"><BringToFront/></span
+			><span class="label"> Hierarchical Labels</span
+			></button
 			>
-			<button id="fitview-btn" class="btn" on:click={fitViewofGraph} title = "Fit View of Graph"
-			><BoxSelect /> Fit View</button
+			<button id="fitview-btn" class="btn rollout-button" on:click={fitViewofGraph} title = "Fit View of Graph"
+			><span class="icon"><BoxSelect /></span
+			><span class="label">Fit View</span></button
 			>
-			<button id="start-tour-btn" class="btn" on:click={startTour} title= "Start Tour"
-			><Binoculars/>  Tour</button
+			<button id="start-tour-btn" class="btn rollout-button" on:click={startTour} title= "Start Tour"
+			><span class="icon"><Binoculars/></span
+			><span class="label">Tour</span></button
 			>
 		</div>
 
@@ -203,10 +208,10 @@
 	#main-frame {
 		display: grid;
 		/* grid-template-columns: var(--chat-width, 35%) minmax(auto,15%) minmax(auto,25%) minmax(auto,25%); */
-		grid-template-columns: max(35%) minmax(150px, 20%) 1fr 1fr;
+		grid-template-columns: max(35%) minmax(150px, 10%) 1fr 1fr;
 		grid-template-rows: 15% var(--info-height,40%)  1fr max(10%);
 		grid-template-areas:
-			'chat control-btns search-bar search-bar'
+			'chat control-btns . search-bar'
 			'chat . . .'
 			'info . . .'
 			'info timeline timeline timeline';
@@ -278,6 +283,52 @@
 		font-size: 14px;
 		font-weight: 600;
 	}
+
+    .rollout-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 40px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-family: sans-serif;
+      cursor: pointer;
+      overflow: hidden;
+      padding: 0 10px;
+      transition: width 0.3s ease;
+    }
+
+    .rollout-button:hover {
+      width: 100%;
+    }
+
+    .icon {
+      z-index: 1;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .label {
+      position: relative;
+      left: 40px; /* Start to the right of the icon */
+      white-space: nowrap;
+      display:none;
+      transform: translateX(-10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .rollout-button:hover .label {
+      display: block;
+      transform: translateX(-10px);
+    }
+	.rollout-button:hover .icon {
+		display: none;
+	}
+
 	#start-tour-btn {
 		background-color: var(--red-7);
 	}

@@ -284,8 +284,8 @@ const TimelineConfig: CosmographTimelineInputConfig<Node> = {
 	filterType: "nodes",
 	formatter(d) {
 		// TO CHANGE FOR 4M
-		//return new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-		return "";
+		return new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+		//return "";
 	},
 	onSelection(selection) {
 		if(selection){

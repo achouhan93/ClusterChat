@@ -80,26 +80,49 @@
 		<div class="search-bar-elems">
 		
 
-		<button type="button" class="clear-search-btn" on:click|stopPropagation={handleClearSearch} title='Clear Chat'>	
-		<X size="48"/></button>
+		
+		<div id="search-bar-container">
+			<div id="search-bar-upper">
+				<input
+				id="search-bar-input"
+				autocomplete="off"
+				type="textarea"
+				placeholder="Search..."
+				name="search-query"
+				/>
+				<button type="button" class="clear-search-btn" on:click|stopPropagation={handleClearSearch} title='Clear Chat'>	
+					<X size="40"/></button>
+			</div>
 
-		<input
-		id="search-bar-input"
-		autocomplete="off"
-		type="textarea"
-		placeholder="Search..."
-		name="search-query"
-	/>
-		<div class="search-options-part">
-			<input class="toggle-btns" form=search-form type="hidden" name=search-type value={checked_1 ? "Semantic" : "Lexical" }/>
-			<input type="checkbox" id="toggle-1" class="toggleCheckbox" bind:checked={$checked_1}
-			/>
-			<label for="toggle-1" class='toggleContainer'>
-			<div>Lexical</div>   
-			<div>Semantic</div>
-			</label>
+			<div id="search-bar-options-container">
 
-			{#if !$checked_1}
+				<div class="toggle-btn-container">
+					<input class="toggle-btns" form=search-form type="hidden" name=search-type value={checked_1 ? "Semantic" : "Lexical" }/>
+					<input type="checkbox" id="toggle-1" class="toggleCheckbox" bind:checked={$checked_1}
+					/>
+					<label for="toggle-1" class='toggleContainer'>
+					<div>Lexical</div>   
+					<div>Semantic</div>
+					</label>
+	
+				</div>
+
+				<select name="search-accessor" id="search-accessor">
+					<option value="abstract">Abstract</option>
+					<option value="title">Title</option>
+				</select>
+		
+			</div>
+
+		</div>
+
+	<!-- Toggle Buttons -->
+
+
+		<!-- <div class="search-options-part"> -->
+
+
+			<!-- {#if !$checked_1}
 
 			<input class="toggle-btns" form=search-form type="hidden" name=search-metadata value={$checked_2 ? "Abstract" : "Title" }/>
 			<input type="checkbox" id="toggle-2" class="toggleCheckbox" bind:checked={$checked_2}
@@ -117,7 +140,7 @@
 			<div>Title</div>   
 			<div>Abstract</div>
 			</label>
-			{/if}
+			{/if} -->
 
 			<!-- <Toggle
 			form="search-form"
@@ -133,7 +156,7 @@
 			label_1="Abstract"
 			label_2="Title"
 			/> -->
-	</div>
+	<!-- </div> -->
 	</div>
 	</form>
 
@@ -141,31 +164,42 @@
 <style>
 	.search-bar-elems {
 		display: flex;
-		direction: rows;
 		margin-top: var(--size-3);
-		gap: var(--size-2);
-		margin-right: var(--size-2);
-	}
-	input {
-		width: 80%;
-		background-color: var(--surface-2-light);
-		color: var(--text-2-light);
-		transition: none !important;
-		margin-left: var(--size-2);
-		padding: var(--size-3);
-
+		border-radius: var(--radius-3);
 	}
 
 	#search-bar-input {
-		width: 100%;
+		width: 95%;
+		padding: 0 var(--size-2) 0 var(--size-2);
 		background-color: var(--surface-3-light);
-		border-radius: 0% var(--radius-3) var(--radius-3) 0;
-		transition: background-color 0.3s ease;
+		border-top-right-radius: var(--radius-3);
+		color: var(--text-2-light);
+		padding: var(--size-3);
+		border-top-left-radius: var(--radius-3);
 	}
-	#search-bar-input:focus-visible {
-		background-color: var(--surface-4-light);
-		border:none;
+
+
+	#search-bar-container {
+		width: 95%;
+		background: var(--surface-3-light);
+		display: flex;
+		flex-direction: column;
+		border-radius: var(--radius-3);
 	}
+
+	#search-bar-upper {
+		display: flex;
+	}
+
+	#search-bar-options-container{
+	display: flex;
+	flex-direction: row;
+	gap: var(--size-3);
+	padding: 0 var(--size-1) var(--size-1) 0;
+	align-items: center;
+	margin-left: var(--size-3);
+}
+
 	#search-bar-input:hover {
 		cursor: text;
 	}
@@ -174,11 +208,11 @@
 	color: var(--text-2-light);
 	width: -moz-fit-content;
 	width: fit-content;
+	min-width: 5%;
 	border: none;
 	transition: background-color 0.3s ease;
 	box-shadow: none;
-	margin-right: -1rem;
-	border-radius: var(--radius-3) 0 0 var(--radius-3);
+	border-radius: var(--radius-3);
 	text-shadow: none;
 	}
 	.clear-search-btn:hover {
@@ -186,14 +220,30 @@
 	}
 
 	.clear-search-btn:active {
-	background-color: var(--gray-5); /* Change this to any color you want */
+	background-color: var(--gray-5);
 	}
+
+	#search-accessor {
+	background-color: #007bff;
+	color: white;
+	border-radius: var(--radius-6); 
+	/* background-color: #caf1f5; */
+	text-align: center;
+	text-align-last: center; /* For modern browsers to center the selected option */
+	width: auto; 
+	border: 1px solid #ccc;
+	/* font-weight: bold; */
+	font-size: small;
+	padding: var(--size-1);
+	border: none;
+	height: 80%;
+}
 	
-	.search-options-part{
+	/* .search-options-part{
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-	}
+	} */
 
 	.toggleContainer {
    position: relative;
@@ -201,10 +251,10 @@
    grid-template-columns: repeat(2, 1fr);
    width: max-content;
    border: 1px solid #f0f0f0;
-   border-radius: 20px;
+   border-radius: var(--radius-6);
    /* background: #343434; */
    background: white;
-   font-weight: bold;
+   /* font-weight: bold; */
    font-size: small;
    color: #343434;
    cursor: pointer;
@@ -217,7 +267,7 @@
    width: 50%;
    height: 100%;
    left: 0%;
-   border-radius:20px;
+   border-radius:var(--radius-6);
    background: #007bff;
    transition: all 0.3s;
  }
@@ -248,4 +298,8 @@
    color: var(--text-2-light);
    transition: color 0.3s;
  }
+
+
+ 
+
 </style>

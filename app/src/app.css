@@ -97,11 +97,15 @@ body {
 }
 
 .cosmograph-timeline {
-    --cosmograph-timeline-background: var(--surface-3-light);
+	--cosmograph-timeline-axis-color: var(--gray-8);
     --cosmograph-timeline-selection-color: #2463EB;
-    --cosmograph-timeline-bar-color: var(--gray-6);
-    --cosmograph-timeline-selection-opacity: 0.5;
-	/* --cosmograph-timeline-axis-color: black */
+	--cosmograph-timeline-selection-opacity: 0.5;
+	--cosmograph-timeline-background: var(--surface-3-light);
+    --cosmograph-timeline-bar-color: var(--gray-5);
+	--cosmograph-timeline-font-size: var(--font-size-1);
+
+
+
 }
 body {
 	font-family: sans-serif;
