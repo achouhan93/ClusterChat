@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { X } from 'lucide-svelte';
+	import { X, Search } from 'lucide-svelte';
 	import { getRenderedNodes, getSelectedNodes, setSelectedNodes, updateGraphData, updateNodes, SelectedSearchQuery, conditionalSelectNodes, unselectNodes, document_specific, selectedNodes } from '$lib/graph';
 	import type { Node } from '$lib/types';
 	import { getClusterNodes, setSelectedNodesOnGraph } from '$lib/graph';
@@ -77,12 +77,10 @@
 
 
 	<form id="search-form" on:submit|preventDefault={handleSearch}>
-		<div class="search-bar-elems">
-		
 
-		
 		<div id="search-bar-container">
 			<div id="search-bar-upper">
+				<div class="search-icon"><Search/></div>
 				<input
 				id="search-bar-input"
 				autocomplete="off"
@@ -111,8 +109,6 @@
 					<option value="abstract">Abstract</option>
 					<option value="title">Title</option>
 				</select>
-		
-			</div>
 
 		</div>
 
@@ -162,24 +158,9 @@
 
 
 <style>
-	.search-bar-elems {
-		display: flex;
-		margin-top: var(--size-3);
-		border-radius: var(--radius-3);
-	}
-
-	#search-bar-input {
-		width: 95%;
-		padding: 0 var(--size-2) 0 var(--size-2);
-		background-color: var(--surface-3-light);
-		border-top-right-radius: var(--radius-3);
-		color: var(--text-2-light);
-		padding: var(--size-3);
-		border-top-left-radius: var(--radius-3);
-	}
-
 
 	#search-bar-container {
+		margin-top: var(--size-3);
 		width: 95%;
 		background: var(--surface-3-light);
 		display: flex;
@@ -187,8 +168,25 @@
 		border-radius: var(--radius-3);
 	}
 
+	#search-bar-input {
+		width: 100%;
+		padding: var(--size-3) 0 var(--size-3) 0;
+		background-color: var(--surface-3-light);
+		border-top-right-radius: var(--radius-3);
+		color: var(--text-2-light);
+		border-top-left-radius: var(--radius-3);
+	}
+
+
 	#search-bar-upper {
 		display: flex;
+	}
+
+	.search-icon{
+		min-width: 10%;
+		align-self: center;
+		justify-items: center;
+		color: var(--gray-6);
 	}
 
 	#search-bar-options-container{
@@ -214,6 +212,7 @@
 	box-shadow: none;
 	border-radius: var(--radius-3);
 	text-shadow: none;
+	color: var(--gray-8);
 	}
 	.clear-search-btn:hover {
 		background-color: var(--gray-4);
