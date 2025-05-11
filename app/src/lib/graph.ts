@@ -39,25 +39,18 @@ export let selectMultipleClusters= writable<boolean>(false); // TODO: change to 
 export let hierarchicalLabels = writable<boolean>(false);
 export let selectNodeRange: boolean = false;
 
-//let drag_select: boolean = false;
 let hoveredNodeId = writable<string>("")
 export let hNode = writable<Node>();
 export let document_specific = writable(true);
 
+
+
+let cachedIds = new Set<string>();
+let lastSelected: Node[] = [];
+
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
 
-const handleNodeClick = async (clickedNode: Node) => {
-	if (clickedNode && !isFilteringActive() && get(document_specific)) {
-		showLabelsfor([clickedNode] as Node[]);
-		graph.selectNode(clickedNode);
-		setSelectedNodes([clickedNode])
-	}  else if (!clickedNode) {
-		unselectNodes();
-	}
-};
-
 const handleZoomEvent = async () => {
-	// TODO: change all!!
 	/* const from_value:number = get($batch_number)*BATCH_SIZE
 	console.log(`Current batch_number = ${get($batch_number)}`)
 	console.log(`Current from_value = ${from_value}`)
@@ -74,10 +67,50 @@ const handleZoomEvent = async () => {
 		} */
 }
 
+/**
+ * Handles click events on individual graph nodes.
+ * 
+ * If filtering is not active and a document is currently selected, it:
+ * - Shows the label for the clicked node.
+ * - Selects the node in the graph visualization.
+ * - Sets the clicked node as the current selection.
+ * 
+ * If no node was clicked (e.g., background click), it:
+ * - Clears the current node selection.
+ * 
+ * @param {Node} clickedNode - The node that was clicked. Can be null or undefined if no node was selected.
+ */
+const handleNodeClick = async (clickedNode: Node) => {
+	if (clickedNode && !isFilteringActive() && get(document_specific)) {
+		showLabelsfor([clickedNode] as Node[]);
+		graph.selectNode(clickedNode);
+		setSelectedNodes([clickedNode])
+	}  else if (!clickedNode) {
+		unselectNodes();
+	}
+};
+
+
+/**
+ * Handles click events on a graph node label.
+ * 
+ * If the clicked node represents a cluster and Single Cluster Selection is set:
+ * - Sets the selected cluster.
+ * - Retrieves associated leaf nodes.
+ * - Loads all nodes belonging to the selected cluster.
+ * - Filters currently rendered nodes by the cluster ID.
+ * - Updates the selected nodes on the graph accordingly.
+ * 
+ * @param {Node} node - The node object that was clicked. If it is a cluster node, its associated leaf nodes will be processed.
+ * 
+ * @todo 
+ * Add MultiClusterSelection as an Option!
+ */
 const handleLabelClick = async (node:Node) => {
-	if(node.isClusterNode){
+
+	if(node.isClusterNode && !isSelectionActive()){
 		SelectedCluster.set(node.id)
-		console.log(`Selected Cluster Id: ${node.id}`)
+		console.log(`Selected Cluster Id: ${get(SelectedCluster)}`)
 		const cluster_ids:string[] = getAssociatedLeafs(node.id,node.title)
 		console.log(cluster_ids)
 		LoadNodesByCluster(cluster_ids)
@@ -86,7 +119,7 @@ const handleLabelClick = async (node:Node) => {
 		const set_cluster_ids = new Set(cluster_ids);
 		const filteredNodes =  getRenderedNodes().filter(node => set_cluster_ids.has(node.cluster))
 		
-		if (getSelectedNodes().length == 0){
+		if (getSelectedNodes().length === 0){
 			selectedNodes.set(filteredNodes)
 			filteredNodes.push(node)
 			graph.selectNodes(filteredNodes)
@@ -99,6 +132,20 @@ const handleLabelClick = async (node:Node) => {
 		}
 	}
 }
+
+/**
+ * Handles timeline range selection to filter and highlight nodes by date.
+ * 
+ * When a valid time range is selected and nodes are rendered:
+ * - Updates the selected date range if the selection is of `Date` type.
+ * - Filters rendered nodes whose `date` field falls within the selected range.
+ * - Updates selected nodes and highlights them on the graph.
+ * - Includes cluster nodes in the selection for context.
+ * 
+ * If there are already selected nodes, it intersects them with the time-filtered set.
+ * 
+ * @param {[Date, Date] | [number, number]} selection - The selected date or numeric range from the timeline.
+ */
 const handleTimelineSelection = async(selection:[Date,Date] | [number,number]) => {
 	
 	if(getRenderedNodes().length !=0){
@@ -200,13 +247,18 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	},
 	  // Scale node on hover
 	  onNodeMouseOver(hoveredNode) {
+		// Deactivate hover if a selection is present
 		if(hoveredNode){
-			hNode.set(hoveredNode)
-			hoveredNodeId.set(hoveredNode.id);  // Track the hovered node by ID
-			const main_frame = document.getElementById('main-graph');
-			main_frame.style.cursor = "pointer"
-			GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.01)
-			updateGraphConfig(GraphConfig);  // Update the graph configuration to reflect the new node size
+			if((isSelectionActive() && isSelectedNode(hoveredNode)) 
+				|| !isSelectionActive()){
+				hNode.set(hoveredNode)
+				hoveredNodeId.set(hoveredNode.id);  // Track the hovered node by ID
+				const main_frame = document.getElementById('main-graph');
+				main_frame.style.cursor = "pointer"
+				GraphConfig.nodeSize = (node: Node) => (node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.01)
+				updateGraphConfig(GraphConfig);  // Update the graph configuration to reflect the new node size
+			}
+	
 		} 
 	  },
 	  
@@ -341,19 +393,6 @@ export function toggleHierarchicalLabels(){
 	hierarchicalLabels.update((value) => !value)
 }
 
-// export function toggleSelectNodeRange() {
-// 	selectNodeRange = !selectNodeRange;
-// }
-// export function toggleDragSelection() {
-// 	drag_select = !drag_select;
-// 	const main_frame = document.getElementById('main-graph');
-// 	if (drag_select) {
-// 		main_frame.style.cursor = 'crosshair';
-// 	} else {
-// 		main_frame.style.cursor = 'default';
-// 		unselectNodes();
-// 	}
-// }
 
 /* ====================================== Graph Methods ====================================== */
 
@@ -366,6 +405,8 @@ async function initializeGraph(){
 export function updateGraphConfig(config: CosmographInputConfig<Node, Link>) {
 	graph.setConfig(config);
 }
+
+// export function updateTimelineConfig(config: CosmographTimelineInputConfig)
 
 export function updateGraphData(){
 	const startTime = new Date().getTime()
@@ -403,13 +444,31 @@ export function unselectNodes() {
 	const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
 	search_bar_input.value = '';
 	SelectedSearchQuery.set('')
-	SelectedCluster.set("")
+	SelectedCluster.set([])
 }
+
+/**
+ * Gets all the selected Node objects.
+ * @return {Node[]} An array of selected Node objects.
+ * @todo very slow for 5M Nodes, need another way.
+ */
 
 export function getSelectedNodes() {
 	return get(selectedNodes)
-	// return graph.getSelectedNodes();
 
+}
+
+
+export function isSelectedNode(node: Node): boolean {
+	const current = getSelectedNodes();
+
+	// Rebuild the set only if the selection changed
+	if (current !== lastSelected) {
+		cachedIds = new Set(current.map(n => n.id));
+		lastSelected = current;
+	}
+
+	return cachedIds.has(node.id);
 }
 
 export function getClusterNodes(){
@@ -466,8 +525,12 @@ function showLabelsfor(nodes: Node[]) {
 
 export function isFilteringActive():boolean{
 	if (get(SelectedDateRange) != undefined || get(SelectedSearchQuery) != "" ||
-	get(SelectedCluster) != "" ) return true
+	get(SelectedCluster).length !== 0 ) return true
 	return false
+}
+
+function isSelectionActive():boolean{
+	return getSelectedNodes().length !== 0;
 }
 
 export function getClusterNodesByClusterIds(cluster_ids:string[]):Node[]{
@@ -475,5 +538,4 @@ export function getClusterNodesByClusterIds(cluster_ids:string[]):Node[]{
 	const filteredNodes =  getRenderedNodes().filter(node => ClusterNodeIds.has(node.id) && node.isClusterNode)
 	return filteredNodes
 }
-
 
