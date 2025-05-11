@@ -9,10 +9,10 @@
 	let checked_1 =writable<boolean>(false)
 	let checked_2=writable<boolean>(false)
 
-	async function fetchSearchQueryAnswer(search_query:string, searchMetadata:string){
+	async function fetchSearchQueryAnswer(search_query:string, searchType:string){
 		/* Requests OpenSearch and fetches to 10k nodes */
 		try {
-			const response = await fetch(`/api/opensearch/search/${searchMetadata.toLowerCase()}/${search_query}`);
+			const response = await fetch(`/api/opensearch/search/${searchType.toLowerCase()}/${search_query}`);
 			const data = await response.json();
 			return data
 		} catch(error) {
@@ -34,18 +34,18 @@
 
 		const searchQuery = formData.get('search-query') as string;
 		const searchType = formData.get('search-type') as string;
-		const searchMetadata = formData.get('search-metadata')
+		console.log([...formData.entries()])
 
 		/** different index based on lexical or semantic*/
 
-		if (!searchQuery) return;
+		if (!searchQuery || !searchType) return;
 		if ($SelectedSearchQuery != "") unselectNodes()
 		
 		SelectedSearchQuery.set(searchQuery)
 
 
 		// send to opensearch and get the top 10k
-		const data = await fetchSearchQueryAnswer(searchQuery, searchMetadata);
+		const data = await fetchSearchQueryAnswer(searchQuery, searchType);
 
 		if (Array.isArray(data)){
 			const nodeIdsToSelect:Set<string> = new Set(data.map(item => item._id));
@@ -84,7 +84,6 @@
 				<input
 				id="search-bar-input"
 				autocomplete="off"
-				type="textarea"
 				placeholder="Search..."
 				name="search-query"
 				/>
@@ -96,7 +95,7 @@
 
 				<div class="toggle-btn-container">
 					<input class="toggle-btns" form=search-form type="hidden" name=search-type value={checked_1 ? "Semantic" : "Lexical" }/>
-					<input type="checkbox" id="toggle-1" class="toggleCheckbox" bind:checked={$checked_1}
+					<input name=search-type type="checkbox" id="toggle-1" form=search-form class="toggleCheckbox" bind:checked={$checked_1}
 					/>
 					<label for="toggle-1" class='toggleContainer'>
 					<div>Lexical</div>   
@@ -105,7 +104,7 @@
 	
 				</div>
 
-				<select name="search-accessor" id="search-accessor">
+				<select name="search-accessor" id="search-accessor" form=search-form>
 					<option value="abstract">Abstract</option>
 					<option value="title">Title</option>
 				</select>
@@ -183,7 +182,8 @@
 	}
 
 	.search-icon{
-		min-width: 10%;
+		/* display: flex; */
+		min-width: 6%;
 		align-self: center;
 		justify-items: center;
 		color: var(--gray-6);
@@ -233,9 +233,7 @@
 	border: 1px solid #ccc;
 	/* font-weight: bold; */
 	font-size: small;
-	padding: var(--size-1);
 	border: none;
-	height: 80%;
 }
 	
 	/* .search-options-part{

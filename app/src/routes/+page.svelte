@@ -208,7 +208,7 @@
 	#main-frame {
 		display: grid;
 		/* grid-template-columns: var(--chat-width, 35%) minmax(auto,15%) minmax(auto,25%) minmax(auto,25%); */
-		grid-template-columns: max(35%) minmax(150px, 10%) 1fr 1fr;
+		grid-template-columns: max(35%) minmax(150px, 10%) 0.5fr 1.5fr;
 		grid-template-rows: 15% var(--info-height,40%)  1fr max(10%);
 		grid-template-areas:
 			'chat control-btns . search-bar'
