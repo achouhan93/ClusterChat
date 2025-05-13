@@ -346,3 +346,7 @@ class Processor:
         except Exception as e:
             log.error(f"Error processing API request: {e}")
             raise RuntimeError(f"Error processing API request: {e}")
+        
+    
+    def encode_text(self, text: str) -> List[float]:
+        return self.embed_model.encode(text).tolist()

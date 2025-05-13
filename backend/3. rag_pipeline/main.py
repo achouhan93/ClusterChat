@@ -1,5 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 import logging
@@ -97,3 +99,23 @@ def ask_question(request: QuestionRequest):
     except Exception as e:
         logging.error(f"Error processing request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/embed")
+async def get_embedding(request: Request):
+    """
+    Accepts a JSON payload: { "query": "some query" }
+    Returns a n-dim embedding using the initialized processor.
+    """
+    try:
+        body = await request.json()
+        query_text = body.get("query")
+        if not query_text:
+            raise HTTPException(status_code=400, detail="Missing 'query' field in body.")
+
+        embedding = processor.encode_text(query_text)  # Make sure this method exists
+        return JSONResponse(content={"embedding": embedding})
+
+    except Exception as e:
+        logging.error(f"Error generating embedding: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate embedding.")
