@@ -1,8 +1,6 @@
 from tqdm import tqdm
 import logging
-from pipeline_helpers.loader_helper.database_insert import (
-    opensearch_insert
-)
+from pipeline_helpers.loader_helper.database_insert import opensearch_insert
 import sys
 
 log = logging.getLogger(__name__)

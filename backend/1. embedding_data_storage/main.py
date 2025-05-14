@@ -59,98 +59,6 @@ class Processor:
         self.scroll_size = 500
         self.chunking_strategy = chunking_strategy
 
-    def insert_article_by_id(self, json_file_path):
-        # Read PubMed IDs from the specified JSON file
-        with open(json_file_path, "r") as file:
-            data = json.load(file)
-            pubmed_ids = data["pubmed_ids"]
-
-        fields_to_include = [
-            "title",
-            "abstract",
-            "articleDate",
-            "authors",
-            "keywords.name",
-            "journalInformation.journalTitle",
-            "meshTerms.meshID",
-            "meshTerms.name",
-            "chemicals.name",
-        ]
-
-        search_params = {
-            "query": {
-                "bool": {
-                    "must": [{"ids": {"values": pubmed_ids}}],  # List of article IDs
-                    "must_not": [
-                        {
-                            "match_phrase": {
-                                "abstract": "no abstract available on pubmed"
-                            }
-                        },
-                        {"match_phrase": {"abstract": "ABSTRACT TRUNCATED"}},
-                    ],
-                }
-            },
-            "_source": fields_to_include,
-        }
-
-        # Execute the initial search request
-        response = self.os_connection.search(
-            index=self.source_os_index_name,
-            scroll="10m",
-            size=self.scroll_size,
-            body=search_params,
-        )
-
-        # Get the scroll ID and hits from the initial search request
-        scroll_id = response["_scroll_id"]
-        hits = response["hits"]["hits"]
-        total_docs = response["hits"]["total"][
-            "value"
-        ]  # Get the total number of documents
-
-        with tqdm(total=total_docs) as pbar:
-            while hits:
-                try:
-                    logging.info(f"considered {len(hits)} documents for processing")
-                    document_vector_information = self.get_document_information(hits)
-
-                    if document_vector_information:
-                        loadSuccess = opensearch_insert(
-                            self.os_connection,
-                            self.target_os_index_name,
-                            document_vector_information,
-                        )
-
-                    if not loadSuccess:
-                        logging.error(
-                            f"\nOperation unsuccessful, see logs for more information."
-                        )
-                    else:
-                        logging.info(
-                            f"\nOperation successful for {len(hits)} documents."
-                        )
-
-                except Exception as e:
-                    logging.error(
-                        f"Error during vector create and storage operation due to error {e}"
-                    )
-
-                if self.scroll_size > len(hits):
-                    pbar.update(len(hits))
-                else:
-                    pbar.update(self.scroll_size - len(hits))
-
-                # Paginate through the search results using the scroll parameter
-                response = self.os_connection.scroll(scroll_id=scroll_id, scroll="10m")
-                hits = response["hits"]["hits"]
-                scroll_id = response["_scroll_id"]
-
-        # Clear the scroll
-        self.os_connection.clear_scroll(scroll_id=scroll_id)
-        pbar.close()
-        logging.info(f"Processing completed for all documents.")
-        logging.info(f"Total Number of documents: {total_docs}")
 
     def process_articles_in_batches(self):
         fields_to_include = [
@@ -183,7 +91,11 @@ class Processor:
                                     "abstract": "no abstract available on pubmed"
                                 }
                             },
-                            {"match_phrase": {"abstract": "ABSTRACT TRUNCATED AT"}},
+                            {
+                                "match_phrase": {
+                                    "abstract": "ABSTRACT TRUNCATED AT"
+                                }
+                            },
                         ],
                     }
                 },
@@ -233,11 +145,8 @@ class Processor:
                         logging.error(
                             f"Error during vector create and storage operation due to error {e}"
                         )
-
-                    if self.scroll_size > len(hits):
-                        pbar.update(len(hits))
-                    else:
-                        pbar.update(self.scroll_size - len(hits))
+                        
+                    pbar.update(len(hits))
 
                     # Paginate through the search results using the scroll parameter
                     response = self.os_connection.scroll(
@@ -422,21 +331,17 @@ def main(argv=None):
 
         # parse command line arguments
         parser = argparse.ArgumentParser()
+        
         parser.add_argument(
             "-v",
             "--vectorcreation",
             metavar="date-range",
             type=str,
             nargs="*",
+            default=[],
             help="Storing the vector embeddings in Opensearch based on date range in yyyy-mm-dd",
         )
-        parser.add_argument(
-            "-j",
-            "--json_file",
-            metavar="FILE",
-            type=str,
-            help="Path to JSON file containing PubMed IDs",
-        )
+
         parser.add_argument(
             "-c",
             "--chunking",
@@ -453,7 +358,7 @@ def main(argv=None):
         elif args.chunking == "sentence":
             target_os_index = CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_SENTENCE"]
 
-        if args.vectorcreation:
+        if len(args.vectorcreation) >= 0:
             if len(args.vectorcreation) == 1:
                 print("--range expects two arguments: <mindate, maxdate>")
                 sys.exit()
@@ -478,7 +383,7 @@ def main(argv=None):
                 res = ""
                 while res != "n":
                     res = input(
-                        "Are you sure you want to insert the records starting from 1900 till date? This can take several days. (y/n): "
+                        "Are you sure you want to insert all records starting from start date till date? This can take several days. (y/n): "
                     )
                     if res == "y":
                         start_time = time()
@@ -500,24 +405,6 @@ def main(argv=None):
             else:
                 print("--vectorcreation expects two arguments: <mindate, maxdate>")
                 sys.exit()
-        elif args.json_file:
-            json_path = args.json_file
-            args.json_file = ""
-            start_time = time()
-            logging.info(
-                f"Vector storage for pubmed records started at {secondsToText(start_time)}"
-            )
-            document_processor = Processor(
-                os_connection,
-                source_os_index,
-                target_os_index,
-                args.chunking,
-                args.json_file,
-            )
-            document_processor.insert_article_by_id(json_path)
-            logging.info(
-                f"Vector storage for pubmed records completed at {secondsToText(time()- start_time)}"
-            )
 
     finally:
         os_connection.close()

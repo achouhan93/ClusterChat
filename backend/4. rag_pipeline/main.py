@@ -111,7 +111,9 @@ async def get_embedding(request: Request):
         body = await request.json()
         query_text = body.get("query")
         if not query_text:
-            raise HTTPException(status_code=400, detail="Missing 'query' field in body.")
+            raise HTTPException(
+                status_code=400, detail="Missing 'query' field in body."
+            )
 
         embedding = processor.encode_text(query_text)  # Make sure this method exists
         return JSONResponse(content={"embedding": embedding})

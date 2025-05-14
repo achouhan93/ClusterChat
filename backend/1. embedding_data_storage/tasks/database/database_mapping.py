@@ -57,7 +57,7 @@ def opensearch_pubmedbert_mapping():
                     "type": "knn_vector",
                     "dimension": 768,
                     "method": {
-                        "engine": "nmslib",
+                        "engine": "lucene",
                         "name": "hnsw",
                         "space_type": "cosinesimil",
                         "parameters": {"ef_construction": 40, "m": 8},
