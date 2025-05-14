@@ -13,6 +13,11 @@ def create_document_index(os_connection, document_index_name):
     """
     if not os_connection.indices.exists(index=document_index_name):
         document_index_body = {
+            "settings": {
+                "number_of_shards": 3,
+                "number_of_replicas": 1,
+                "knn": True,
+            },
             "mappings": {
                 "properties": {
                     "document_id": {"type": "keyword"},
@@ -28,6 +33,19 @@ def create_document_index(os_connection, document_index_name):
                     "cluster_id": {"type": "keyword"},
                     "x": {"type": "float"},
                     "y": {"type": "float"},
+                    "pubmed_bert_vector": {
+                        "type": "knn_vector",
+                        "dimension": 768,
+                        "method": {
+                            "engine": "lucene",
+                            "space_type": "cosinesimil",
+                            "name": "hnsw",
+                            "parameters": {
+                                "ef_construction": 40,
+                                "m": 8
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -90,6 +108,7 @@ def index_documents(
                     "cluster_id": str(assigned_topics[idx]),
                     "x": float(x_coords[idx]),
                     "y": float(y_coords[idx]),
+                    "pubmed_bert_vector": document_embeddings[idx].tolist()
                 },
             }
 
