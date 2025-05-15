@@ -1,7 +1,7 @@
 <script lang="ts">
 	// style
 	import 'open-props/buttons';
-	import { Send, LoaderPinwheel, File, ChartScatter,RotateCw, X } from 'lucide-svelte';
+	import { Send, LoaderPinwheel, File, ChartScatter,RotateCw, Sparkle, Trash2 } from 'lucide-svelte';
 
 	// utils
 	import { splitTextIntoLines } from '$lib/utils';
@@ -165,7 +165,12 @@
 <div class="chat-side">
 	<div class="scroll-area">
 		<!-- Title that dynamically changes based on the toggle state -->
-		<h4>{$document_specific ? 'Interact with Document(s)' : 'Interact with Corpus'}</h4>
+		<div class="scroll-area-header">
+			<h4>{$document_specific ? 'Interact with Document(s)' : 'Interact with Corpus'}</h4>
+			<button class="menu-button" aria-label="Options" on:click|stopPropagation={handleClearChat} title='Clear Chat'
+			><Trash2/></button>
+		</div>
+		
 		{#each $messages as message, index}
 			<div class="message user">
 				<p>
@@ -176,7 +181,7 @@
 				<div class="loader"><LoaderPinwheel size={20} /></div>
 
 			{:else if $TimeOutTryAgain && index === $messages.length-1}
-				<div class="try-again-message"><button on:click={handleTryAgain}>try Again <RotateCw/></button></div>
+				<div class="try-again-message"><button on:click={handleTryAgain}>Try Again <RotateCw/></button></div>
 			{:else}
 				<div class="message assistant">
 					<p>
@@ -211,9 +216,16 @@
 
 		<!-- Input field and send button -->
 		<form on:submit|preventDefault={handleSendMessage}>
-			<button type="button" class="clear-chat-btn" on:click|stopPropagation={handleClearChat} title='Clear Chat'
-			><X/></button
-			>
+
+			<!--Feature on Hold-->
+			<!-- <button type="button" class="chat-model-btn" title='Choose Model'
+			><Sparkle size={20}/></button
+			> -->
+			<!-- <select name="model-accessor" id="model-accessor">
+				<option value="mixtral">Mixtral</option>
+				<option value="openai">OpenAI</option>
+			</select> -->
+			
 			<input
 				id="chat-input"
 				autocomplete="off"
@@ -221,18 +233,13 @@
 				placeholder="Type your query..."
 				name="message"
 			/>
-			<button class="btn"><Send size={18} /></button>
+			<button class="send-btn"><Send size={18} /></button>
 		</form>
 	</div>
 </div>
 
 <style>
-	h4 {
-		color: black;
-		text-align: center;
-		align-self: center;
-		padding: var(--size-2);
-	}
+
 	input {
 		background-color: var(--surface-4-light);
 		color: var(--text-2-light);
@@ -273,6 +280,10 @@
 		margin: var(--size-2);
 		padding: var(--size-2);
 	}
+
+	#chat-input:hover{
+		cursor: text;
+	}
 	button {
 		border: none;
 		height: var(--size-8);
@@ -291,6 +302,37 @@
 		flex-flow: column;
 	}
 
+	.scroll-area-header {
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
+	align-items: center;
+	}
+
+	.scroll-area-header h4 {
+	grid-column: 2;
+	text-align: center;
+	}
+
+	.scroll-area-header button {
+		grid-column: 3;
+		justify-self: end;
+	}
+	.menu-button {
+		background: none;
+		border: none;
+		font-size: var(--size-4);
+		cursor: pointer;
+		padding: var(--size-1);
+		border-radius: 4px;
+		transition: background-color 0.3s ease;
+	}
+
+	.menu-button:hover {
+		background-color: var(--surface-4-light);
+	}
+	.menu-button:active {
+		background-color: var(--gray-5);
+	}
 	.message {
 		display: flex;
 		flex-direction: column;
@@ -370,7 +412,7 @@
 		color: white;
 	}
 		
-	.btn {
+	.send-btn {
 		padding: 10px 20px;
 		background-color: #007bff;
 		color: white;
@@ -385,9 +427,14 @@
 		gap: var(--size-2);
 		flex-wrap: nowrap;
 	}
-	.clear-chat-btn {
+	#model-accessor {
 		background-color: var(--blue-4);
-		color: var(--text-1-dark);
+		color: var(--gray-0);
 		width: fit-content;
 	}
+	/* .chat-model-btn {
+		background-color: var(--blue-4);
+		color: var(--gray-0);
+		width: fit-content;
+	} */
 </style>
