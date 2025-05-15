@@ -11,6 +11,7 @@ import psutil
 import os
 import gc
 import logging
+from time import sleep
 
 log = logging.getLogger(__name__)
 
@@ -172,4 +173,5 @@ class TopicModeller:
                 topic_model
             )
             gc.collect()
+            sleep(2)
             self._log_memory_usage()

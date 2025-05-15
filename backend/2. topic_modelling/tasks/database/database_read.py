@@ -101,9 +101,9 @@ class DataFetcher:
                                     ),
                                     "meshTerms": doc["_source"].get("meshTerms"),
                                     "chemicals": doc["_source"].get("chemicals"),
-                                    "authors.name": doc["_source"].get("authors.name"),
+                                    "authors.name": doc["_source"].get("authors:name"),
                                     "authors.affiliation": doc["_source"].get(
-                                        "authors.affiliation"
+                                        "authors:affiliation"
                                     ),
                                     "abstract_chunk": doc["_source"].get(
                                         "abstract_chunk"
