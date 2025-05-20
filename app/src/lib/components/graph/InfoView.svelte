@@ -1,13 +1,20 @@
 <script lang="ts">
-	import { selectedNodes, SelectedDateRange, SelectedSearchQuery, SelectedCluster, unselectNodes, hNode} from "$lib/graph";
+	import { 
+        selectedNodes, 
+        SelectedDateRange, 
+        SelectedSearchQuery, 
+        SelectedCluster, 
+        unselectNodes, 
+        isSelectionActive,
+        hNode
+    } from "$lib/graph";
     import { ChevronRight, ChevronLeft, X, ExternalLink } from "lucide-svelte";
-    import { get, readable,writable } from 'svelte/store';
+    import { get,writable } from 'svelte/store';
     import type {Node, Cluster, InfoPanel } from "$lib/types";
 	import { allClusters, ClustersTree } from "$lib/readcluster";
 
 
     let NodesToShow= writable<Node[]>([])
-    let abstract = writable<string>("");
     let currentPage = writable<number>(1)
     let pageCount = writable<number>(0)
     let currentInfoPanel = writable<InfoPanel>([])
@@ -107,11 +114,31 @@ let showMoreAbstract:boolean = false;
 
     })
 
+    
     hNode.subscribe(n =>{
-        if(n!== undefined){
+        if (!n) return;
+
+        if (isSelectionActive()){
+            const nodes = get(NodesToShow);
+            const foundNodeIndex = nodes.findIndex(node => node.id === n.id);
+
+            if (foundNodeIndex !== -1) {
+                const currentPageVal = $currentPage;
+                const newPageIndex = foundNodeIndex + 1;
+
+                // Only update if needed
+                if (newPageIndex !== currentPageVal) {
+                    currentPage.set(newPageIndex);
+                }
+
+                fetchInfoPanelByNode(nodes[foundNodeIndex]);
+            } else {
+                console.warn('Node not found in NodesToShow:', n);
+            }
+        } else {
             NodesToShow.set([$hNode])
         }
-    } )
+    })
 
 
     // TODO: update
@@ -269,9 +296,10 @@ let showMoreAbstract:boolean = false;
     .pagation-btns {
         margin-bottom: var(--size-2);
         margin-left: var(--size-1);
-        gap: var(--size-1);
+        gap: var(--size-2);
         display: flex;
         font-size: small;
+        align-items: center;
     }
     .filter-tags {
         display: flex;

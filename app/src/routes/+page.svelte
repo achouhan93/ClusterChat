@@ -7,16 +7,13 @@
 	import { Combine, BringToFront, LoaderCircle, BoxSelect, Binoculars } from 'lucide-svelte';
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
-	import { toggleMultipleClustersMode, toggleHierarchicalLabels,  fitViewofGraph, selectMultipleClusters } from '$lib/graph';
+	import { toggleMultipleClustersMode, toggleHierarchicalLabels,  fitViewofGraph, selectMultipleClusters, hierarchicalLabels } from '$lib/graph';
 	import { onMount } from 'svelte';
 	import { dataloaded } from '$lib/readcluster';
 	import InfoView from '$lib/components/graph/InfoView.svelte';
 	import introJs from 'intro.js';
 	import 'intro.js/minified/introjs.min.css';
-
-
-
-
+	import { writable } from 'svelte/store';
 
 	function startTour() {
 	introJs().setOptions({
@@ -152,11 +149,11 @@
 		<div class="control-buttons">
 			<button id="multiple-node-btn" class={$selectMultipleClusters ? "btn rollout-button active" : "btn rollout-button"} on:click={toggleMultipleClustersMode} title="Multiple Cluster Selection"
 			><span class="icon"><Combine/></span
-			><span class="label">Multiple Cluster Select</span></button
+			><span class="label">Multiple Cluster Selection</span></button
 			>
 			<button id="hierarchical-label" class="btn rollout-button" on:click={toggleHierarchicalLabels} title="Toggle Hierarchical Cluster Label"
 			><span class="icon"><BringToFront/></span
-			><span class="label"> Hierarchical Labels</span
+			><span class="label">{$hierarchicalLabels ? "Flat Labels":"Hierarchical Labels"}</span
 			></button
 			>
 			<button id="fitview-btn" class="btn rollout-button" on:click={fitViewofGraph} title = "Fit View of Graph"
@@ -208,7 +205,7 @@
 	#main-frame {
 		display: grid;
 		/* grid-template-columns: var(--chat-width, 35%) minmax(auto,15%) minmax(auto,25%) minmax(auto,25%); */
-		grid-template-columns: max(35%) minmax(150px, 10%) 0.5fr 1.5fr;
+		grid-template-columns: max(35%) minmax(200px, 12%) 0.5fr 1.5fr;
 		grid-template-rows: 15% var(--info-height,40%)  1fr max(10%);
 		grid-template-areas:
 			'chat control-btns . search-bar'
@@ -317,13 +314,13 @@
       left: 40px; /* Start to the right of the icon */
       white-space: nowrap;
       display:none;
-      transform: translateX(-10px);
+      transform: translateX(-30px);
       transition: opacity 0.3s ease, transform 0.3s ease;
     }
 
     .rollout-button:hover .label {
       display: block;
-      transform: translateX(-10px);
+      transform: translateX(-30px);
     }
 	.rollout-button:hover .icon {
 		display: none;

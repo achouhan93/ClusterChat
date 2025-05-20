@@ -7,12 +7,12 @@
 
 
 	let checked_1 =writable<boolean>(false)
-	let checked_2=writable<boolean>(false)
+	// let checked_2=writable<boolean>(false)
 
-	async function fetchSearchQueryAnswer(search_query:string, searchType:string){
+	async function fetchSearchQueryAnswer(searchType:string, search_accessor:string, search_query:string){
 		/* Requests OpenSearch and fetches to 10k nodes */
 		try {
-			const response = await fetch(`/api/opensearch/search/${searchType.toLowerCase()}/${search_query}`);
+			const response = await fetch(`/api/opensearch/search/${searchType}/${search_accessor}/${search_query}`);
 			const data = await response.json();
 			return data
 		} catch(error) {
@@ -34,7 +34,8 @@
 
 		const searchQuery = formData.get('search-query') as string;
 		const searchType = formData.get('search-type') as string;
-		console.log([...formData.entries()])
+		const searchAccessor = formData.get('search-accessor') as string;
+		// console.dir([...formData.entries()])
 
 		/** different index based on lexical or semantic*/
 
@@ -45,7 +46,7 @@
 
 
 		// send to opensearch and get the top 10k
-		const data = await fetchSearchQueryAnswer(searchQuery, searchType);
+		const data = await fetchSearchQueryAnswer(searchType, searchAccessor, searchQuery);
 
 		if (Array.isArray(data)){
 			const nodeIdsToSelect:Set<string> = new Set(data.map(item => item._id));
@@ -71,8 +72,6 @@
 		
 	}
   
-
-
 </script>
 
 
@@ -94,8 +93,8 @@
 			<div id="search-bar-options-container">
 
 				<div class="toggle-btn-container">
-					<input class="toggle-btns" form=search-form type="hidden" name=search-type value={checked_1 ? "Semantic" : "Lexical" }/>
-					<input name=search-type type="checkbox" id="toggle-1" form=search-form class="toggleCheckbox" bind:checked={$checked_1}
+					<input class="toggle-btns" type="hidden" name=search-type value={$checked_1 ? "semantic": "lexical"}/>
+					<input type="checkbox" id="toggle-1" class="toggleCheckbox"  bind:checked={$checked_1}
 					/>
 					<label for="toggle-1" class='toggleContainer'>
 					<div>Lexical</div>   
@@ -105,8 +104,12 @@
 				</div>
 
 				<select name="search-accessor" id="search-accessor" form=search-form>
-					<option value="abstract">Abstract</option>
-					<option value="title">Title</option>
+					{#if $checked_1}
+						<option value="abstract">Abstract</option>
+					{:else}
+						<option value="abstract">Abstract</option>
+						<option value="title">Title</option>
+					{/if}
 				</select>
 
 		</div>
