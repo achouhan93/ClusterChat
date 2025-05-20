@@ -529,7 +529,7 @@ export function isFilteringActive():boolean{
 	return false
 }
 
-function isSelectionActive():boolean{
+export function isSelectionActive():boolean{
 	return getSelectedNodes().length !== 0;
 }
 
