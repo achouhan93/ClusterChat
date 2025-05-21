@@ -7,7 +7,6 @@ import {
 	OPENSEARCH_NODE
 } from '$env/static/private';
 
-
 // OpenSearch client setup
 const client = new Client({
 	node: OPENSEARCH_NODE,
@@ -17,25 +16,25 @@ const client = new Client({
 	}
 });
 
-export async function GET({params}){
-    try {
-        const response = await client.search({
-            index: CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX,
-            body: {
-                query : {
-                    match:{
-                        _id: params.id
-                    }
-                },
-                _source: {
-                    includes: ["abstract","authors:name","keywords:name","journal:title"]
-                },
-                size: 1
-            }
-        });
-        return new Response(JSON.stringify(response.body.hits.hits));
-    } catch (error) {
-        console.error("Error fetching from OpenSearch:", error);
-        return new Response('Error', { status: 404 });
-    }
+export async function GET({ params }) {
+	try {
+		const response = await client.search({
+			index: CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX,
+			body: {
+				query: {
+					match: {
+						_id: params.id
+					}
+				},
+				_source: {
+					includes: ['abstract', 'authors:name', 'keywords:name', 'journal:title']
+				},
+				size: 1
+			}
+		});
+		return new Response(JSON.stringify(response.body.hits.hits));
+	} catch (error) {
+		console.error('Error fetching from OpenSearch:', error);
+		return new Response('Error', { status: 404 });
+	}
 }

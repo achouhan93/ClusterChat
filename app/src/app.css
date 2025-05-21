@@ -26,7 +26,7 @@ html,
 body {
 	height: 100%;
 	scroll-behavior: smooth;
-	color: var(--text-1-light)
+	color: var(--text-1-light);
 }
 
 .cosmograph-node-label,
@@ -98,17 +98,14 @@ body {
 
 .cosmograph-timeline {
 	--cosmograph-timeline-axis-color: var(--gray-8);
-    --cosmograph-timeline-selection-color: #2463EB;
+	--cosmograph-timeline-selection-color: #2463eb;
 	--cosmograph-timeline-selection-opacity: 0.5;
 	--cosmograph-timeline-background: var(--surface-3-light);
-    --cosmograph-timeline-bar-color: var(--gray-5);
+	--cosmograph-timeline-bar-color: var(--gray-5);
 	--cosmograph-timeline-font-size: var(--font-size-1);
-
-
-
 }
 body {
-	font-family: sans-serif;
+	font-family: var(--font-system-ui);
 	margin: 0px;
 }
 
@@ -152,9 +149,9 @@ body {
 }
 
 input:focus-visible {
-	outline:none;
+	outline: none;
 }
 
 select:focus-visible {
-	outline:none;
+	outline: none;
 }

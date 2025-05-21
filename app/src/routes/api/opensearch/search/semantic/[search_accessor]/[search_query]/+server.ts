@@ -4,7 +4,7 @@ import {
 	OPENSEARCH_USERNAME,
 	OPENSEARCH_PASSWORD,
 	OPENSEARCH_NODE,
-    CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX,
+	CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX,
 	CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_COMPLETE
 } from '$env/static/private';
 
@@ -50,7 +50,6 @@ export async function GET({ params }) {
 		});
 
 		return json(vectorResponse.body.hits.hits);
-
 	} catch (error) {
 		console.error('Error performing semantic search:', error);
 		return new Response('Semantic search error', { status: 500 });

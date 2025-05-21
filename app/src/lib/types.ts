@@ -30,6 +30,16 @@ export type Cluster = {
 	path: string;
 };
 
+export const undefinedCluster: Cluster = {
+	id: '',
+	xCenter: 0,
+	yCenter: 0,
+	label: '',
+	depth: 0,
+	isLeaf: false,
+	path: ''
+};
+
 export type Link = {
 	source: string | '';
 	target: string | '';
@@ -43,12 +53,12 @@ export type ChatQuestion = {
 };
 
 export type Source = {
-	id: string 
-	title:string
-}
+	id: string;
+	title: string;
+};
 
 export type InfoPanel = {
-	pubmed_id: string | "";
+	pubmed_id: string | '';
 	title: string;
 	abstract: string;
 	date: Date | number | undefined;
@@ -56,4 +66,4 @@ export type InfoPanel = {
 	authors_name: string[];
 	journal_title: string;
 	keywords: string[];
-}
+};

@@ -41,7 +41,7 @@ export async function POST({ request }) {
 					terms: { cluster_id: ids }
 				},
 				_source: {
-					includes: ["document_id","x","y","title","date","cluster_id"]
+					includes: ['document_id', 'x', 'y', 'title', 'date', 'cluster_id']
 				},
 				size: 10000
 			}
