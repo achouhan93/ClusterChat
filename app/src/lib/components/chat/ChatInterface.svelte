@@ -180,7 +180,6 @@
 	<div class="scroll-area">
 		<!-- Title that dynamically changes based on the toggle state -->
 		<div class="scroll-area-header">
-			<button class="btn">collapse</button>
 			<h4>{$document_specific ? 'Interact with Document(s)' : 'Interact with Corpus'}</h4>
 			<button
 				class="menu-button"
