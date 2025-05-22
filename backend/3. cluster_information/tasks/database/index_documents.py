@@ -40,14 +40,11 @@ def create_document_index(os_connection, document_index_name):
                             "engine": "lucene",
                             "space_type": "cosinesimil",
                             "name": "hnsw",
-                            "parameters": {
-                                "ef_construction": 40,
-                                "m": 8
-                            }
-                        }
-                    }
+                            "parameters": {"ef_construction": 40, "m": 8},
+                        },
+                    },
                 }
-            }
+            },
         }
         os_connection.indices.create(
             index=document_index_name, body=document_index_body
@@ -108,7 +105,7 @@ def index_documents(
                     "cluster_id": str(assigned_topics[idx]),
                     "x": float(x_coords[idx]),
                     "y": float(y_coords[idx]),
-                    "pubmed_bert_vector": document_embeddings[idx].tolist()
+                    "pubmed_bert_vector": document_embeddings[idx].tolist(),
                 },
             }
 

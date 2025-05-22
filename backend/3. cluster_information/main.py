@@ -118,41 +118,41 @@ def main():
                     umap_model, os.path.join(model_path, "umap_2_components.joblib")
                 )
 
-            logging.info(f"Loading the UMAP model completed")
+            # logging.info(f"Loading the UMAP model completed")
 
-            # Step 4: Build hierarchy
-            clusters, cluster_embeddings = build_custom_hierarchy(
-                merged_topic_embeddings_array,
-                merged_topics,
-                topic_label,
-                topic_description,
-                topic_words,
-                umap_model,
-                model_path,
-            )
+            # # Step 4: Build hierarchy
+            # clusters, cluster_embeddings = build_custom_hierarchy(
+            #     merged_topic_embeddings_array,
+            #     merged_topics,
+            #     topic_label,
+            #     topic_description,
+            #     topic_words,
+            #     umap_model,
+            #     model_path,
+            # )
 
-            # Step 5: Index clusters into OpenSearch
-            create_cluster_index(os_connection, cluster_index_name)
-            index_clusters(
-                os_connection, cluster_index_name, clusters, cluster_embeddings
-            )
+            # # Step 5: Index clusters into OpenSearch
+            # create_cluster_index(os_connection, cluster_index_name)
+            # index_clusters(
+            #     os_connection, cluster_index_name, clusters, cluster_embeddings
+            # )
 
-            # Step 6: Update cluster paths in OpenSearch
-            update_cluster_paths(os_connection, cluster_index_name)
+            # # Step 6: Update cluster paths in OpenSearch
+            # update_cluster_paths(os_connection, cluster_index_name)
 
-            # Step 7: Index documents into OpenSearch
-            create_document_index(os_connection, document_index_name)
+            # # Step 7: Index documents into OpenSearch
+            # create_document_index(os_connection, document_index_name)
 
-            # Index documents
-            index_documents(
-                os_connection,
-                document_index_name,
-                data_fetcher,
-                umap_model,
-                merged_topic_embeddings_array,
-            )
+            # # Index documents
+            # index_documents(
+            #     os_connection,
+            #     document_index_name,
+            #     data_fetcher,
+            #     umap_model,
+            #     merged_topic_embeddings_array,
+            # )
 
-            logging.info("Clustering and indexing pipeline completed successfully.")
+            # logging.info("Clustering and indexing pipeline completed successfully.")
 
     finally:
         # Close OpenSearch connection

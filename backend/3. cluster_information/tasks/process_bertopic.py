@@ -26,44 +26,6 @@ def list_bertopic_models(model_path):
     return model_files
 
 
-# def get_topic_label(topic_words):
-#     prompt = f"Provide a concise and informative label of two words for a topic represented by the following words, listed in order of importance: {', '.join([word for word, _ in topic_words])}. The earlier words are more important."
-#     response = client.chat.completions.create(
-#         model="gpt-4o-mini",  # Or another suitable model like 'gpt-3.5-turbo'
-#         messages=[
-#             {
-#                 "role": "system",
-#                 "content": "You are a helpful assistant that generates concise topic labels of two words. Prioritize earlier words as they are more important when creating the label.",
-#             },
-#             {"role": "user", "content": prompt},
-#         ],
-#         max_tokens=10,
-#         n=1,
-#         temperature=0.1,
-#     )
-#     label = response.choices[0].message.content.strip()  # Access content from message
-#     return label
-
-
-# def get_topic_description(topic_words):
-#     prompt = f"Provide a brief, informative description for a topic represented by the following words, listed in order of importance: {', '.join([word for word, _ in topic_words])}. Earlier words are more important and should be emphasized in the description."
-
-#     response = client.chat.completions.create(
-#         model="gpt-4o-mini",
-#         messages=[
-#             {
-#                 "role": "system",
-#                 "content": "You are a helpful assistant that generates concise and informative topic descriptions. Use the words provided, emphasizing the most important ones that appear first.",
-#             },
-#             {"role": "user", "content": prompt},
-#         ],
-#         max_tokens=20,
-#         n=1,
-#         temperature=0.5,
-#     )
-#     description = response.choices[0].message.content.strip()
-#     return description
-
 def get_topic_metadata(topic_words):
     prompt = (
         f"You are given topic keywords in order of importance: {', '.join([word for word, _ in topic_words])}. "
@@ -94,9 +56,10 @@ def get_topic_metadata(topic_words):
             "label": None,
             "description": None,
             "error": f"Failed to parse JSON: {e}",
-            "raw_output": content
+            "raw_output": content,
         }
     return metadata
+
 
 def save_checkpoint(checkpoint_path, checkpoint_data):
     """Saves the current checkpoint data to a file."""
@@ -195,10 +158,8 @@ def process_models(model_path):
                 words = batch_topics[tid]
                 topic_words[tid] = [word for word, _ in words]
                 metadata = get_topic_metadata(words)
-                # topic_label[tid] = get_topic_label(words)
                 topic_label[tid] = metadata.get("label")
                 topic_description[tid] = metadata.get("description")
-                # topic_description[tid] = get_topic_description(words)
                 sleep(2)
 
             # Clean up variables to free memory

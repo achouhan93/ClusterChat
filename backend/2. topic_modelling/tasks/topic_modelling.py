@@ -30,20 +30,20 @@ class TopicModeller:
             end_date (str): End date in 'YYYY-MM-DD' format.
         """
         self.model_location = model_path
-        
+
         os.makedirs(self.model_location, exist_ok=True)
         self.model_paths_file = os.path.join(self.model_location, "model_paths.txt")
 
         # Dimensionality reduction with UMAP to 50 dimensions
         self.umap_model = UMAP(
-                n_components=50, min_dist=0.0, metric="cosine", random_state=42
-            )
-        
+            n_components=50, min_dist=0.0, metric="cosine", random_state=42
+        )
+
         # Clustering with HDBSCAN
         self.hdbscan_model = HDBSCAN(
-                min_cluster_size=15, metric="euclidean", cluster_selection_method="eom"
-            )
-        
+            min_cluster_size=15, metric="euclidean", cluster_selection_method="eom"
+        )
+
         self.vectorizer_model = CountVectorizer(stop_words="english")
         self.ctfidf_model = ClassTfidfTransformer(
             bm25_weighting=True, reduce_frequent_words=True
@@ -52,16 +52,14 @@ class TopicModeller:
         # Representation model
         self.representation_model = MaximalMarginalRelevance(diversity=0.3)
 
-
     def _log_memory_usage(self):
         if psutil:
-            mem = psutil.Process(os.getpid()).memory_info().rss / (1024 ** 3)
+            mem = psutil.Process(os.getpid()).memory_info().rss / (1024**3)
             log.info(f"[Memory Usage] Current process memory: {mem:.2f} GB")
 
     def _write_model_path(self, path):
         with open(self.model_paths_file, "a") as f:
             f.write(path + "\n")
-
 
     def train_bertopic_model(self, date_range, data_fetcher):
         """
@@ -170,7 +168,7 @@ class TopicModeller:
                 embeddings,
                 texts,
                 doc_info,
-                topic_model
+                topic_model,
             )
             gc.collect()
             sleep(2)

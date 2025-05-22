@@ -59,7 +59,6 @@ class Processor:
         self.scroll_size = 500
         self.chunking_strategy = chunking_strategy
 
-
     def process_articles_in_batches(self):
         fields_to_include = [
             "title",
@@ -91,11 +90,7 @@ class Processor:
                                     "abstract": "no abstract available on pubmed"
                                 }
                             },
-                            {
-                                "match_phrase": {
-                                    "abstract": "ABSTRACT TRUNCATED AT"
-                                }
-                            },
+                            {"match_phrase": {"abstract": "ABSTRACT TRUNCATED AT"}},
                         ],
                     }
                 },
@@ -145,7 +140,7 @@ class Processor:
                         logging.error(
                             f"Error during vector create and storage operation due to error {e}"
                         )
-                        
+
                     pbar.update(len(hits))
 
                     # Paginate through the search results using the scroll parameter
@@ -331,7 +326,7 @@ def main(argv=None):
 
         # parse command line arguments
         parser = argparse.ArgumentParser()
-        
+
         parser.add_argument(
             "-v",
             "--vectorcreation",
