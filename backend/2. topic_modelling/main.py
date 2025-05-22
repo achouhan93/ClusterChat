@@ -38,11 +38,11 @@ def generate_date_ranges(start_date, end_date, delta_days=15):
 def main(argv=None):
     """Main function to run the clustering pipeline."""
     try:
-        if not os.path.exists(CONFIG["CLUSTER_TALK_LOG_PATH"]):
-            os.makedirs(CONFIG["CLUSTER_TALK_LOG_PATH"])
+        if not os.path.exists(CONFIG["CLUSTER_CHAT_LOG_PATH"]):
+            os.makedirs(CONFIG["CLUSTER_CHAT_LOG_PATH"])
 
         logging.basicConfig(
-            filename=CONFIG["CLUSTER_TALK_LOG_EXE_PATH"],
+            filename=CONFIG["CLUSTER_CHAT_LOG_EXE_PATH"],
             filemode="a",
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             datefmt="%d-%m-%y %H:%M:%S",
@@ -51,7 +51,7 @@ def main(argv=None):
 
         # Establish OpenSearch Connection
         os_connection = opensearch_connection()
-        os_index = CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_COMPLETE"]
+        os_index = CONFIG["CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_COMPLETE"]
         intermediate_path = CONFIG["MODEL_PATH"]
         os.makedirs(intermediate_path, exist_ok=True)
 
@@ -59,20 +59,20 @@ def main(argv=None):
         parser = argparse.ArgumentParser(description="Clustering Pipeline")
         parser.add_argument(
             "-c",
-            "--clustertalkbackend",
+            "--clusterchatbackend",
             metavar=("START_DATE", "END_DATE"),
             type=str,
             nargs=2,
             help=(
-                "Perform clustering and store the final cluster information "
-                "based on date range in YYYY-MM-DD format."
+                "Based on date range in YYYY-MM-DD format, "
+                "train and store the BERTopic Model."
             ),
         )
 
         args = parser.parse_args()
 
-        if args.clustertalkbackend:
-            start_date, end_date = args.clustertalkbackend
+        if args.clusterchatbackend:
+            start_date, end_date = args.clusterchatbackend
             min_date = datetime.strptime(start_date, "%Y-%m-%d")
             max_date = datetime.strptime(end_date, "%Y-%m-%d")
 

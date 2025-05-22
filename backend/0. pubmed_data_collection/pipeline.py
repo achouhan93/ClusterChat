@@ -64,12 +64,12 @@ def insertArticlesByTimeRange(database, index_name, *args, batchSize=100):
 def main(argv=None):
     CONFIG = utils.load_config_from_env()
 
-    if not os.path.exists(CONFIG["CLUSTER_TALK_LOG_PATH"]):
-        os.makedirs(CONFIG["CLUSTER_TALK_LOG_PATH"])
-        print(f'created: {CONFIG["CLUSTER_TALK_LOG_PATH"]} directory.')
+    if not os.path.exists(CONFIG["CLUSTER_CHAT_LOG_PATH"]):
+        os.makedirs(CONFIG["CLUSTER_CHAT_LOG_PATH"])
+        print(f'created: {CONFIG["CLUSTER_CHAT_LOG_PATH"]} directory.')
 
     logging.basicConfig(
-        filename=CONFIG["CLUSTER_TALK_LOG_EXE_PATH"],
+        filename=CONFIG["CLUSTER_CHAT_LOG_EXE_PATH"],
         filemode="a",
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%d-%b-%y %H:%M:%S",
@@ -79,7 +79,7 @@ def main(argv=None):
     start_time = time()
     logging.info("Current date and time: " + str(start_time))
 
-    database = [CONFIG["CLUSTER_TALK_OPENSEARCH_SOURCE_INDEX"]]
+    database = [CONFIG["CLUSTER_CHAT_OPENSEARCH_SOURCE_INDEX"]]
     database_connection = opensearch_connection(database)
 
     parser = argparse.ArgumentParser("Specify which articles you want to fetch")

@@ -34,7 +34,7 @@ class Processor:
 
         self.device = f"cuda:{cuda.current_device()}" if cuda.is_available() else "cpu"
 
-        embed_model_id = CONFIG["CLUSTER_TALK_EMBEDDING_MODEL"]
+        embed_model_id = CONFIG["CLUSTER_CHAT_EMBEDDING_MODEL"]
 
         self.embed_model = SentenceTransformer(
             model_name_or_path=embed_model_id,
@@ -315,11 +315,11 @@ def main(argv=None):
     try:
         CONFIG = loadConfigFromEnv()
 
-        if not os.path.exists(CONFIG["CLUSTER_TALK_LOG_PATH"]):
-            os.makedirs(CONFIG["CLUSTER_TALK_LOG_PATH"])
+        if not os.path.exists(CONFIG["CLUSTER_CHAT_LOG_PATH"]):
+            os.makedirs(CONFIG["CLUSTER_CHAT_LOG_PATH"])
 
         logging.basicConfig(
-            filename=CONFIG["CLUSTER_TALK_LOG_EXE_PATH"],
+            filename=CONFIG["CLUSTER_CHAT_LOG_EXE_PATH"],
             filemode="a",
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             datefmt="%d-%m-%y %H:%M:%S",
@@ -327,7 +327,7 @@ def main(argv=None):
         )
 
         os_connection = opensearch_connection()
-        source_os_index = CONFIG["CLUSTER_TALK_OPENSEARCH_SOURCE_INDEX"]
+        source_os_index = CONFIG["CLUSTER_CHAT_OPENSEARCH_SOURCE_INDEX"]
 
         # parse command line arguments
         parser = argparse.ArgumentParser()
@@ -354,9 +354,9 @@ def main(argv=None):
         args = parser.parse_args()
 
         if args.chunking == "complete":
-            target_os_index = CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_COMPLETE"]
+            target_os_index = CONFIG["CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_COMPLETE"]
         elif args.chunking == "sentence":
-            target_os_index = CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_SENTENCE"]
+            target_os_index = CONFIG["CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_SENTENCE"]
 
         if len(args.vectorcreation) >= 0:
             if len(args.vectorcreation) == 1:

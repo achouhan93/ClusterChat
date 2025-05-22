@@ -132,8 +132,8 @@ Execute the below steps to setup Python Environment (tested with Python 3.9.0):
 4. Rename the `.env-example` to `.env` and populate the file with the required credentials
 
 ```sh
-CLUSTER_TALK_LOG_EXE_PATH="logs/insights_execution.log"
-CLUSTER_TALK_LOG_PATH="logs/"
+CLUSTER_CHAT_LOG_EXE_PATH="logs/insights_execution.log"
+CLUSTER_CHAT_LOG_PATH="logs/"
 
 # Required for Backend functionalities, i.e., Embedding creation and storage, 
 # Topic Modeling and Clustering information construction and storage,
@@ -143,19 +143,19 @@ CLUSTER_TALK_LOG_PATH="logs/"
 OPENSEARCH_USERNAME = "your_opensearch_username"
 OPENSEARCH_PASSWORD = "your_opensearch_password"
 OPENSEARCH_PORT=your_opensearch_port
-CLUSTER_TALK_OPENSEARCH_HOST="your_opensearch_host_name"
+CLUSTER_CHAT_OPENSEARCH_HOST="your_opensearch_host_name"
 
-CLUSTER_TALK_OPENSEARCH_SOURCE_INDEX="frameintell_pubmed"
-CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_COMPLETE="frameintell_pubmed_abstract_embeddings"
-CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_SENTENCE="frameintell_pubmed_sentence_embeddings"
-CLUSTER_TALK_CLUSTER_INFORMATION_INDEX="frameintell_clusterchat_clusterinformation"
-CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX="frameintell_clusterchat_documentinformation"
+CLUSTER_CHAT_OPENSEARCH_SOURCE_INDEX="frameintell_pubmed"
+CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_COMPLETE="frameintell_pubmed_abstract_embeddings"
+CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_SENTENCE="frameintell_pubmed_sentence_embeddings"
+CLUSTER_CHAT_CLUSTER_INFORMATION_INDEX="frameintell_clusterchat_clusterinformation"
+CLUSTER_CHAT_DOCUMENT_INFORMATION_INDEX="frameintell_clusterchat_documentinformation"
 
 # HuggingFace Key
 HUGGINGFACE_AUTH_KEY = "your-huggingface-api-key"
 
 ## Required for embedding computation for Abstract and Sentences
-CLUSTER_TALK_EMBEDDING_MODEL="NeuML/pubmedbert-base-embeddings"
+CLUSTER_CHAT_EMBEDDING_MODEL="NeuML/pubmedbert-base-embeddings"
 ## Required for topic label and topic description generation
 OPENAI_API_KEY = "your-openapi-key"
 ## Required for Answer Generation in the QA Pipeline

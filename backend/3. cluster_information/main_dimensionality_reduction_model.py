@@ -38,7 +38,7 @@ def opensearch_connection():
     os = OpenSearch(
         hosts=[
             {
-                "host": CONFIG["CLUSTER_TALK_OPENSEARCH_HOST"],
+                "host": CONFIG["CLUSTER_CHAT_OPENSEARCH_HOST"],
                 "port": CONFIG["OPENSEARCH_PORT"],
             }
         ],

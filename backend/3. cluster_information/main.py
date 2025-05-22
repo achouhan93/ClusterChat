@@ -16,11 +16,11 @@ CONFIG = load_config_from_env()
 
 def main():
     try:
-        if not os.path.exists(CONFIG["CLUSTER_TALK_LOG_PATH"]):
-            os.makedirs(CONFIG["CLUSTER_TALK_LOG_PATH"])
+        if not os.path.exists(CONFIG["CLUSTER_CHAT_LOG_PATH"]):
+            os.makedirs(CONFIG["CLUSTER_CHAT_LOG_PATH"])
 
         logging.basicConfig(
-            filename=CONFIG["CLUSTER_TALK_LOG_EXE_PATH"],
+            filename=CONFIG["CLUSTER_CHAT_LOG_EXE_PATH"],
             filemode="a",
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             datefmt="%d-%m-%y %H:%M:%S",
@@ -32,9 +32,9 @@ def main():
         os_connection = opensearch_connection()
 
         # Initialize DataFetcher
-        os_index = CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_COMPLETE"]
-        cluster_index_name = CONFIG["CLUSTER_TALK_CLUSTER_INFORMATION_INDEX"]
-        document_index_name = CONFIG["CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX"]
+        os_index = CONFIG["CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_COMPLETE"]
+        cluster_index_name = CONFIG["CLUSTER_CHAT_CLUSTER_INFORMATION_INDEX"]
+        document_index_name = CONFIG["CLUSTER_CHAT_DOCUMENT_INFORMATION_INDEX"]
         model_path = CONFIG["MODEL_PATH"]
 
         # parse command line arguments

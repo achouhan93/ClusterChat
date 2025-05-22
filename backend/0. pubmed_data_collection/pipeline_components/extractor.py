@@ -139,7 +139,7 @@ def getIdsFromXML(xmlObject, os):
         x_ids = tree.findall(".//Id")
         ids = [i.text for i in x_ids]
 
-        index_name = CONFIG["CLUSTER_TALK_OPENSEARCH_SOURCE_INDEX"]
+        index_name = CONFIG["CLUSTER_CHAT_OPENSEARCH_SOURCE_INDEX"]
         non_existing_ids = opensearch_existing_check(os, index_name, ids)
 
         return non_existing_ids
@@ -154,7 +154,7 @@ def getIdsFromXMLForTimeRange(xmlObject, os):
         pubmed_articles = tree.findall(".//PubmedArticle")
         ids = [i.find(".//PMID").text for i in pubmed_articles]
 
-        index_name = CONFIG["CLUSTER_TALK_OPENSEARCH_SOURCE_INDEX"]
+        index_name = CONFIG["CLUSTER_CHAT_OPENSEARCH_SOURCE_INDEX"]
         non_existing_ids = opensearch_existing_check(os, index_name, ids)
 
         return non_existing_ids
