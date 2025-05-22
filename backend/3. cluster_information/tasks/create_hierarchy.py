@@ -9,12 +9,77 @@ import pickle
 import os
 from time import sleep
 import math
+from scipy.cluster.hierarchy import linkage, fcluster
+import gc
+from collections import defaultdict
 
 CONFIG = load_config_from_env()
 log = logging.getLogger(__name__)
 
 # Initialize OpenAI client
 client = OpenAI(api_key=CONFIG["OPENAI_API_KEY"])
+
+
+def estimate_optimal_distance_threshold(
+    embeddings,
+    desired_cluster_range=(100, 200),
+    linkage_method="average",
+    metric="cosine",
+    threshold_candidates=None,
+):
+    """
+    Automatically estimate a suitable distance threshold for Agglomerative Clustering
+    that results in a number of clusters within a specified range.
+
+    Parameters:
+    -----------
+    embeddings : np.ndarray
+        Array of shape (n_samples, n_features) representing topic embeddings.
+    
+    desired_cluster_range : tuple of int, optional (default=(100, 200))
+        A (min_clusters, max_clusters) range that defines the acceptable number of clusters.
+    
+    linkage_method : str, optional (default="average")
+        Linkage criterion to use. One of {'single', 'complete', 'average', 'ward'}.
+    
+    metric : str, optional (default="cosine")
+        Distance metric to use in the clustering (for example, 'euclidean' or 'cosine').
+    
+    threshold_candidates : list of float, optional
+        Specific distance thresholds to try. If None, a default range from 0.2 to 1.0
+        in increments of 0.05 is used.
+
+    Returns:
+    --------
+    best_threshold : float or None
+        The first distance threshold that gives a number of clusters within the desired range.
+        Returns None if no such threshold is found.
+
+    cluster_counts : dict
+        Dictionary mapping each tested threshold to the number of clusters produced.
+    """
+    if threshold_candidates is None:
+        threshold_candidates = np.arange(0.2, 1.01, 0.05)
+
+    Z = linkage(embeddings, method=linkage_method, metric=metric)
+    cluster_counts = {}
+    best_threshold = None
+
+    for threshold in threshold_candidates:
+        labels = fcluster(Z, t=threshold, criterion='distance')
+        n_clusters = len(set(labels))
+        cluster_counts[threshold] = n_clusters
+
+        if desired_cluster_range[0] <= n_clusters <= desired_cluster_range[1]:
+            best_threshold = threshold
+            break  # return first threshold within range
+
+    del Z
+    del labels
+    gc.collect()
+    sleep(2)
+
+    return best_threshold, cluster_counts
 
 
 def get_cluster_metadata(child_labels, child_descriptions):
@@ -128,62 +193,120 @@ def build_custom_hierarchy(
             clusters[str(tid)]["x"] = float(topic_umap_embeddings[i][0])
             clusters[str(tid)]["y"] = float(topic_umap_embeddings[i][1])
 
+        best_threshold, cluster_stats = estimate_optimal_distance_threshold(
+            embeddings=merged_topic_embeddings_array,
+            desired_cluster_range=(10, 20)
+            )
+
         agg = AgglomerativeClustering(
-            n_clusters=None, distance_threshold=0.0, metric="cosine", linkage="average"
-        )
-        agg.fit(merged_topic_embeddings_array)
-        children = agg.children_
-
-        current_cluster_index = (
-            max([int(k) for k in clusters.keys() if k.isdigit()]) + 1
+            n_clusters=None, distance_threshold=best_threshold, metric="cosine", linkage="average"
         )
 
-        for merge_id, (left_idx, right_idx) in enumerate(children):
-            cid_i = (
-                str(left_idx) if str(left_idx) in clusters else f"cluster_{left_idx}"
-            )
-            cid_j = (
-                str(right_idx) if str(right_idx) in clusters else f"cluster_{right_idx}"
-            )
+        # agg.fit(merged_topic_embeddings_array)
+        # children = agg.children_
+        Z = linkage(merged_topic_embeddings_array, method="average", metric="cosine")
+        flat_labels = fcluster(Z, t=best_threshold, criterion='distance')
+        grouped = defaultdict(list)
 
-            new_depth = max(clusters[cid_i]["depth"], clusters[cid_j]["depth"]) + 1
-            if new_depth > depth:
-                log.info(f"Skipping merge at depth {new_depth} > max_depth ({depth})")
+        # current_cluster_index = (
+        #     max([int(k) for k in clusters.keys() if k.isdigit()]) + 1
+        # )
+
+        # for merge_id, (left_idx, right_idx) in enumerate(children):
+        #     cid_i = (
+        #         str(left_idx) if str(left_idx) in clusters else f"cluster_{left_idx}"
+        #     )
+        #     cid_j = (
+        #         str(right_idx) if str(right_idx) in clusters else f"cluster_{right_idx}"
+        #     )
+
+        #     new_depth = max(clusters[cid_i]["depth"], clusters[cid_j]["depth"]) + 1
+        #     if new_depth > depth:
+        #         log.info(f"Skipping merge at depth {new_depth} > max_depth ({depth})")
+        #         continue
+
+        #     child_labels = [clusters[cid_i]["label"], clusters[cid_j]["label"]]
+        #     child_descriptions = [
+        #         clusters[cid_i]["description"],
+        #         clusters[cid_j]["description"],
+        #     ]
+        #     metadata = get_cluster_metadata(child_labels, child_descriptions)
+        #     combined_label = metadata.get("label")
+        #     combined_description = metadata.get("description")
+        #     sleep(2)
+
+        #     new_cluster_id = f"cluster_{current_cluster_index}"
+        #     current_cluster_index += 1
+
+        #     size_i = clusters[cid_i]["size"]
+        #     size_j = clusters[cid_j]["size"]
+        #     total_size = size_i + size_j
+
+        #     avg_x = (
+        #         size_i * clusters[cid_i]["x"] + size_j * clusters[cid_j]["x"]
+        #     ) / total_size
+        #     avg_y = (
+        #         size_i * clusters[cid_i]["y"] + size_j * clusters[cid_j]["y"]
+        #     ) / total_size
+        #     new_embedding = (
+        #         size_i * cluster_embeddings[cid_i] + size_j * cluster_embeddings[cid_j]
+        #     ) / total_size
+
+        #     new_path = clusters[cid_i]["path"] + "/" + clusters[cid_j]["path"]
+        #     full_path = new_cluster_id + "/" + new_path
+
+        #     combined_topic_words = list(
+        #         set(clusters[cid_i]["topic_words"] + clusters[cid_j]["topic_words"])
+        #     )
+
+        #     clusters[new_cluster_id] = {
+        #         "cluster_id": new_cluster_id,
+        #         "label": combined_label,
+        #         "topic_information": None,
+        #         "description": combined_description,
+        #         "topic_words": combined_topic_words,
+        #         "is_leaf": False,
+        #         "depth": new_depth,
+        #         "path": full_path,
+        #         "x": avg_x,
+        #         "y": avg_y,
+        #         "children": [cid_i, cid_j],
+        #         "size": total_size,
+        #     }
+
+        #     cluster_embeddings[new_cluster_id] = new_embedding
+
+        #     checkpoint_data = {
+        #         "clusters": clusters,
+        #         "cluster_embeddings": cluster_embeddings,
+        #         "linkage_matrix": children,
+        #     }
+        #     save_checkpoint(checkpoint_path, checkpoint_data)
+        for idx, label in enumerate(flat_labels):
+            grouped[label].append(str(current_topic_ids[idx]))
+
+        current_cluster_index = max([int(k) for k in clusters.keys() if k.isdigit()]) + 1
+
+        for group_id, member_ids in grouped.items():
+            if len(member_ids) <= 1:
                 continue
 
-            child_labels = [clusters[cid_i]["label"], clusters[cid_j]["label"]]
-            child_descriptions = [
-                clusters[cid_i]["description"],
-                clusters[cid_j]["description"],
-            ]
+            child_labels = [clusters[tid]["label"] for tid in member_ids]
+            child_descriptions = [clusters[tid]["description"] for tid in member_ids]
+
             metadata = get_cluster_metadata(child_labels, child_descriptions)
             combined_label = metadata.get("label")
             combined_description = metadata.get("description")
             sleep(2)
 
+            total_size = sum(clusters[tid]["size"] for tid in member_ids)
+            avg_x = sum(clusters[tid]["x"] * clusters[tid]["size"] for tid in member_ids) / total_size
+            avg_y = sum(clusters[tid]["y"] * clusters[tid]["size"] for tid in member_ids) / total_size
+            avg_embedding = np.mean([cluster_embeddings[tid] for tid in member_ids], axis=0)
+            combined_topic_words = list(set(word for tid in member_ids for word in clusters[tid]["topic_words"]))
             new_cluster_id = f"cluster_{current_cluster_index}"
             current_cluster_index += 1
-
-            size_i = clusters[cid_i]["size"]
-            size_j = clusters[cid_j]["size"]
-            total_size = size_i + size_j
-
-            avg_x = (
-                size_i * clusters[cid_i]["x"] + size_j * clusters[cid_j]["x"]
-            ) / total_size
-            avg_y = (
-                size_i * clusters[cid_i]["y"] + size_j * clusters[cid_j]["y"]
-            ) / total_size
-            new_embedding = (
-                size_i * cluster_embeddings[cid_i] + size_j * cluster_embeddings[cid_j]
-            ) / total_size
-
-            new_path = clusters[cid_i]["path"] + "/" + clusters[cid_j]["path"]
-            full_path = new_cluster_id + "/" + new_path
-
-            combined_topic_words = list(
-                set(clusters[cid_i]["topic_words"] + clusters[cid_j]["topic_words"])
-            )
+            full_path = new_cluster_id + "/" + "/".join(member_ids)
 
             clusters[new_cluster_id] = {
                 "cluster_id": new_cluster_id,
@@ -192,20 +315,24 @@ def build_custom_hierarchy(
                 "description": combined_description,
                 "topic_words": combined_topic_words,
                 "is_leaf": False,
-                "depth": new_depth,
+                "depth": 1,
                 "path": full_path,
                 "x": avg_x,
                 "y": avg_y,
-                "children": [cid_i, cid_j],
+                "children": member_ids,
                 "size": total_size,
             }
 
-            cluster_embeddings[new_cluster_id] = new_embedding
+            cluster_embeddings[new_cluster_id] = avg_embedding
+
+            for tid in member_ids:
+                clusters[tid]["depth"] = 2
+                clusters[tid]["path"] = new_cluster_id + "/" + tid
 
         checkpoint_data = {
             "clusters": clusters,
             "cluster_embeddings": cluster_embeddings,
-            "linkage_matrix": children,
+            "linkage_matrix": Z,
         }
         save_checkpoint(checkpoint_path, checkpoint_data)
 
