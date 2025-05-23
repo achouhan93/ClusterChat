@@ -203,28 +203,28 @@ def main():
                     model_path,
                 )
 
-            # Step 6: Index clusters into OpenSearch
-            create_cluster_index(os_connection, cluster_index_name)
-            index_clusters(
-                os_connection, cluster_index_name, clusters, cluster_embeddings
-            )
+            # # Step 6: Index clusters into OpenSearch
+            # create_cluster_index(os_connection, cluster_index_name)
+            # index_clusters(
+            #     os_connection, cluster_index_name, clusters, cluster_embeddings
+            # )
 
-            # Step 7: Update cluster paths in OpenSearch
-            update_cluster_paths(os_connection, cluster_index_name)
+            # # Step 7: Update cluster paths in OpenSearch
+            # update_cluster_paths(os_connection, cluster_index_name)
 
-            # Step 8: Index documents into OpenSearch
-            create_document_index(os_connection, document_index_name)
+            # # Step 8: Index documents into OpenSearch
+            # create_document_index(os_connection, document_index_name)
 
-            # Index documents
-            index_documents(
-                os_connection,
-                document_index_name,
-                data_fetcher,
-                umap_model,
-                cleaned_merged_topic_embeddings_array,
-            )
+            # # Index documents
+            # index_documents(
+            #     os_connection,
+            #     document_index_name,
+            #     data_fetcher,
+            #     umap_model,
+            #     cleaned_merged_topic_embeddings_array,
+            # )
 
-            logging.info("Clustering and indexing pipeline completed successfully.")
+            # logging.info("Clustering and indexing pipeline completed successfully.")
 
     finally:
         # Close OpenSearch connection

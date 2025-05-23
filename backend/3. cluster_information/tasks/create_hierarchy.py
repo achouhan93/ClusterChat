@@ -9,6 +9,7 @@ import pickle
 import os
 from time import sleep
 import math
+from tqdm import tqdm
 
 CONFIG = load_config_from_env()
 log = logging.getLogger(__name__)
@@ -107,7 +108,10 @@ def build_custom_hierarchy(
         completed_merge_id = -1
         current_topic_ids = list(merged_topics.keys())
 
-        for i, tid in enumerate(current_topic_ids):
+        for i, tid in tqdm(enumerate(current_topic_ids), 
+                           total=len(current_topic_ids), 
+                           desc="Initializing leaf clusters"
+                           ):
             clusters[str(tid)] = {
                 "cluster_id": str(tid),
                 "label": topic_label[tid],
@@ -141,7 +145,11 @@ def build_custom_hierarchy(
              for k in clusters.keys()]) + 1
     )
 
-    for merge_id, (left_idx, right_idx) in enumerate(linkage_matrix):
+    for merge_id, (left_idx, right_idx) in tqdm(
+        enumerate(linkage_matrix), 
+        total=len(linkage_matrix), 
+        desc="Merging Clusters"
+        ):
         if merge_id <= completed_merge_id:
             continue
 
@@ -157,20 +165,16 @@ def build_custom_hierarchy(
             continue
 
         new_depth = max(clusters[cid_i]["depth"], clusters[cid_j]["depth"]) + 1
-        # if new_depth > depth:
-        #     log.info(f"Skipping merge at depth {new_depth} > max_depth ({depth})")
-        #     continue
 
         child_labels = [clusters[cid_i]["label"], clusters[cid_j]["label"]]
         child_descriptions = [
             clusters[cid_i]["description"],
             clusters[cid_j]["description"],
         ]
-        # metadata = get_cluster_metadata(child_labels, child_descriptions)
-        # combined_label = metadata.get("label")
-        # combined_description = metadata.get("description")
-        combined_label = "text"
-        combined_description = "text"
+        
+        metadata = get_cluster_metadata(child_labels, child_descriptions)
+        combined_label = metadata.get("label")
+        combined_description = metadata.get("description")
         sleep(2)
 
         new_cluster_id = f"cluster_{current_cluster_index}"
@@ -187,8 +191,8 @@ def build_custom_hierarchy(
             size_i * clusters[cid_i]["y"] + size_j * clusters[cid_j]["y"]
         ) / total_size
         new_embedding = (
-            size_i * cluster_embeddings[cid_i] + size_j * cluster_embeddings[cid_j]
-        ) / total_size
+            cluster_embeddings[cid_i] + cluster_embeddings[cid_j]
+        ) / 2
 
         new_path = clusters[cid_i]["path"] + "/" + clusters[cid_j]["path"]
         full_path = new_cluster_id + "/" + new_path
