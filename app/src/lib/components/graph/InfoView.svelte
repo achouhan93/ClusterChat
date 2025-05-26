@@ -7,7 +7,7 @@
 		selectedNodes,
 		SelectedDateRange,
 		SelectedSearchQuery,
-		SelectedCluster,
+		SelectedClusters,
 		hNode,
 		allClusters,
 		ClustersTree
@@ -44,7 +44,7 @@
 		// Reverse Selection (maybe make a variable that stores the selection from the search)
 		SelectedDateRange.set(undefined);
 		SelectedSearchQuery.set('');
-		SelectedCluster.set('');
+		SelectedClusters.set([]);
 		unselectNodes();
 	};
 
@@ -100,9 +100,9 @@
 		const foundClusters = theClusters.filter((cluster) => clusterLinage.has(cluster.id));
 		foundClusters.sort((c1, c2) => c2.depth - c1.depth);
 		const foundClusterName: string[] = foundClusters.map((c) => c.label);
-		if ($SelectedCluster.length !== 0) {
+		if ($SelectedClusters.length !== 0) {
 			const selected_cluster: Cluster = theClusters.find(
-				(cluster) => cluster.id === $SelectedCluster[0]
+				(cluster) => cluster.id === $SelectedClusters[0]
 			) ?? undefinedCluster;
 			return getClusterRange(foundClusterName, selected_cluster.label);
 		} else {
@@ -122,7 +122,7 @@
 	hNode.subscribe((n) => {
 		if (!n || $hNode.isClusterNode) return;
 
-		if (isSelectionActive()) {
+		if (get(isSelectionActive)) {
 			const nodes = get(NodesToShow);
 			const foundNodeIndex = nodes.findIndex((node) => node.id === n.id);
 
@@ -154,7 +154,7 @@
 <div class="node-information-view">
 	<h4>Node Information</h4>
 	<div class="node-info-list">
-		{#if $NodesToShow.length != 0 && !$NodesToShow[$currentPage - 1].isClusterNode}
+		{#if $NodesToShow.length !== 0 && !$NodesToShow[$currentPage - 1].isClusterNode}
 			{#if $NodesToShow.length > 1}
 				<div class="pagation-btns">
 					<button class="pagation-btn" on:click={handleLeftClick}><ChevronLeft /></button>
@@ -163,7 +163,8 @@
 				</div>
 			{/if}
 
-			{#if $SelectedDateRange != undefined || $SelectedSearchQuery != '' || $SelectedCluster != ''}
+			{#if get(isSelectionActive)}
+			
 				<div class="filter-tags">
 					{#if $SelectedDateRange != undefined}
 						<div class="selected-date-range">
@@ -177,9 +178,9 @@
 						</div>
 					{/if}
 
-					{#if $SelectedCluster != ''}
+					{#if $SelectedClusters.length !== 0}
 						<div class="selected-cluster">
-							<span><b>Cluster:</b> {getClusterLabelById($SelectedCluster)}</span>
+							<span><b>Cluster:</b> {getClusterLabelById(get(SelectedClusters)[0])}</span>
 						</div>
 					{/if}
 
@@ -287,7 +288,7 @@
 		color: var(--blue-5);
 	}
 	.info-field-content.collapsed {
-		overflow-y: hidden; /* Allows vertical scrolling */
+		overflow-y: scroll; /* Allows vertical scrolling */
 		overflow-x: hidden;
 		height: var(--size-fluid-5);
 		display: flex;

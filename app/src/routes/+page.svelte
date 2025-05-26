@@ -183,9 +183,9 @@
 			><span class="icon"><Menu/></span
 			><span class="label">{sideCollapsed ? "Show Side" : "Collapase Side"}</span></button
 			>
-			<button id="multiple-node-btn" class={$selectMultipleClusters ? "btn rollout-button active" : "btn rollout-button"} on:click={toggleMultipleClustersMode} title="Multiple Cluster Selection"
+			<button id="multiple-node-btn" class="btn rollout-button" on:click={toggleMultipleClustersMode} title={$selectMultipleClusters? "Multiple Cluster Selection is active": "Single Cluster Selection is active"}
 			><span class="icon"><Combine/></span
-			><span class="label">Multiple Cluster Selection</span></button
+			><span class="label">{$selectMultipleClusters? "Select Single Clusters": "Select Multiple Clusters"}</span></button
 			>
 			<button id="hierarchical-label" class="btn rollout-button" on:click={toggleHierarchicalLabels} title="Toggle Hierarchical Cluster Label"
 			><span class="icon"><BringToFront/></span
@@ -203,9 +203,9 @@
 
 		</div>
 
-			<div id="chat-interface" style="width: {sideCollapsed ? '0' : '100%'}; overflow: hidden;" ><ChatInterface /></div>
+			<div id="chat-interface" style="{sideCollapsed ? 'width:0; overflow:hidden;' : 'width:100%;'}" ><ChatInterface /></div>
 
-			<div id="info-view" style="width: {sideCollapsed ? '0' : '100%'}; overflow: hidden;">
+			<div id="info-view" style="{sideCollapsed ? 'width: 0; overflow:hidden;' : 'width:100%'}">
 				<div
 				class="resize-handle-horizontal"
 				role="button"

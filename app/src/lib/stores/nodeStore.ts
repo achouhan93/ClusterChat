@@ -8,10 +8,15 @@ import type  {
 // graph.ts
 
 export let selectedNodes = writable<Node[]>([]);
+export let selectedNodesCount = writable<number>(0);
 
-export let SelectedDateRange = writable<[Date, Date]>(undefined);
+selectedNodes.subscribe((arr) => {
+  selectedNodesCount.set(arr.length);
+})
+
+export let SelectedDateRange = writable<[Date, Date] | [number, number]>(undefined);
 export let SelectedSearchQuery = writable<string>('');
-export let SelectedCluster = writable<string[]>([]);
+export let SelectedClusters = writable<string[]>([]);
 
 export let selectMultipleClusters = writable<boolean>(false); // TODO: change to multiple Cluster selection
 export let selectNodeRange: boolean = false;

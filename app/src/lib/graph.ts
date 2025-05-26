@@ -17,14 +17,15 @@ import {
 	links,
 	SelectedDateRange,
 	SelectedSearchQuery,
-	SelectedCluster,
+	SelectedClusters,
 	selectedNodes,
 	selectMultipleClusters,
 	hNode,
 	hoveredNodeId,
 	allClusters,
 	allClusterNodes,
-	ClustersTree
+	ClustersTree,
+	selectedNodesCount
 } from '$lib/stores/nodeStore';
 
 import {
@@ -37,7 +38,7 @@ import '../app.css';
 import type { Node, Link, Cluster } from '$lib/types';
 //import { DragSelect } from '$lib/components/graph/DragSelect';
 // import { dragSelection } from './components/graph/D3DragSelection';
-import { get, writable } from 'svelte/store';
+import { get, derived } from 'svelte/store';
 
 // Useful global variables
 let graph: Cosmograph<Node, Link>;
@@ -45,7 +46,7 @@ let timeline: CosmographTimeline<Node>;
 
 const BATCH_SIZE: number = 10000;
 const MAX_SIZE: number = 100000; // TODO: make this dynamic
-const BATCH_NUMBER_START: number = 3; // TO CHANGE BEFORE PUSH
+const BATCH_NUMBER_START: number = 1; // TO CHANGE BEFORE PUSH
 const INITIAL_BATCH_SIZE: number = BATCH_NUMBER_START * BATCH_SIZE;
 const HOVERED_NODE_SIZE: number = 0.5;
 // let $batch_number= writable<number>(BATCH_NUMBER_START);
@@ -91,7 +92,7 @@ const handleZoomEvent = async () => {
  * @param {Node} clickedNode - The node that was clicked. Can be null or undefined if no node was selected.
  */
 const handleNodeClick = async (clickedNode: Node) => {
-	if (clickedNode && !isFilteringActive() && get(document_specific)) {
+	if (clickedNode && !get(isSelectionActive) && get(document_specific)) {
 		showLabelsfor([clickedNode] as Node[]);
 		graph.selectNode(clickedNode);
 		setSelectedNodes([clickedNode]);
@@ -116,22 +117,26 @@ const handleNodeClick = async (clickedNode: Node) => {
  * Add MultiClusterSelection as an Option!
  */
 const handleLabelClick = async (node: Node) => {
-	if (node.isClusterNode && !isSelectionActive()) {
-		SelectedCluster.set(node.id);
-		console.log(`Selected Cluster Id: ${get(SelectedCluster)}`);
-		const cluster_ids: string[] = getAssociatedLeafs(node.id, node.title);
-		console.log(cluster_ids);
-		LoadNodesByCluster(cluster_ids);
+	if (node.isClusterNode && node.id !== '') {
 
-		// get all the rendered nodes and filter the ones that have the cluster ids
-		const set_cluster_ids = new Set(cluster_ids);
-		const filteredNodes = getRenderedNodes().filter((node) => set_cluster_ids.has(node.cluster));
+		if (!selectMultipleClusters){
+			SelectedClusters.set([node.id])
+		} else {
+			get(SelectedClusters).push(node.id)
+		}
 
-		if (getSelectedNodes().length === 0) {
+			// get all the rendered nodes and filter the ones that have the cluster ids
+			const cluster_ids: string[] = getAssociatedLeafs(node.id, node.title);
+			LoadNodesByCluster(cluster_ids);
+			const set_cluster_ids = new Set(cluster_ids);
+			const filteredNodes = getRenderedNodes().filter((node) => set_cluster_ids.has(node.cluster));
+
+
+		if (!get(isSelectionActive)) {
 			selectedNodes.set(filteredNodes);
 			filteredNodes.push(node);
 			graph.selectNodes(filteredNodes);
-		} else {
+		} else if (get(isSelectionActive)) {
 			const filteredNodesSet = new Set(filteredNodes.map((node) => node.id));
 			const nodesToShowonGraph = getSelectedNodes().filter((node) => filteredNodesSet.has(node.id));
 			selectedNodes.set(nodesToShowonGraph);
@@ -154,39 +159,37 @@ const handleLabelClick = async (node: Node) => {
  *
  * @param {[Date, Date] | [number, number]} selection - The selected date or numeric range from the timeline.
  */
-const handleTimelineSelection = async (selection: [Date, Date] | [number, number]) => {
-	if (getRenderedNodes().length != 0) {
-		if (selection.length === 2 && selection[0] instanceof Date && selection[1] instanceof Date) {
-			SelectedDateRange.set(selection);
-		}
+const handleTimelineSelection = async(selection:[Date,Date] | [number,number]) => {
+	
+	if(getRenderedNodes().length !=0){
+		if(selection.length === 2 && selection[0] instanceof Date && selection[1] instanceof Date){SelectedDateRange.set(selection)}
 
-		const nodesToSelect: Node[] = getRenderedNodes().filter(
-			(node) =>
-				node.date != undefined &&
-				new Date(node.date) >= selection[0] &&
-				new Date(node.date) <= selection[1]
-		);
+		const nodesToSelect:Node[]=getRenderedNodes().filter(node => 
+			node.date != undefined && new Date(node.date) >= selection[0] && new Date(node.date) <= selection[1])
+			
+		if (getSelectedNodes().length == 0)	{
 
-		if (getSelectedNodes().length == 0) {
 			//setSelectedNodes(nodesToSelect)
-			selectedNodes.set(nodesToSelect);
-			const graphNodesToSelect = nodesToSelect.concat(get(allClusterNodes));
-			graph.selectNodes(graphNodesToSelect);
-		} else {
-			// TODO
-			const nodesToSelectSet = new Set(nodesToSelect.map((node) => node.id));
-			const nodesToShowonGraph = getSelectedNodes().filter((node) => nodesToSelectSet.has(node.id));
-			selectedNodes.set(nodesToShowonGraph);
-			const graphNodesToSelect = nodesToShowonGraph.concat(get(allClusterNodes));
-			graph.selectNodes(graphNodesToSelect);
+			selectedNodes.set(nodesToSelect)
+			const graphNodesToSelect = nodesToSelect.concat(get(allClusterNodes))
+			graph.selectNodes(graphNodesToSelect)
 		}
+		else {
+			// TODO
+			const nodesToSelectSet = new Set(nodesToSelect.map(node => node.id))
+			const nodesToShowonGraph = getSelectedNodes().filter(node => nodesToSelectSet.has(node.id))
+			selectedNodes.set(nodesToShowonGraph)
+			const graphNodesToSelect = nodesToShowonGraph.concat(get(allClusterNodes))
+			graph.selectNodes(graphNodesToSelect)
+		 } 
 
 		// TODO: for some reason the graph selection only appears,
 		// when the user clicks outside the blue timeline selection box!
 		// so setting the selection to [0,0] emulates that
-		timeline.setSelection([0, 0]);
+		timeline.setSelection([0,0])
 	}
-};
+
+}
 
 const handleOnZoomStartHierarchical = async () => {
 	const ZoomLevel: number = graph.getZoomLevel() || 10;
@@ -204,7 +207,7 @@ const handleOnZoomStartHierarchical = async () => {
 	}
 	GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
 	updateGraphConfig(GraphConfig);
-	console.log(ZoomLevel);
+	// console.log(ZoomLevel);
 };
 
 const handleOnZoomStartTopLabel = () => {
@@ -219,7 +222,7 @@ const handleOnZoomStartTopLabel = () => {
 	}
 	GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
 	updateGraphConfig(GraphConfig);
-	console.log(ZoomLevel);
+	// console.log(ZoomLevel);
 };
 
 /* ====================================== Config for the Graph and Timeline ====================================== */
@@ -262,7 +265,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	onNodeMouseOver(hoveredNode) {
 		// Deactivate hover if a selection is present
 		if (hoveredNode) {
-			if ((isSelectionActive() && isSelectedNode(hoveredNode)) || !isSelectionActive()) {
+			if ((get(isSelectionActive) && isSelectedNode(hoveredNode)) || !get(isSelectionActive)) {
 				hNode.set(hoveredNode);
 				hoveredNodeId.set(hoveredNode.id); // Track the hovered node by ID
 				const main_frame = document.getElementById('main-graph');
@@ -325,7 +328,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		}
 		GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
 		updateGraphConfig(GraphConfig);
-		console.log(ZoomLevel);
+		// console.log(ZoomLevel);
 
 		// change all
 		/* 		if(userDriven && e.sourceEvent.type != "mousedown"){		
@@ -448,12 +451,12 @@ export function unselectNodes() {
 	const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
 	search_bar_input.value = '';
 	SelectedSearchQuery.set('');
-	SelectedCluster.set([]);
+	SelectedClusters.set([]);
 }
 
 /**
  * Gets all the selected Node objects.
- * @return {Node[]} An array of selected Node objects.
+ * @return An array of selected Node objects.
  * @todo very slow for 5M Nodes, need another way.
  */
 
@@ -493,7 +496,7 @@ export function setSelectedNodesOnGraph(nodes: Node[]) {
 
 export function updateSelectedNodes(thenodes: Node[]) {
 	selectedNodes.update((existingNodes) => {
-		const existingIds = new Set(existingNodes.map((node) => node.id));
+		const existingIds = new Set(existingNodes.map((n) => n.id));
 
 		const uniqueNewNodes = thenodes.filter((newNode) => !existingIds.has(newNode.id));
 
@@ -504,8 +507,8 @@ export function updateSelectedNodes(thenodes: Node[]) {
 
 export function conditionalSelectNodes(theNodes: Node[]) {
 	// get the matches
-	const newNodes = new Set(theNodes.map((node) => node.id));
-	const nodesToShowonGraph = getSelectedNodes().filter((node) => newNodes.has(node.id));
+	const newNodes = new Set(theNodes.map((n) => n.id));
+	const nodesToShowonGraph = getSelectedNodes().filter((n) => newNodes.has(n.id));
 	setSelectedNodes(nodesToShowonGraph);
 }
 
@@ -523,19 +526,14 @@ function showLabelsfor(nodes: Node[]) {
 	}
 }
 
-export function isFilteringActive(): boolean {
-	if (
-		get(SelectedDateRange) != undefined ||
-		get(SelectedSearchQuery) != '' ||
-		get(SelectedCluster).length !== 0
-	)
-		return true;
-	return false;
-}
+// export function isSelectionActive(): boolean {
+// 	return get(selectedNodesCount) !== 0;
+// }
 
-export function isSelectionActive(): boolean {
-	return getSelectedNodes().length !== 0;
-}
+export let isSelectionActive = derived(
+  selectedNodesCount,
+  ($count) => $count !== 0
+);
 
 export function getClusterNodesByClusterIds(cluster_ids: string[]): Node[] {
 	const ClusterNodeIds = new Set(cluster_ids);
