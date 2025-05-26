@@ -108,10 +108,11 @@ def build_custom_hierarchy(
         completed_merge_id = -1
         current_topic_ids = list(merged_topics.keys())
 
-        for i, tid in tqdm(enumerate(current_topic_ids), 
-                           total=len(current_topic_ids), 
-                           desc="Initializing leaf clusters"
-                           ):
+        for i, tid in tqdm(
+            enumerate(current_topic_ids),
+            total=len(current_topic_ids),
+            desc="Initializing leaf clusters",
+        ):
             clusters[str(tid)] = {
                 "cluster_id": str(tid),
                 "label": topic_label[tid],
@@ -136,32 +137,33 @@ def build_custom_hierarchy(
 
         agg = AgglomerativeClustering(
             n_clusters=None, distance_threshold=0.0, metric="cosine", linkage="average"
-            )
+        )
         agg.fit(merged_topic_embeddings_array)
         linkage_matrix = agg.children_
-        
+
     current_cluster_index = (
-        max([int(k.replace("cluster_", "")) if "cluster_" in k else int(k)
-             for k in clusters.keys()]) + 1
+        max(
+            [
+                int(k.replace("cluster_", "")) if "cluster_" in k else int(k)
+                for k in clusters.keys()
+            ]
+        )
+        + 1
     )
 
     for merge_id, (left_idx, right_idx) in tqdm(
-        enumerate(linkage_matrix), 
-        total=len(linkage_matrix), 
-        desc="Merging Clusters"
-        ):
+        enumerate(linkage_matrix), total=len(linkage_matrix), desc="Merging Clusters"
+    ):
         if merge_id <= completed_merge_id:
             continue
 
-        cid_i = (
-            str(left_idx) if str(left_idx) in clusters else f"cluster_{left_idx}"
-        )
-        cid_j = (
-            str(right_idx) if str(right_idx) in clusters else f"cluster_{right_idx}"
-        )
+        cid_i = str(left_idx) if str(left_idx) in clusters else f"cluster_{left_idx}"
+        cid_j = str(right_idx) if str(right_idx) in clusters else f"cluster_{right_idx}"
 
         if cid_i not in clusters or cid_j not in clusters:
-            log.warning(f"Skipping merge {merge_id}: missing clusters {cid_i} or {cid_j}")
+            log.warning(
+                f"Skipping merge {merge_id}: missing clusters {cid_i} or {cid_j}"
+            )
             continue
 
         new_depth = max(clusters[cid_i]["depth"], clusters[cid_j]["depth"]) + 1
@@ -171,7 +173,7 @@ def build_custom_hierarchy(
             clusters[cid_i]["description"],
             clusters[cid_j]["description"],
         ]
-        
+
         metadata = get_cluster_metadata(child_labels, child_descriptions)
         combined_label = metadata.get("label")
         combined_description = metadata.get("description")
@@ -190,9 +192,7 @@ def build_custom_hierarchy(
         avg_y = (
             size_i * clusters[cid_i]["y"] + size_j * clusters[cid_j]["y"]
         ) / total_size
-        new_embedding = (
-            cluster_embeddings[cid_i] + cluster_embeddings[cid_j]
-        ) / 2
+        new_embedding = (cluster_embeddings[cid_i] + cluster_embeddings[cid_j]) / 2
 
         new_path = clusters[cid_i]["path"] + "/" + clusters[cid_j]["path"]
         full_path = new_cluster_id + "/" + new_path
@@ -244,7 +244,9 @@ def build_custom_hierarchy(
     log.info(f"Final hierarchy depth: {max_depth}")
 
     root_cluster = max(clusters.values(), key=lambda c: c["depth"])
-    log.info(f"Root cluster ID: {root_cluster['cluster_id']}, depth: {root_cluster['depth']}")
+    log.info(
+        f"Root cluster ID: {root_cluster['cluster_id']}, depth: {root_cluster['depth']}"
+    )
 
     with open(os.path.join(model_path, "clusters.pkl"), "wb") as f:
         pickle.dump(clusters, f)

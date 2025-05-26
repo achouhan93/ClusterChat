@@ -9,10 +9,7 @@ import pickle
 from utils import load_config_from_env
 from time import sleep
 from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
 from difflib import SequenceMatcher
-
-semantic_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 log = logging.getLogger(__name__)
 CONFIG = load_config_from_env()
@@ -257,7 +254,7 @@ def deduplicate_topics(
     merged_topic_embeddings_array,
     model_path,
     label_threshold=0.9,
-    embedding_similarity_threshold=0.9
+    embedding_similarity_threshold=0.9,
 ):
     checkpoint_path = os.path.join(model_path, "dedup_checkpoint.pkl")
     log.info("Starting the topic deduplication process")
@@ -270,7 +267,7 @@ def deduplicate_topics(
             checkpoint["cleaned_topic_label"],
             checkpoint["cleaned_topic_description"],
             checkpoint["cleaned_topic_words"],
-            checkpoint["dedup_map"]
+            checkpoint["dedup_map"],
         )
 
     topic_ids = sorted(merged_topics.keys())
@@ -294,9 +291,7 @@ def deduplicate_topics(
             if tid_j in seen:
                 continue
             if is_fuzzy_label_match(topic_label[tid_i], topic_label[tid_j]):
-                if (
-                    sim_matrix[i][j] >= embedding_similarity_threshold
-                ):
+                if sim_matrix[i][j] >= embedding_similarity_threshold:
                     canonical_tid = min(tid_i, tid_j)
                     redundant_tid = max(tid_i, tid_j)
                     dedup_map[redundant_tid] = canonical_tid
@@ -339,7 +334,10 @@ def deduplicate_topics(
         pickle.dump(new_topic_description, f)
     with open(os.path.join(model_path, "cleaned_topic_words.pkl"), "wb") as f:
         pickle.dump(new_topic_words, f)
-    np.save(os.path.join(model_path, "cleaned_merged_topic_embeddings_array.npy"), dedup_embeddings_array)
+    np.save(
+        os.path.join(model_path, "cleaned_merged_topic_embeddings_array.npy"),
+        dedup_embeddings_array,
+    )
 
     checkpoint_data = {
         "merged_topics": new_merged_topics,
@@ -348,15 +346,17 @@ def deduplicate_topics(
         "topic_description": new_topic_description,
         "topic_words": new_topic_words,
         "dedup_map": dedup_map,
-        "remap_ids": remap_ids
+        "remap_ids": remap_ids,
     }
     save_checkpoint(checkpoint_path, checkpoint_data)
-    log.info(f"Deduplication completed. {len(dedup_map)} topics merged. {len(new_merged_topics)} topics retained.")
+    log.info(
+        f"Deduplication completed. {len(dedup_map)} topics merged. {len(new_merged_topics)} topics retained."
+    )
 
     return (
         new_merged_topics,
         dedup_embeddings_array,
         new_topic_label,
         new_topic_description,
-        new_topic_words
+        new_topic_words,
     )

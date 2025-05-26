@@ -13,6 +13,7 @@ from time import sleep
 
 CONFIG = load_config_from_env()
 
+
 def main():
     try:
         if not os.path.exists(CONFIG["CLUSTER_CHAT_LOG_PATH"]):
@@ -101,10 +102,18 @@ def main():
                 ) = process_models(model_path)
 
             # Step 3: Deduplicate topics
-            cleaned_merged_topics_path = os.path.join(model_path, "cleaned_merged_topics.pkl")
-            cleaned_topic_label_path = os.path.join(model_path, "cleaned_topic_label.pkl")
-            cleaned_topic_description_path = os.path.join(model_path, "cleaned_topic_description.pkl")
-            cleaned_topic_words_path = os.path.join(model_path, "cleaned_topic_words.pkl")
+            cleaned_merged_topics_path = os.path.join(
+                model_path, "cleaned_merged_topics.pkl"
+            )
+            cleaned_topic_label_path = os.path.join(
+                model_path, "cleaned_topic_label.pkl"
+            )
+            cleaned_topic_description_path = os.path.join(
+                model_path, "cleaned_topic_description.pkl"
+            )
+            cleaned_topic_words_path = os.path.join(
+                model_path, "cleaned_topic_words.pkl"
+            )
             cleaned_merged_embeddings_path = os.path.join(
                 model_path, "cleaned_merged_topic_embeddings_array.npy"
             )
@@ -128,7 +137,9 @@ def main():
                     cleaned_topic_description = pickle.load(f)
                 with open(cleaned_topic_words_path, "rb") as f:
                     cleaned_topic_words = pickle.load(f)
-                cleaned_merged_topic_embeddings_array = np.load(cleaned_merged_embeddings_path)
+                cleaned_merged_topic_embeddings_array = np.load(
+                    cleaned_merged_embeddings_path
+                )
             else:
                 logging.info("Deduplicating topics to remove redundant entries.")
                 (
@@ -143,7 +154,7 @@ def main():
                     topic_description,
                     topic_words,
                     merged_topic_embeddings_array,
-                    model_path
+                    model_path,
                 )
 
                 logging.info("Saved deduplicated topics to cleaned_topics.pkl")
@@ -155,7 +166,7 @@ def main():
             del merged_topic_embeddings_array
             gc.collect()
             sleep(2)
-            
+
             # Step 4: Load UMAP model
             logging.info(f"Loading the trained UMAP model")
             umap_path = os.path.join(model_path, "umap_2_components.joblib")
@@ -165,9 +176,11 @@ def main():
                 with open(umap_path, "rb") as f:
                     umap_model = joblib.load(f)
             else:
-                embeddings = shuffle(cleaned_merged_topic_embeddings_array, random_state=42)
+                embeddings = shuffle(
+                    cleaned_merged_topic_embeddings_array, random_state=42
+                )
                 umap_model = UMAP(n_components=2, n_jobs=1, random_state=42)
-                
+
                 # Fit UMAP on topic embeddings only
                 umap_model.fit(embeddings)
                 joblib.dump(
@@ -181,11 +194,7 @@ def main():
             cluster_embeddings_path = os.path.join(model_path, "cluster_embeddings.pkl")
 
             if all(
-                os.path.exists(path)
-                for path in [
-                    cluster_path,
-                    cluster_embeddings_path
-                ]
+                os.path.exists(path) for path in [cluster_path, cluster_embeddings_path]
             ):
                 logging.info("Loading cluster information")
                 with open(cluster_path, "rb") as f:
@@ -203,28 +212,28 @@ def main():
                     model_path,
                 )
 
-            # # Step 6: Index clusters into OpenSearch
-            # create_cluster_index(os_connection, cluster_index_name)
-            # index_clusters(
-            #     os_connection, cluster_index_name, clusters, cluster_embeddings
-            # )
+            # Step 6: Index clusters into OpenSearch
+            create_cluster_index(os_connection, cluster_index_name)
+            index_clusters(
+                os_connection, cluster_index_name, clusters, cluster_embeddings
+            )
 
-            # # Step 7: Update cluster paths in OpenSearch
-            # update_cluster_paths(os_connection, cluster_index_name)
+            # Step 7: Update cluster paths in OpenSearch
+            update_cluster_paths(os_connection, cluster_index_name)
 
-            # # Step 8: Index documents into OpenSearch
-            # create_document_index(os_connection, document_index_name)
+            # Step 8: Index documents into OpenSearch
+            create_document_index(os_connection, document_index_name)
 
-            # # Index documents
-            # index_documents(
-            #     os_connection,
-            #     document_index_name,
-            #     data_fetcher,
-            #     umap_model,
-            #     cleaned_merged_topic_embeddings_array,
-            # )
+            # Index documents
+            index_documents(
+                os_connection,
+                document_index_name,
+                data_fetcher,
+                umap_model,
+                cleaned_merged_topic_embeddings_array,
+            )
 
-            # logging.info("Clustering and indexing pipeline completed successfully.")
+            logging.info("Clustering and indexing pipeline completed successfully.")
 
     finally:
         # Close OpenSearch connection
