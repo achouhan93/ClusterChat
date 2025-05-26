@@ -37,11 +37,7 @@ def create_cluster_index(os_connection, cluster_index_name):
                     "cluster_id": {"type": "keyword"},
                     "label": {"type": "text", "analyzer": "modified_analyzer"},
                     "topic_information": {
-                        "type": "nested",
-                        "properties": {
-                            "word": {"type": "text"},
-                            "score": {"type": "float"},
-                        },
+                        "type": "object"
                     },
                     "description": {"type": "text", "analyzer": "modified_analyzer"},
                     "topic_words": {"type": "text"},
@@ -62,11 +58,7 @@ def create_cluster_index(os_connection, cluster_index_name):
                         },
                     },  # Cluster embedding vector
                     "pairwise_similarity": {
-                        "type": "nested",
-                        "properties": {
-                            "other_cluster_id": {"type": "keyword"},
-                            "similarity_score": {"type": "float"},
-                        },
+                        "type": "object"
                     },
                 }
             },
