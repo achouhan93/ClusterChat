@@ -5,6 +5,7 @@ from tqdm import tqdm
 
 log = logging.getLogger(__name__)
 BATCH_SIZE = 50
+MAX_PATH_BYTES = 32766
 
 
 def create_cluster_index(os_connection, cluster_index_name):
@@ -37,9 +38,7 @@ def create_cluster_index(os_connection, cluster_index_name):
                 "properties": {
                     "cluster_id": {"type": "keyword"},
                     "label": {"type": "text", "analyzer": "modified_analyzer"},
-                    "topic_information": {
-                        "type": "object"
-                    },
+                    "topic_information": {"type": "object"},
                     "description": {"type": "text", "analyzer": "modified_analyzer"},
                     "topic_words": {"type": "text"},
                     "x": {"type": "float"},
@@ -58,9 +57,7 @@ def create_cluster_index(os_connection, cluster_index_name):
                             "parameters": {"ef_construction": 40, "m": 8},
                         },
                     },  # Cluster embedding vector
-                    "pairwise_similarity": {
-                        "type": "object"
-                    },
+                    "pairwise_similarity": {"type": "object"},
                 }
             },
         }
@@ -101,6 +98,22 @@ def index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddin
                 {"other_cluster_id": other_id, "similarity_score": score}
                 for other_id, score in cluster["pairwise_similarity"].items()
             ]
+
+            # --- Safe truncation for path ---
+            raw_path = cluster.get("path", "")
+            if (
+                isinstance(raw_path, str)
+                and len(raw_path.encode("utf-8")) > MAX_PATH_BYTES
+            ):
+                log.warning(
+                    f"Truncating 'path' for cluster {cluster_id} to fit byte limit"
+                )
+                truncated_path = raw_path.encode("utf-8")[: MAX_PATH_BYTES - 10].decode(
+                    "utf-8", errors="ignore"
+                )
+            else:
+                truncated_path = raw_path
+
             action = {
                 "_index": cluster_index_name,
                 "_id": cluster_id,
@@ -112,7 +125,7 @@ def index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddin
                     "topic_words": cluster["topic_words"],
                     "is_leaf": cluster["is_leaf"],
                     "depth": cluster["depth"],
-                    "path": cluster["path"],
+                    "path": truncated_path,
                     "x": cluster["x"],
                     "y": cluster["y"],
                     "children": cluster["children"] if "children" in cluster else [],
@@ -139,7 +152,9 @@ def index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddin
     if cluster_actions:
         try:
             bulk(os_connection, cluster_actions)
-            log.info(f"Indexed remaining {len(cluster_actions)} clusters into OpenSearch.")
+            log.info(
+                f"Indexed remaining {len(cluster_actions)} clusters into OpenSearch."
+            )
         except Exception as e:
             log.error(f"Error indexing final batch: {e}")
 
