@@ -10,7 +10,10 @@
 		SelectedClusters,
 		hNode,
 		allClusters,
-		ClustersTree
+		ClustersTree,
+
+		selectedClustersCount
+
 	} from '$lib/stores/nodeStore'
 
 	import { ChevronRight, ChevronLeft, X, ExternalLink } from 'lucide-svelte';
@@ -26,9 +29,7 @@
 	let showMoreAbstract: boolean = false;
 
 	// Toggle function to show/hide content
-	function toggleShowMoreCluster() {
-		showMoreCluster = !showMoreCluster;
-	}
+
 	function toggleShowMoreAbstract() {
 		showMoreAbstract = !showMoreAbstract;
 	}
@@ -163,16 +164,16 @@
 				</div>
 			{/if}
 
-			{#if get(isSelectionActive)}
-			
+			<!-- {#if get(isSelectionActive)} -->
+			{#if $SelectedDateRange !== undefined || $SelectedSearchQuery !== '' || $SelectedClusters.length !== 0}
 				<div class="filter-tags">
-					{#if $SelectedDateRange != undefined}
+					{#if $SelectedDateRange !== undefined}
 						<div class="selected-date-range">
 							<span><b>Date:</b> {formatDateRange($SelectedDateRange)}</span>
 						</div>
 					{/if}
 
-					{#if $SelectedSearchQuery != ''}
+					{#if $SelectedSearchQuery !== ''}
 						<div class="selected-search">
 							<span><b>Search:</b> {$SelectedSearchQuery}</span>
 						</div>
@@ -180,7 +181,11 @@
 
 					{#if $SelectedClusters.length !== 0}
 						<div class="selected-cluster">
+							{#if $SelectedClusters.length === 1}
 							<span><b>Cluster:</b> {getClusterLabelById(get(SelectedClusters)[0])}</span>
+							{:else}
+							<span><b>Clusters:</b>{get(SelectedClusters).map(getClusterLabelById).join(', ')}</span>
+							{/if}
 						</div>
 					{/if}
 
