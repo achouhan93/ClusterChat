@@ -1,11 +1,22 @@
 <script lang="ts">
 	// style
 	import 'open-props/buttons';
-	import { Send, LoaderPinwheel, File, ChartScatter,RotateCw, Sparkle, Trash2 } from 'lucide-svelte';
+	import 'open-props/style';
+	import 'open-props/normalize';
+	import {
+		Send,
+		LoaderPinwheel,
+		File,
+		ChartScatter,
+		RotateCw,
+		Sparkle,
+		Trash2
+	} from 'lucide-svelte';
 
 	// utils
 	import { splitTextIntoLines } from '$lib/utils';
-	import { getSelectedNodes, document_specific } from '$lib/graph';
+	import { getSelectedNodes } from '$lib/graph';
+	import { document_specific } from '$lib/stores/uiStore';
 	import type { Node, ChatQuestion, Source } from '$lib/types';
 	import SourceCards from './SourceCards.svelte';
 
@@ -17,55 +28,56 @@
 	//import { API_URL } from '$env/static/public';
 
 	let isLoading = writable<boolean>(false);
-	let messages = writable<{ question: string; answer: string; sources:string[] }[]>([]);
+	let messages = writable<{ question: string; answer: string; sources: string[] }[]>([]);
 	let TimeOutTryAgain = writable<boolean>(false);
-	let currentFoundSources = writable<Source[]>([])
+	let currentFoundSources = writable<Source[]>([]);
 	let payload: ChatQuestion;
 
-	async function fetchSourceInfo(doc_ids:string[]){
+	async function fetchSourceInfo(doc_ids: string[]) {
 		const response = await fetch('/api/opensearch/findtitle', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
 
-        body: JSON.stringify({ doc_ids }) // Send the array in the request body as JSON
-    });
-	const data = await response.json();
-	const foundSources:Source[] = data.map(item  => (
-		{
-			id: item._source.document_id,
-			title: item._source.title
-		} satisfies Source
-	))
-	currentFoundSources.set(foundSources)
+			body: JSON.stringify({ doc_ids }) // Send the array in the request body as JSON
+		});
+		const data = await response.json();
+		const foundSources: Source[] = data.map(
+			(item) =>
+				({
+					id: item._source.document_id,
+					title: item._source.title
+				}) satisfies Source
+		);
+		currentFoundSources.set(foundSources);
 	}
 
 	async function fetchChatAnswerWithTimeout(payload: ChatQuestion, timeout = 15000) {
-	// Timeout promise that rejects after the specified time
-	const timeoutPromise = new Promise<null>((_, reject) =>
-		setTimeout(() => reject(new Error("Request timed out after 15 seconds")), timeout)
-	);
+		// Timeout promise that rejects after the specified time
+		const timeoutPromise = new Promise<null>((_, reject) =>
+			setTimeout(() => reject(new Error('Request timed out after 15 seconds')), timeout)
+		);
 
-	// Fetch request with a timeout
-	const fetchPromise = (async () => {
-		try {
-		const response = await fetch('http://localhost:8100/ask', {
-			method: 'POST',
-			headers: {
-			'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(payload)
-		});
-		return response.ok ? response : null;
-		} catch (error) {
-			console.error('Error fetching chat completion: ', error);
-			return null;
-		}
-	})();
+		// Fetch request with a timeout
+		const fetchPromise = (async () => {
+			try {
+				const response = await fetch('http://localhost:8100/ask', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(payload)
+				});
+				return response.ok ? response : null;
+			} catch (error) {
+				console.error('Error fetching chat completion: ', error);
+				return null;
+			}
+		})();
 
-	// Race the fetchPromise against the timeoutPromise
-	return Promise.race([fetchPromise, timeoutPromise]);
+		// Race the fetchPromise against the timeoutPromise
+		return Promise.race([fetchPromise, timeoutPromise]);
 	}
 
 	function scrollToBottom(scrollArea: HTMLDivElement) {
@@ -76,16 +88,15 @@
 		});
 	}
 
-	async function handleClearChat(){
-		messages.set([])
+	async function handleClearChat() {
+		messages.set([]);
 	}
 
 	async function handleTryAgain() {
-		
 		try {
-			TimeOutTryAgain.set(false)
+			TimeOutTryAgain.set(false);
 			const chatCompletion = await fetchChatAnswerWithTimeout(payload);
-			if (!chatCompletion) throw new Error("Failed to get chat completion");
+			if (!chatCompletion) throw new Error('Failed to get chat completion');
 			const fastData = await chatCompletion.json();
 			const textContent = fastData.answer;
 			const formattedText = splitTextIntoLines(textContent, 25);
@@ -93,15 +104,16 @@
 			// else currentFoundSources.set([])
 			messages.update((msgs) => {
 				msgs[msgs.length - 1].answer = formattedText; // Set the answer
-				msgs[msgs.length -1].sources =  (fastData.sources.length != 0 && get(document_specific)) ? fastData.sources.slice(0,3) : [];
+				msgs[msgs.length - 1].sources =
+					fastData.sources.length != 0 && get(document_specific)
+						? fastData.sources.slice(0, 3)
+						: [];
 				return msgs;
 			});
-			
-		} catch (error){
-			TimeOutTryAgain.set(true)
-			console.error(error)
+		} catch (error) {
+			TimeOutTryAgain.set(true);
+			console.error(error);
 		}
-
 	}
 
 	async function handleSendMessage(event: Event) {
@@ -113,7 +125,7 @@
 		const formattedUserInput = splitTextIntoLines(InputMessage, 30);
 		const userMessage: string = formattedUserInput;
 
-		messages.update((msgs) => [...msgs, { question: userMessage, answer: '', sources:[] }]);
+		messages.update((msgs) => [...msgs, { question: userMessage, answer: '', sources: [] }]);
 
 		// clear input after sending message
 		const chat_input = document.getElementById('chat-input') as HTMLInputElement;
@@ -121,17 +133,19 @@
 
 		// get context from selected node
 		let selectedNodes: Node[] = getSelectedNodes();
-		if (!selectedNodes) return
+		if (!selectedNodes) return;
 		payload = {
 			question: InputMessage,
-			question_type: $document_specific? "document-specific" : "corpus-specific", // TODO: make it dropdown list of options
-			supporting_information: selectedNodes.map((node) => (node.isClusterNode ? '' : (node.id as string)))
+			question_type: $document_specific ? 'document-specific' : 'corpus-specific', // TODO: make it dropdown list of options
+			supporting_information: selectedNodes.map((node) =>
+				node.isClusterNode ? '' : (node.id as string)
+			)
 		};
-		
+
 		try {
-			TimeOutTryAgain.set(false)
-  			const chatCompletion = await fetchChatAnswerWithTimeout(payload);
-  			if (!chatCompletion) throw new Error("Failed to get chat completion");
+			TimeOutTryAgain.set(false);
+			const chatCompletion = await fetchChatAnswerWithTimeout(payload);
+			if (!chatCompletion) throw new Error('Failed to get chat completion');
 
 			const fastData = await chatCompletion.json();
 			const textContent = fastData.answer;
@@ -140,26 +154,26 @@
 			// else currentFoundSources.set([])
 			messages.update((msgs) => {
 				msgs[msgs.length - 1].answer = formattedText; // Set the answer
-				msgs[msgs.length -1].sources =  (fastData.sources.length != 0 && get(document_specific)) ? fastData.sources.slice(0,3) : [];
+				msgs[msgs.length - 1].sources =
+					fastData.sources.length != 0 && get(document_specific)
+						? fastData.sources.slice(0, 3)
+						: [];
 				return msgs;
 			});
-
-			
-
 		} catch (error) {
-			TimeOutTryAgain.set(true)	
-  			console.error(error);
-			
+			TimeOutTryAgain.set(true);
+			console.error(error);
 		}
 
-		$isLoading = false;	
+		$isLoading = false;
 	}
 
 	afterUpdate(() => {
 		// Scroll to the bottom of the message container after each update
 		scrollToBottom(document.querySelector('.scroll-area') as HTMLDivElement);
 	});
-	
+
+
 </script>
 
 <div class="chat-side">
@@ -167,35 +181,40 @@
 		<!-- Title that dynamically changes based on the toggle state -->
 		<div class="scroll-area-header">
 			<h4>{$document_specific ? 'Interact with Document(s)' : 'Interact with Corpus'}</h4>
-			<button class="menu-button" aria-label="Options" on:click|stopPropagation={handleClearChat} title='Clear Chat'
-			><Trash2/></button>
+			<button
+				class="menu-button"
+				aria-label="Options"
+				on:click|stopPropagation={handleClearChat}
+				title="Clear Chat"><Trash2 /></button
+			>
 		</div>
-		
+
 		{#each $messages as message, index}
 			<div class="message user">
 				<p>
 					{message.question}
 				</p>
 			</div>
-			{#if message.answer === '' && !$TimeOutTryAgain && index === $messages.length-1}
+			{#if message.answer === '' && !$TimeOutTryAgain && index === $messages.length - 1}
 				<div class="loader"><LoaderPinwheel size={20} /></div>
-
-			{:else if $TimeOutTryAgain && index === $messages.length-1}
-				<div class="try-again-message"><button on:click={handleTryAgain}>Try Again <RotateCw/></button></div>
+			{:else if $TimeOutTryAgain && index === $messages.length - 1}
+				<div class="try-again-message">
+					<button on:click={handleTryAgain}>Try Again <RotateCw /></button>
+				</div>
 			{:else}
 				<div class="message assistant">
 					<p>
 						{message.answer}
 					</p>
 					{#if message.sources.length != 0}
-					<div class="sources-list">
-						{#each message.sources as doc_source}
-						<SourceCards
-							title = {doc_source}
-							source = {`https://pubmed.ncbi.nlm.nih.gov/${doc_source}`}
-						/>
-					{/each}
-					</div>
+						<div class="sources-list">
+							{#each message.sources as doc_source}
+								<SourceCards
+									title={doc_source}
+									source={`https://pubmed.ncbi.nlm.nih.gov/${doc_source}`}
+								/>
+							{/each}
+						</div>
 					{/if}
 				</div>
 			{/if}
@@ -204,19 +223,24 @@
 	<div class="input-fields">
 		<!-- Toggle for Document Specific / Corpus Specific -->
 		<div class="toggle-container">
-			<button class="toggle-button { $document_specific ? 'active' : '' }" on:click={() => document_specific.set(true)}>
+			<button
+				class="toggle-button {$document_specific ? 'active' : ''}"
+				on:click={() => document_specific.set(true)}
+			>
 				<File style="display:inline-block; vertical-align:middle; margin-right:5px" /> Document(s)
 			</button>
 
 			<!-- Corpus Button -->
-			<button class="toggle-button { !$document_specific ? 'active' : '' }" on:click={() => document_specific.set(false)}>
+			<button
+				class="toggle-button {!$document_specific ? 'active' : ''}"
+				on:click={() => document_specific.set(false)}
+			>
 				<ChartScatter style="display:inline-block; vertical-align:middle; margin-right:5px" /> Corpus
 			</button>
 		</div>
 
 		<!-- Input field and send button -->
 		<form on:submit|preventDefault={handleSendMessage}>
-
 			<!--Feature on Hold-->
 			<!-- <button type="button" class="chat-model-btn" title='Choose Model'
 			><Sparkle size={20}/></button
@@ -225,7 +249,7 @@
 				<option value="mixtral">Mixtral</option>
 				<option value="openai">OpenAI</option>
 			</select> -->
-			
+
 			<input
 				id="chat-input"
 				autocomplete="off"
@@ -257,6 +281,7 @@
 			'input-field input-field';
 		height: 100%;
 		width: 100%;
+		animation: fade-in 300ms var(--ease-2);
 	}
 
 	.input-fields {
@@ -281,7 +306,7 @@
 		padding: var(--size-2);
 	}
 
-	#chat-input:hover{
+	#chat-input:hover {
 		cursor: text;
 	}
 	button {
@@ -303,14 +328,14 @@
 	}
 
 	.scroll-area-header {
-	display: grid;
-	grid-template-columns: 1fr auto 1fr;
-	align-items: center;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
 	}
 
 	.scroll-area-header h4 {
-	grid-column: 2;
-	text-align: center;
+		grid-column: 2;
+		text-align: center;
 	}
 
 	.scroll-area-header button {
@@ -362,7 +387,7 @@
 		max-width: fit-content;
 		color: var(--surface-4-dark);
 	}
-	.try-again-message{
+	.try-again-message {
 		align-self: center;
 	}
 	.try-again-message button {
@@ -397,7 +422,9 @@
 		font-size: 12px;
 		display: flex;
 		align-items: center;
-		transition: background-color 0.3s ease, color 0.3s ease;
+		transition:
+			background-color 0.3s ease,
+			color 0.3s ease;
 	}
 
 	/* Highlight the active button */
@@ -411,7 +438,7 @@
 		background-color: #0056b3;
 		color: white;
 	}
-		
+
 	.send-btn {
 		padding: 10px 20px;
 		background-color: #007bff;
@@ -422,16 +449,16 @@
 	}
 	.sources-list {
 		margin-top: var(--size-3);
-		display:inline-flex;
+		display: inline-flex;
 		flex-direction: row;
 		gap: var(--size-2);
 		flex-wrap: nowrap;
 	}
-	#model-accessor {
+	/* #model-accessor {
 		background-color: var(--blue-4);
 		color: var(--gray-0);
 		width: fit-content;
-	}
+	} */
 	/* .chat-model-btn {
 		background-color: var(--blue-4);
 		color: var(--gray-0);
