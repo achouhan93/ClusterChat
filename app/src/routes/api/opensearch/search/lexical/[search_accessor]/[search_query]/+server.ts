@@ -22,14 +22,16 @@ export async function GET({ params }) {
 			index: CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX,
 			body: {
 				query: {
-					match: {
-						_id: params.id
+					match_phrase_prefix: {
+						[params.search_accessor]: {
+							query: params.search_query
+						}
 					}
 				},
 				_source: {
-					includes: ['abstract', 'authors:name', 'keywords:name', 'journal:title']
+					includes: [params.search_accessor]
 				},
-				size: 1
+				size: 10000
 			}
 		});
 		return new Response(JSON.stringify(response.body.hits.hits));

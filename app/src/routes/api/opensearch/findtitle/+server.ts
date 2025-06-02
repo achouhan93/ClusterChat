@@ -41,8 +41,8 @@ export async function POST({ request }) {
 					terms: { document_id: ids }
 				},
 				_source: {
-					includes: ["document_id","title"]
-				},
+					includes: ['document_id', 'title']
+				}
 			}
 		});
 
