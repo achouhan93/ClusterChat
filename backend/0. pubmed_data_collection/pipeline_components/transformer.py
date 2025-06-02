@@ -1,15 +1,30 @@
+import sys
+import calendar
+import logging
 import datetime
 import xml.etree.ElementTree as ET
-import logging
-import calendar
-import numpy as np
+from typing import Optional, Dict, List, Any
 from tqdm import tqdm
-import sys
 
 log = logging.getLogger(__name__)
 
 
-def safe_parse_date(year, month, day, pmid=None, context=""):
+def safe_parse_date(
+    year: str, month: str, day: str, pmid: Optional[str] = None, context: str = ""
+) -> Optional[str]:
+    """
+    Safely parse a date from string or integer values, correcting invalid days where possible.
+
+    Args:
+        year (str): Year component of the date.
+        month (str): Month component of the date.
+        day (str): Day component of the date.
+        pmid (str): PubMed ID for context logging.
+        context (str): Context for which the date is being parsed.
+
+    Returns:
+        Optional[str]: ISO formatted date string if successful; otherwise, None.
+    """
     try:
         return datetime.date(int(year), int(month), int(day)).isoformat()
     except ValueError as e:
@@ -27,38 +42,51 @@ def safe_parse_date(year, month, day, pmid=None, context=""):
             return corrected_date
         except Exception as ex:
             log.error(f"[PMID: {pmid}] Date correction failed: {ex}")
-            return None  # or return an indicative placeholder like "0000-00-00"
+            return None
 
 
 class ArticleTransformer:
-    def __init__(self, element_tree):
+    def __init__(self, element_tree: ET.Element):
+        """
+        Initialize the ArticleTransformer.
 
-        self.tree = element_tree
+        Args:
+            element_tree (ET.Element): XML tree representing a PubMed article.
+        """
+        self.tree: ET.Element = element_tree
         self.pmid = None
         self.title = None
-        self.vernacularTitle = None
+        self.vernacular_title = None
         self.abstract = None
-        self.otherAbstract = None
+        self.other_abstract = None
         self.language = None
         self.status = None
-        self.articleDate = None
+        self.article_date = None
         self.history = []
         self.authors = []
         self.grants = []
         self.chemicals = []
         self.keywords = []
-        self.meshTerms = []
-        self.publicationTypes = []
-        self.journalInformation = None
-        self.fullTextURL = "NA"
-        self.vectorisedFlag = "N"
-        self.nlpProcessedFlag = "N"
-        self.fullText = "NA"
+        self.mesh_terms = []
+        self.publication_types = []
+        self.journal_information = None
+        self.full_text_url = "NA"
+        self.vectorised_flag = "N"
+        self.nlp_processed_flag = "N"
+        self.full_text = "NA"
 
-        # PMID
-        self.pmid = self.tree.find(".//PMID").text
+        self._parse_article()
 
-        # AritcleTitle
+    def _parse_article(self) -> None:
+        """
+        Extracts all required fields from the XML tree.
+        """
+        # Basic identifiers and metadata
+        pmid_elem = self.tree.find(".//PMID")
+        if pmid_elem is not None:
+            self.pmid = pmid_elem.text
+
+        # ArticleTitle
         x_title = self.tree.find(".//ArticleTitle")
         if x_title is not None:
             self.title = "".join(list(x_title.itertext()))
@@ -66,19 +94,20 @@ class ArticleTransformer:
         # Vernacular Title
         x_vernacular_title = self.tree.find(".//VernacularTitle")
         if x_vernacular_title is not None:
-            self.vernacularTitle = "".join(list(x_vernacular_title.itertext()))
+            self.vernacular_title = "".join(list(x_vernacular_title.itertext()))
 
         # other abstract equivalent to abstract
         x_other_abstr = self.tree.find(".//OtherAbstract")
         if x_other_abstr is not None:
-            self.otherAbstract = []
+            self.other_abstract = []
             all_other_text = x_other_abstr.findall(".//AbstractText")
 
             for t in all_other_text:
-                self.otherAbstract.append("".join(list(t.itertext())))
-            self.otherAbstract = " ".join(self.otherAbstract)
+                self.other_abstract.append("".join(list(t.itertext())))
 
-        # abstract, the loop is used to separate new sections with a blank space at the beginning
+            self.other_abstract = " ".join(self.other_abstract)
+
+        # Abstract, the loop is used to separate new sections with a blank space at the beginning
         x_abstr = self.tree.find(".//Abstract")
         if x_abstr is not None:
             self.abstract = []
@@ -86,6 +115,7 @@ class ArticleTransformer:
 
             for t in all_text:
                 self.abstract.append("".join(list(t.itertext())))
+
             self.abstract = " ".join(self.abstract)
 
         # language
@@ -116,14 +146,14 @@ class ArticleTransformer:
                     }
                 )
 
-        # date
+        # Date
         x_article_date = self.tree.find(".//ArticleDate")
         if x_article_date is not None:
             year = x_article_date.find(".//Year").text
             month = x_article_date.find(".//Month").text
             day = x_article_date.find(".//Day").text
 
-            self.articleDate = safe_parse_date(
+            self.article_date = safe_parse_date(
                 year, month, day, pmid=self.pmid, context="ArticleDate"
             )
         else:
@@ -139,17 +169,17 @@ class ArticleTransformer:
                 year = x_pubdate.find(".//Year").text
                 day = x_pubdate.find(".//Day").text
 
-                self.articleDate = safe_parse_date(
+                self.article_date = safe_parse_date(
                     year, month, day, pmid=self.pmid, context="ArticleDate"
                 )
 
-        if self.articleDate is None:
+        if self.article_date is None:
             for h in self.history:
                 if h["Type"] == "entrez":
-                    self.articleDate = h["Date"]
+                    self.article_date = h["Date"]
 
-        if self.articleDate is None:
-            self.articleDate = self.history[0]["Date"]
+        if self.article_date is None:
+            self.article_date = self.history[0]["Date"]
 
         # authors
         x_authors_list = self.tree.find(".//AuthorList")
@@ -256,14 +286,14 @@ class ArticleTransformer:
                 {"Name": x_key.text, "Major": x_key.attrib["MajorTopicYN"] == "Y"}
             )
         # meshterms
-        x_meshlist = self.tree.find(".//MeshHeadingList")
-        x_meshheaders = []
+        x_mesh_list = self.tree.find(".//MeshHeadingList")
+        x_mesh_headers = []
 
-        if x_meshlist is not None:
-            self.meshTerms = []
-            x_meshheaders = x_meshlist.findall(".//MeshHeading")
+        if x_mesh_list is not None:
+            self.mesh_terms = []
+            x_mesh_headers = x_mesh_list.findall(".//MeshHeading")
 
-            for xmesh in x_meshheaders:
+            for x_mesh in x_mesh_headers:
 
                 (
                     descr,
@@ -281,19 +311,19 @@ class ArticleTransformer:
                     None,
                 )
 
-                xdesc = xmesh.find(".//DescriptorName")
-                if xdesc is not None:
-                    descr = xdesc.text
-                    descr_ui = xdesc.attrib["UI"]
-                    descr_ismajor = xdesc.attrib["MajorTopicYN"] == "Y"
+                x_desc = x_mesh.find(".//DescriptorName")
+                if x_desc is not None:
+                    descr = x_desc.text
+                    descr_ui = x_desc.attrib["UI"]
+                    descr_ismajor = x_desc.attrib["MajorTopicYN"] == "Y"
 
-                xqual = xmesh.find(".//QualifierName")
+                xqual = x_mesh.find(".//QualifierName")
                 if xqual is not None:
                     qual = xqual.text
                     qual_ui = xqual.attrib["UI"]
-                    qual_ismajor = xdesc.attrib["MajorTopicYN"] == "Y"
+                    qual_ismajor = x_desc.attrib["MajorTopicYN"] == "Y"
 
-                self.meshTerms.append(
+                self.mesh_terms.append(
                     {"MeshUI": descr_ui, "Name": descr, "Major": descr_ismajor}
                 )
 
@@ -302,11 +332,11 @@ class ArticleTransformer:
         x_pub_types = []
 
         if x_publication_type_list is not None:
-            self.publicationTypes = []
+            self.publication_types = []
             x_pub_types = x_publication_type_list.findall(".//PublicationType")
 
             for x_type in x_pub_types:
-                self.publicationTypes.append(
+                self.publication_types.append(
                     {
                         "MeshUI": x_type.attrib["UI"],
                         "Name": x_type.text,
@@ -317,7 +347,7 @@ class ArticleTransformer:
         x_journal_information = self.tree.find(".//Journal")
 
         if x_journal_information is not None:
-            self.journalInformation = None
+            self.journal_information = None
 
             journal_title, journal_abbreviation = None, None
             journal_issue_information = None
@@ -391,50 +421,64 @@ class ArticleTransformer:
                     "JournalIssueDate": journal_issue_date,
                 }
 
-            self.journalInformation = {
+            self.journal_information = {
                 "JournalTitle": journal_title,
                 "Abbreviation": journal_abbreviation,
                 "JournalIssue": journal_issue_information,
             }
 
-    def getDataDic(self):
-        data = {
+    def get_data_dict(self) -> Dict[str, Any]:
+        """
+        Convert the parsed article into a dictionary.
+
+        Returns:
+            Dict[str, Any]: Structured data representation of the article.
+        """
+        return {
             "PMID": self.pmid,
             "Title": self.title,
-            "VernacularTitle": self.vernacularTitle,
+            "VernacularTitle": self.vernacular_title,
             "Abstract": self.abstract,
-            "OtherAbstract": self.otherAbstract,
+            "OtherAbstract": self.other_abstract,
             "Language": self.language,
             "Status": self.status,
-            "ArticleDate": self.articleDate,
+            "ArticleDate": self.article_date,
             "History": self.history,
             "Authors": self.authors,
             "Grants": self.grants,
             "Chemicals": self.chemicals,
             "Keywords": self.keywords,
-            "MeshTerms": self.meshTerms,
-            "PublicationTypes": self.publicationTypes,
-            "JournalInformation": self.journalInformation,
-            "FullTextURL": self.fullTextURL,
-            "VectorisedFlag": self.vectorisedFlag,
-            "NLPProcessedFlag": self.nlpProcessedFlag,
-            "FullText": self.fullText,
+            "MeshTerms": self.mesh_terms,
+            "PublicationTypes": self.publication_types,
+            "JournalInformation": self.journal_information,
+            "FullTextURL": self.full_text_url,
+            "VectorisedFlag": self.vectorised_flag,
+            "NLPProcessedFlag": self.nlp_processed_flag,
+            "FullText": self.full_text,
         }
-
-        return data
 
 
 # Only PubMedArticle are extracted not the PubmedBookArticle
-def transformArticles(xml_article_set):
+def transform_articles(xml_article_set: str) -> List[Dict[str, Any]]:
+    """
+    Transform a set of PubMed articles in XML format into structured dictionaries.
+
+    Args:
+        xml_article_set (str): XML string of PubMedArticleSet.
+
+    Returns:
+        List[Dict[str, Any]]: List of structured article representations.
+    """
     transformed_articles = []
     set_tree = ET.fromstring(xml_article_set)
-    for c in tqdm(set_tree, desc="Processing the records present: "):
-        if c.tag == "PubmedArticle":
+
+    for element in tqdm(set_tree, desc="Processing the records present: "):
+        if element.tag == "PubmedArticle":
             try:
-                article = ArticleTransformer(c)
-                transformed_articles.append(article.getDataDic())
+                article = ArticleTransformer(element)
+                transformed_articles.append(article.get_data_dict())
             except Exception as e:
-                err_pmid = c.find(".//PMID").text
+                err_pmid = element.find(".//PMID").text
                 error_message = (
                     f"Transformation was unsuccessful for PMID: {err_pmid} \n{e}"
                 )
@@ -446,5 +490,6 @@ def transformArticles(xml_article_set):
                 sys.exit(1)  # Exit the script with a non-zero exit code
 
         else:
-            log.info(f"Document {c} is having tag: {c.tag}")
+            log.info(f"Document {element} is having tag: {element.tag}")
+
     return transformed_articles

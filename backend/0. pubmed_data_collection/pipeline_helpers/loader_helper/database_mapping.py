@@ -1,16 +1,18 @@
-def opensearch_complete_mapping():
-    # """"""""""
-    # Functionality: Creation of the mapping for the ElasticSearch or OpenSearch Index
-    #
-    # For this project mapping is created from JSON using https://json-to-es-mapping.netlify.app/
-    #
-    # Signature of the function:
-    #  Input:
-    #       No input is required for this function, as it is executed to create an object for mapping
-    #
-    #  Output:
-    #       os_mapping: Mapping setting for the ElasticSearch or OpenSearch Index
-    # """"""""""
+from typing import Dict, Any
+
+
+def opensearch_complete_mapping() -> Dict[str, Any]:
+    """
+    Constructs the complete mapping configuration for an OpenSearch index.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing OpenSearch index settings and mappings.
+
+    Notes:
+        - This mapping configuration is tailored for indexing biomedical article metadata.
+        - It includes nested fields, custom analyzers, and keyword fields for structured querying.
+        - The mapping was initially generated using a JSON-to-ES mapping tool.
+    """
     os_mapping = {
         "settings": {
             "number_of_shards": 3,

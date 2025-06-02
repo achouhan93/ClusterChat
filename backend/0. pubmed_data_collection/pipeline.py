@@ -1,75 +1,116 @@
-from tqdm import tqdm
-from datetime import datetime, timedelta, date
-import sys
 import argparse
 import logging
 import os
-import utils
+import sys
+from datetime import datetime, timedelta, date
 from time import time
+from typing import Optional, List
 
+from tqdm import tqdm
+
+import utils
 from pipeline_components.extractor import (
-    extractArticlesData,
-    getArticleIdsForTimeRange,
+    extract_articles_data,
+    get_article_ids_for_time_range,
 )
-from pipeline_components.transformer import transformArticles
-from pipeline_components.loader import loadArticles
+from pipeline_components.transformer import transform_articles
+from pipeline_components.loader import load_articles
 from pipeline_helpers.loader_helper.database_main import opensearch_connection
 
-
+# Logger configuration
 log = logging.getLogger(__name__)
 
+# Constants
 CONST_EUTILS_DEFAULT_MINDATE = "1900"
 CONST_EUTILS_DEFAULT_MAXDATE = date.today().strftime("%Y/%m/%d")
 
 
-def insertArticlesByTimeRange(database, index_name, *args, batchSize=100):
+def insert_articles_by_time_range(
+    database_connection: object,
+    index_name: List[str],
+    *args: str,
+    batch_size: int = 100,
+) -> None:
+    """
+    Inserts articles in a given date range into the OpenSearch index in batches.
 
+    Args:
+        database_connection (object): Connection to the OpenSearch instance.
+        index_name (List[str]): Name of the OpenSearch index to populate.
+        *args (str): Optional. Two strings specifying start and end dates (format: yyyy/mm/dd).
+        batch_size (int, optional): Number of articles per batch insert. Defaults to 100.
+
+    Returns:
+        None
+    """
     if args:
         # Convert start and end dates to datetime objects
         start_date = datetime.strptime(args[0], "%Y/%m/%d")
         end_date = datetime.strptime(args[1], "%Y/%m/%d")
     else:
-        start_date = CONST_EUTILS_DEFAULT_MINDATE
-        end_date = CONST_EUTILS_DEFAULT_MAXDATE
+        start_date = datetime.strptime(CONST_EUTILS_DEFAULT_MINDATE, "%Y")
+        end_date = datetime.strptime(CONST_EUTILS_DEFAULT_MAXDATE, "%Y/%m/%d")
 
     # Loop over the range of dates between start and end dates, with two days apart
     current_date = end_date
 
     while current_date >= start_date:
-        maxdate = current_date.strftime("%Y/%m/%d")
-        date = current_date - timedelta(days=0)
-        mindate = date.strftime("%Y/%m/%d")
+        max_date_str = current_date.strftime("%Y/%m/%d")
+        min_date_str = (current_date - timedelta(days=0)).strftime("%Y/%m/%d")
 
-        allIds = getArticleIdsForTimeRange("pubmed", mindate, maxdate, database)
-        log.info(f"Considered {len(allIds)} new articles for Date: {mindate}")
+        article_ids = get_article_ids_for_time_range(
+            "pubmed", min_date_str, max_date_str, index_name
+        )
+        log.info(f"Retrieved {len(article_ids)} article IDs for date: {min_date_str}")
 
         failed = False
 
-        for idBatch in tqdm(
-            [allIds[i : i + batchSize] for i in range(0, len(allIds), batchSize)],
-            desc=f"Inserting all new article batches(size={batchSize})",
+        for id_batch in tqdm(
+            [
+                article_ids[i : i + batch_size]
+                for i in range(0, len(article_ids), batch_size)
+            ],
+            desc=f"Inserting article batches (size={batch_size})",
         ):
-            allIdsString = ",".join([str(id) for id in idBatch])
-            articleList = extractArticlesData("pubmed", allIdsString)
-            transformed_articles = transformArticles(articleList)
-            loadSuccess = loadArticles(database, transformed_articles, index_name)
-            if not loadSuccess:
-                print(f"\nOperation unsuccessful, see logs for more information.")
+            id_str = ",".join(map(str, id_batch))
+            articles = extract_articles_data("pubmed", id_str)
+            transformed_articles = transform_articles(articles)
+            success = load_articles(
+                database_connection, transformed_articles, index_name
+            )
+
+            if not success:
+                log.error("Batch insert failed for date: %s", min_date_str)
                 failed = True
+                print("\nOperation unsuccessful. Check logs for details.")
+
         if not failed:
-            print(f"\nOperation successful, inserted/updated {len(allIds)} articles.")
+            print(
+                f"\nOperation successful. Inserted/updated {len(article_ids)} articles."
+            )
             current_date -= timedelta(days=1)
 
 
-def main(argv=None):
-    CONFIG = utils.load_config_from_env()
+def main(argv: Optional[List[str]] = None) -> None:
+    """
+    Main entry point of the pipeline execution script.
 
-    if not os.path.exists(CONFIG["CLUSTER_CHAT_LOG_PATH"]):
-        os.makedirs(CONFIG["CLUSTER_CHAT_LOG_PATH"])
-        print(f'created: {CONFIG["CLUSTER_CHAT_LOG_PATH"]} directory.')
+    Args:
+        argv (Optional[List[str]]): Command-line arguments. Defaults to None.
+
+    Returns:
+        None
+    """
+    config = utils.load_config_from_env()
+    log_dir = config.get("CLUSTER_CHAT_LOG_PATH")
+    log_file = config.get("CLUSTER_CHAT_LOG_EXE_PATH")
+
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+        print(f"Created directory: {log_dir}")
 
     logging.basicConfig(
-        filename=CONFIG["CLUSTER_CHAT_LOG_EXE_PATH"],
+        filename=log_file,
         filemode="a",
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%d-%b-%y %H:%M:%S",
@@ -79,8 +120,8 @@ def main(argv=None):
     start_time = time()
     logging.info("Current date and time: " + str(start_time))
 
-    database = [CONFIG["CLUSTER_CHAT_OPENSEARCH_SOURCE_INDEX"]]
-    database_connection = opensearch_connection(database)
+    index_name = [config["CLUSTER_CHAT_OPENSEARCH_SOURCE_INDEX"]]
+    database_connection = opensearch_connection(index_name)
 
     parser = argparse.ArgumentParser("Specify which articles you want to fetch")
 
@@ -95,7 +136,7 @@ def main(argv=None):
     args = parser.parse_args()
 
     if args.range:
-        if len(args.range) == 1:
+        if len(args.range) == 1 or len(args.range) > 2:
             print("--range expects two arguments: <mindate, maxdate>")
             sys.exit()
         elif len(args.range) == 0:
@@ -105,15 +146,17 @@ def main(argv=None):
                     "Are you sure you want to insert the records starting from 1900 till date? This can take several days. (y/n)"
                 )
                 if res == "y":
-                    insertArticlesByTimeRange(database_connection, database, args.range)
+                    insert_articles_by_time_range(
+                        database_connection, index_name, args.range
+                    )
                     res = "n"
         elif len(args.range) == 2:
-            insertArticlesByTimeRange(
-                database_connection, database, args.range[0], args.range[1]
+            insert_articles_by_time_range(
+                database_connection, index_name, args.range[0], args.range[1]
             )
-        else:
-            print("--range expects two arguments: <mindate, maxdate>")
-            sys.exit()
+
+        log.info("Pipeline completed.")
+        print("Pipeline execution completed.")
 
     else:
         print("provide at least one argument.")

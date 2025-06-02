@@ -1,26 +1,36 @@
 import logging
+import sys
+from typing import List, Dict, Any
+from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
 from tqdm import tqdm
-import sys
 
+# Configure logging
 log = logging.getLogger(__name__)
 
-BATCH_SIZE = 50
+# Constants
+BATCH_SIZE: int = 50
 
 
-def opensearch_insert(os_index, index_name, articles):
-    # """"""""""
-    # Functionality: Insert the document in the ElasticSearch or OpenSearch Index
-    #
-    # Signature of the function:
-    #  Input:
-    #       osIndex: ElasticSearch or OpenSearch connection
-    #       indexName: Name of the index that needs to be created
-    #       articleInformation: Information that needs to be inserted in the Index in JSON format
-    #
-    #  Output:
-    #       Insert the information in the OpenSearch Index keeping unqiue ID (_id) as the PubMed ID
-    # """"""""""
+def opensearch_insert(
+    os_index: OpenSearch, index_name: str, articles: List[Dict[str, Any]]
+) -> None:
+    """
+    Inserts a batch of documents into an OpenSearch index.
+
+    Args:
+        os_index (OpenSearch): OpenSearch client instance.
+        index_name (str): The name of the index to insert documents into.
+        articles (List[Dict[str, Any]]): A list of article metadata in JSON format.
+
+    Returns:
+        None
+
+    Notes:
+        Each document is uniquely identified by its 'PMID'.
+        Documents are inserted in batches using OpenSearch bulk helper.
+        Failed insertions are logged.
+    """
     bulk_data = []  # List to store bulk actions
     failed_ids = []  # List to store IDs of failed inserts
 
@@ -164,21 +174,35 @@ def opensearch_insert(os_index, index_name, articles):
 
     # Log all failed IDs after processing is complete
     if failed_ids:
-        logging.error(f"Failed to insert articles with IDs: {failed_ids}")
+        log.error(f"Failed to insert articles with IDs: {failed_ids}")
 
     del bulk_data
     del failed_ids
     os_index.indices.refresh(index=index_name)
 
 
-def process_bulk(os_index, bulk_data, index_name):
+def process_bulk(
+    os_index: OpenSearch, bulk_data: List[Dict[str, Any]], index_name: str
+) -> List[str]:
+    """
+    Executes a bulk insert operation and returns a list of failed document IDs.
+
+    Args:
+        os_index (OpenSearch): OpenSearch client instance.
+        bulk_data (List[Dict[str, Any]]): List of documents for bulk insertion.
+        index_name (str): Target index name.
+
+    Returns:
+        List[str]: List of document IDs that failed to insert.
+    """
     failed_ids = []
     try:
-        responses = bulk(
+        response = bulk(
             os_index, bulk_data, index=index_name, raise_on_error=False, refresh=False
         )
+
         for resp, doc in zip(
-            responses[1], bulk_data
+            response[1], bulk_data
         ):  # responses[1] should contain item responses
             if (
                 resp["index"]["status"] != 201 and resp["index"]["status"] != 200
@@ -189,10 +213,9 @@ def process_bulk(os_index, bulk_data, index_name):
                 )
     except Exception as e:
         error_message = f"General bulk insert error: {str(e)}"
-        logging.error(error_message)  # Log to file
+        log.error(error_message)  # Log to file
         print(error_message)  # Display to command line
         input("Press Enter to acknowledge the error and terminate the script...")
         sys.exit(1)  # Exit the script with a non-zero exit code
-        # Add all current bulk IDs to failed list as we cannot determine specific failures here
-        failed_ids.extend([doc["_id"] for doc in bulk_data])
+
     return failed_ids
