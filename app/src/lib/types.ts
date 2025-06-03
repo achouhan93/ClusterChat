@@ -20,6 +20,15 @@ export type Node = {
 	color: string | '#000';
 };
 
+export type Point = {
+	id: string;
+	title: string | 'No Title';
+	cluster: string;
+	x: number;
+	y: number;
+	date: Date | number | undefined;
+}
+
 export type Cluster = {
 	id: string;
 	xCenter: number;

@@ -4,8 +4,8 @@ import {
 	OPENSEARCH_USERNAME,
 	OPENSEARCH_PASSWORD,
 	OPENSEARCH_NODE,
-	CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX,
-	CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_COMPLETE
+	CLUSTER_CHAT_DOCUMENT_INFORMATION_INDEX,
+	CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_COMPLETE
 } from '$env/static/private';
 
 const client = new Client({
@@ -33,7 +33,7 @@ export async function GET({ params }) {
 
 		// Step 2: Perform vector search using embedding
 		const vectorResponse = await client.search({
-			index: CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_COMPLETE, //testing
+			index: CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_COMPLETE, //testing
 			body: {
 				size: 10000,
 				query: {

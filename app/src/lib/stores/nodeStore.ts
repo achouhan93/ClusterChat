@@ -1,9 +1,5 @@
-import { writable, derived } from "svelte/store";
-import type  {
-    Node,
-    Link,
-    Cluster
-} from '$lib/types';
+import { writable, derived } from 'svelte/store';
+import type { Node, Link, Cluster } from '$lib/types';
 
 // graph.ts
 
@@ -11,8 +7,8 @@ export let selectedNodes = writable<Node[]>([]);
 export let selectedNodesCount = writable<number>(0);
 
 selectedNodes.subscribe((arr) => {
-  selectedNodesCount.set(arr.length);
-})
+	selectedNodesCount.set(arr.length);
+});
 
 export let SelectedDateRange = writable<[Date, Date] | [number, number]>(undefined);
 export let SelectedSearchQuery = writable<string>('');
@@ -20,8 +16,8 @@ export let SelectedClusters = writable<string[]>([]);
 export const selectedClustersCount = writable<number>(0);
 
 SelectedClusters.subscribe((arr) => {
-  selectedClustersCount.set(arr.length)
-})
+	selectedClustersCount.set(arr.length);
+});
 
 export let selectMultipleClusters = writable<boolean>(false); // TODO: change to multiple Cluster selection
 export let selectNodeRange: boolean = false;
@@ -37,4 +33,3 @@ export const dataloaded = writable(false);
 export let allClusters = writable<Cluster[]>([]);
 export let allClusterNodes = writable<Node[]>([]);
 export let ClustersTree = writable<{ [depth: number]: string[] }>([]);
-

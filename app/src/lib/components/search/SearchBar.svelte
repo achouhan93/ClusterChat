@@ -7,10 +7,10 @@
 		updateGraphData,
 		updateNodes,
 		conditionalSelectNodes,
-		unselectNodes,
+		unselectNodes
 	} from '$lib/graph';
 	import { SelectedSearchQuery, selectedNodes } from '$lib/stores/nodeStore';
-	import {document_specific} from '$lib/stores/uiStore'
+	import { document_specific } from '$lib/stores/uiStore';
 	import type { Node } from '$lib/types';
 	import { getClusterNodes, setSelectedNodesOnGraph } from '$lib/graph';
 	import { writable } from 'svelte/store';

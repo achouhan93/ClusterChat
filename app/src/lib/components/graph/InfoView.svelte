@@ -1,8 +1,5 @@
 <script lang="ts">
-	import {
-		unselectNodes,
-		isSelectionActive,
-	} from '$lib/graph';
+	import { unselectNodes, isSelectionActive } from '$lib/graph';
 	import {
 		selectedNodes,
 		SelectedDateRange,
@@ -11,10 +8,8 @@
 		hNode,
 		allClusters,
 		ClustersTree,
-
 		selectedClustersCount
-
-	} from '$lib/stores/nodeStore'
+	} from '$lib/stores/nodeStore';
 
 	import { ChevronRight, ChevronLeft, X, ExternalLink } from 'lucide-svelte';
 	import { get, writable } from 'svelte/store';
@@ -94,17 +89,16 @@
 	function getClusterInformationFromNode(node: Node): string[] {
 		const cluster_id: string = node.cluster;
 		const theClusters: Cluster[] = get(allClusters);
-		const clusterinfo: Cluster = theClusters.find(
-			(cluster) => cluster.id === cluster_id && cluster.isLeaf
-		)?? undefinedCluster;
+		const clusterinfo: Cluster =
+			theClusters.find((cluster) => cluster.id === cluster_id && cluster.isLeaf) ??
+			undefinedCluster;
 		const clusterLinage = new Set(clusterinfo.path.split('/') /* .slice(-3) */);
 		const foundClusters = theClusters.filter((cluster) => clusterLinage.has(cluster.id));
 		foundClusters.sort((c1, c2) => c2.depth - c1.depth);
 		const foundClusterName: string[] = foundClusters.map((c) => c.label);
 		if ($SelectedClusters.length !== 0) {
-			const selected_cluster: Cluster = theClusters.find(
-				(cluster) => cluster.id === $SelectedClusters[0]
-			) ?? undefinedCluster;
+			const selected_cluster: Cluster =
+				theClusters.find((cluster) => cluster.id === $SelectedClusters[0]) ?? undefinedCluster;
 			return getClusterRange(foundClusterName, selected_cluster.label);
 		} else {
 			return getClusterRange(foundClusterName, clusterinfo.label);
@@ -149,7 +143,6 @@
 	$: if ($NodesToShow.length != 0) {
 		fetchInfoPanelByNode(get(NodesToShow)[$currentPage - 1]);
 	}
-
 </script>
 
 <div class="node-information-view">
@@ -182,9 +175,11 @@
 					{#if $SelectedClusters.length !== 0}
 						<div class="selected-cluster">
 							{#if $SelectedClusters.length === 1}
-							<span><b>Cluster:</b> {getClusterLabelById(get(SelectedClusters)[0])}</span>
+								<span><b>Cluster:</b> {getClusterLabelById(get(SelectedClusters)[0])}</span>
 							{:else}
-							<span><b>Clusters:</b>{get(SelectedClusters).map(getClusterLabelById).join(', ')}</span>
+								<span
+									><b>Clusters:</b>{get(SelectedClusters).map(getClusterLabelById).join(', ')}</span
+								>
 							{/if}
 						</div>
 					{/if}
