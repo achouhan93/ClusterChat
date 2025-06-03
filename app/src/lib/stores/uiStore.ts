@@ -1,4 +1,4 @@
-import { writable } from "svelte/store";
+import { writable } from 'svelte/store';
 
 // graph.ts
 export let hierarchicalLabels = writable<boolean>(false);

@@ -6,14 +6,13 @@ import { formatDate } from './utils';
 import { interpolateRgb } from 'd3';
 
 import {
-	nodes, 
-	links, 
-	dataloaded, 
-	allClusters, 
-	allClusterNodes, 
+	nodes,
+	links,
+	dataloaded,
+	allClusters,
+	allClusterNodes,
 	ClustersTree
-} from '$lib/stores/nodeStore'
-
+} from '$lib/stores/nodeStore';
 
 export let ColorPalette: Record<string, string>;
 
@@ -190,7 +189,7 @@ async function fetchDocumentIds(cluster_ids: string[]) {
 
 	const data = await response.json();
 	const newNodes: Node[] = data.map(
-		(item:any) =>
+		(item: any) =>
 			({
 				id: item._source.document_id,
 				title: item._source.title,

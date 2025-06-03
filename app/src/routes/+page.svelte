@@ -23,11 +23,11 @@
 	let sideCollapsed = false;
 
 	$: gridTemplateAreas = sideCollapsed
-	? `'control-btns . . search-bar'
+		? `'control-btns . . search-bar'
 		'. '
 		'.'
 		'timeline`
-	: `'chat control-btns . search-bar'
+		: `'chat control-btns . search-bar'
 		'chat . . .'
 		'info . . .'
 		'info timeline timeline timeline'`;
@@ -37,130 +37,129 @@
 		: 'max(35%) minmax(200px, 12%) 0.5fr 1.5fr';
 
 	function startTour() {
-	introJs().setOptions({
-		steps: [
-		{
-			element: document.getElementById('main-graph'),
-			intro: 'This tour will show you all the functionalities of this app.',
-			position: 'center'
-		},
-		{
-			element: document.getElementById('info-view'),
-			intro: 'Here you can see information about each paper you hover over or click',
-			position: 'right'
-		},
-		{
-			element: document.getElementById('chat-interface'),
-			intro: 'Here you can interact with the selected documents',
-			position: 'right'
-		},
-		{
-			element: document.querySelector('.toggle-container'),
-			intro: 'Chat either with the selected Documents or the whole Corpus',
-			position: 'right'
-		},
-		{
-			element: document.querySelector('.menu-button'),
-			intro: 'To start a new Chat session delete the old one',
-			position: 'right'
-		},
-		{
-			element: document.getElementById('main-search-bar'),
-			intro: 'When searching for a specific paper use the search bar',
-			position: 'bottom'
-		},
-		{
-			element: document.querySelector('.search-options-part'),
-			intro: 'You can tailor your query using these options. Semantic Search is only possible on Abstracts.',
-			position: 'bottom'
-		},
-		{
-			element: document.getElementById('main-timeline'),
-			intro: 'To select The documents based on the timeline you perform a drag selection',
-			position: 'top'
-		},
-		{
-			element: document.querySelector(".control-buttons"),
-			intro: 'These buttons allow you to interact with the Graph directly',
-			position: 'right'
-		}
-	]
-		}).start();
+		introJs()
+			.setOptions({
+				steps: [
+					{
+						element: document.getElementById('main-graph'),
+						intro: 'This tour will show you all the functionalities of this app.',
+						position: 'center'
+					},
+					{
+						element: document.getElementById('info-view'),
+						intro: 'Here you can see information about each paper you hover over or click',
+						position: 'right'
+					},
+					{
+						element: document.getElementById('chat-interface'),
+						intro: 'Here you can interact with the selected documents',
+						position: 'right'
+					},
+					{
+						element: document.querySelector('.toggle-container'),
+						intro: 'Chat either with the selected Documents or the whole Corpus',
+						position: 'right'
+					},
+					{
+						element: document.querySelector('.menu-button'),
+						intro: 'To start a new Chat session delete the old one',
+						position: 'right'
+					},
+					{
+						element: document.getElementById('main-search-bar'),
+						intro: 'When searching for a specific paper use the search bar',
+						position: 'bottom'
+					},
+					{
+						element: document.querySelector('.search-options-part'),
+						intro:
+							'You can tailor your query using these options. Semantic Search is only possible on Abstracts.',
+						position: 'bottom'
+					},
+					{
+						element: document.getElementById('main-timeline'),
+						intro: 'To select The documents based on the timeline you perform a drag selection',
+						position: 'top'
+					},
+					{
+						element: document.querySelector('.control-buttons'),
+						intro: 'These buttons allow you to interact with the Graph directly',
+						position: 'right'
+					}
+				]
+			})
+			.start();
 	}
 
-
-
-
-    let isResizingHorizontal = false;
+	let isResizingHorizontal = false;
 	let initialInfoHeight = 40; // Default info height percentage
 	let initialMousePositionY = 0;
 
+	function handleHorizontalResizeStart(event: MouseEvent) {
+		isResizingHorizontal = true;
+		document.body.style.cursor = 'ns-resize';
+		document.documentElement.classList.add('smooth-resize');
 
-    function handleHorizontalResizeStart(event: MouseEvent) {
-        isResizingHorizontal = true;
-        document.body.style.cursor = "ns-resize";
-		document.documentElement.classList.add("smooth-resize");
+		initialMousePositionY = event.clientY;
+		initialInfoHeight =
+			parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--info-height')) ||
+			40;
+	}
 
-    	initialMousePositionY = event.clientY;
-    	initialInfoHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--info-height")) || 40;
-    }
-
-    function handleMouseMove(event: MouseEvent) {
-        // if (isResizingVertical) {
-        //     // Calculate width as a percentage of the viewport width
-        //     const newChatWidth = (event.clientX / window.innerWidth) * 100;
-        //     const clampedChatWidth = Math.min(40, Math.max(30, newChatWidth)); // Restrict between 20% and 40%
-        //     document.documentElement.style.setProperty("--chat-width", `${clampedChatWidth}%`);
-        // }
+	function handleMouseMove(event: MouseEvent) {
+		// if (isResizingVertical) {
+		//     // Calculate width as a percentage of the viewport width
+		//     const newChatWidth = (event.clientX / window.innerWidth) * 100;
+		//     const clampedChatWidth = Math.min(40, Math.max(30, newChatWidth)); // Restrict between 20% and 40%
+		//     document.documentElement.style.setProperty("--chat-width", `${clampedChatWidth}%`);
+		// }
 
 		if (isResizingHorizontal) {
-        // Calculate the vertical delta from the starting position
-        const deltaY = event.clientY - initialMousePositionY;
-        
-        // Adjust the pane height based on the delta
-        const newInfoHeight = initialInfoHeight + (deltaY / window.innerHeight) * 100;
-        
-        // Clamp the new height within the desired range
-        const clampedInfoHeight = Math.max(20, Math.min(50, newInfoHeight));
-        
-        // Apply the new height
-        document.documentElement.style.setProperty("--info-height", `${clampedInfoHeight}%`);
-    }
-    }
+			// Calculate the vertical delta from the starting position
+			const deltaY = event.clientY - initialMousePositionY;
 
-    function handleMouseUp() {
-        //isResizingVertical = false;
-        isResizingHorizontal = false;
-        document.body.style.cursor = "default";
-    }
+			// Adjust the pane height based on the delta
+			const newInfoHeight = initialInfoHeight + (deltaY / window.innerHeight) * 100;
 
+			// Clamp the new height within the desired range
+			const clampedInfoHeight = Math.max(20, Math.min(50, newInfoHeight));
+
+			// Apply the new height
+			document.documentElement.style.setProperty('--info-height', `${clampedInfoHeight}%`);
+		}
+	}
+
+	function handleMouseUp() {
+		//isResizingVertical = false;
+		isResizingHorizontal = false;
+		document.body.style.cursor = 'default';
+	}
 
 	onMount(async () => {
 		$dataloaded = true;
 		const { createGraph, createTimeline } = await import('$lib/graph');
 		createGraph();
 		createTimeline();
-
 	});
 
 	onMount(() => {
-				// Resizable Handles
-				window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("mouseup", handleMouseUp);
+		// Resizable Handles
+		window.addEventListener('mousemove', handleMouseMove);
+		window.addEventListener('mouseup', handleMouseUp);
 		return () => {
-            // Cleanup listeners on component unmount
-            window.removeEventListener("mousemove", handleMouseMove);
-            window.removeEventListener("mouseup", handleMouseUp);
-        };
-	})
+			// Cleanup listeners on component unmount
+			window.removeEventListener('mousemove', handleMouseMove);
+			window.removeEventListener('mouseup', handleMouseUp);
+		};
+	});
 
 	async function toggleSide() {
-		sideCollapsed = !sideCollapsed
+		sideCollapsed = !sideCollapsed;
 	}
-
 </script>
 
-<main id="main-frame"
+<main
+	id="main-frame"
 	style="
 		display: grid;
 		grid-template-areas: {gridTemplateAreas};
@@ -172,49 +171,65 @@
 	{#if !$dataloaded}
 		<div class="loader"><LoaderCircle size="48" /></div>
 	{:else}
-		<div id="main-graph"> 
-			<svg id="selection-svg"/>
+		<div id="main-graph">
+			<svg id="selection-svg" />
 		</div>
-		<div id="main-search-bar" class="cosmograph-search" >
+		<div id="main-search-bar" class="cosmograph-search">
 			<SearchBar />
 		</div>
 		<div class="control-buttons">
-			<button id="collapse-btn" class="btn rollout-button" on:click={toggleSide} title= "Start Tour"
-			><span class="icon"><Menu/></span
-			><span class="label">{sideCollapsed ? "Show Side" : "Collapase Side"}</span></button
+			<button id="collapse-btn" class="btn rollout-button" on:click={toggleSide} title="Start Tour"
+				><span class="icon"><Menu /></span><span class="label"
+					>{sideCollapsed ? 'Show Side' : 'Collapase Side'}</span
+				></button
 			>
-			<button id="multiple-node-btn" class="btn rollout-button" on:click={toggleMultipleClustersMode} title={$selectMultipleClusters? "Multiple Cluster Selection is active": "Single Cluster Selection is active"}
-			><span class="icon"><Combine/></span
-			><span class="label">{$selectMultipleClusters? "Select Single Clusters": "Select Multiple Clusters"}</span></button
+			<button
+				id="multiple-node-btn"
+				class="btn rollout-button"
+				on:click={toggleMultipleClustersMode}
+				title={$selectMultipleClusters
+					? 'Multiple Cluster Selection is active'
+					: 'Single Cluster Selection is active'}
+				><span class="icon"><Combine /></span><span class="label"
+					>{$selectMultipleClusters ? 'Select Single Clusters' : 'Select Multiple Clusters'}</span
+				></button
 			>
-			<button id="hierarchical-label" class="btn rollout-button" on:click={toggleHierarchicalLabels} title="Toggle Hierarchical Cluster Label"
-			><span class="icon"><BringToFront/></span
-			><span class="label">{$hierarchicalLabels ? "Flat Labels":"Hierarchical Labels"}</span
-			></button
+			<button
+				id="hierarchical-label"
+				class="btn rollout-button"
+				on:click={toggleHierarchicalLabels}
+				title="Toggle Hierarchical Cluster Label"
+				><span class="icon"><BringToFront /></span><span class="label"
+					>{$hierarchicalLabels ? 'Flat Labels' : 'Hierarchical Labels'}</span
+				></button
 			>
-			<button id="fitview-btn" class="btn rollout-button" on:click={fitViewofGraph} title = "Fit View of Graph"
-			><span class="icon"><BoxSelect /></span
-			><span class="label">Fit View</span></button
+			<button
+				id="fitview-btn"
+				class="btn rollout-button"
+				on:click={fitViewofGraph}
+				title="Fit View of Graph"
+				><span class="icon"><BoxSelect /></span><span class="label">Fit View</span></button
 			>
-			<button id="start-tour-btn" class="btn rollout-button" on:click={startTour} title= "Start Tour"
-			><span class="icon"><Binoculars/></span
-			><span class="label">Tour</span></button
+			<button id="start-tour-btn" class="btn rollout-button" on:click={startTour} title="Start Tour"
+				><span class="icon"><Binoculars /></span><span class="label">Tour</span></button
 			>
-
 		</div>
 
-			<div id="chat-interface" style="{sideCollapsed ? 'width:0; overflow:hidden;' : 'width:100%;'}" ><ChatInterface /></div>
+		<div id="chat-interface" style={sideCollapsed ? 'width:0; overflow:hidden;' : 'width:100%;'}>
+			<ChatInterface />
+		</div>
 
-			<div id="info-view" style="{sideCollapsed ? 'width: 0; overflow:hidden;' : 'width:100%'}">
-				<div
+		<div id="info-view" style={sideCollapsed ? 'width: 0; overflow:hidden;' : 'width:100%'}>
+			<div
 				class="resize-handle-horizontal"
 				role="button"
 				tabindex="0"
 				on:mousedown={handleHorizontalResizeStart}
 				aria-label="Resize sidebar"
 			></div>
-			<InfoView/></div>
-			<!-- <div
+			<InfoView />
+		</div>
+		<!-- <div
 			class="resize-handle-vertical"
 			role="button"
 			tabindex="0"
@@ -223,7 +238,6 @@
 		></div> -->
 
 		<div id="main-timeline" class="cosmograph-timeline"></div>
-
 	{/if}
 	<slot />
 </main>
@@ -259,7 +273,6 @@
 		min-height: 0;
 		height: 100%;
 		z-index: 2;
-		
 	}
 	#chat-interface {
 		grid-area: chat;
@@ -278,7 +291,7 @@
 		transition: width 0.5s var(--ease-5);
 	}
 
-	#multiple-node-btn.active{
+	#multiple-node-btn.active {
 		background-color: var(--surface-1-dark);
 	}
 	.loader {
@@ -318,47 +331,49 @@
 		font-weight: 600;
 	}
 
-    .rollout-button {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 50px;
-      height: 40px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-family: sans-serif;
-      cursor: pointer;
-      overflow: hidden;
-      padding: 0 10px;
-      transition: width 0.3s ease;
-    }
+	.rollout-button {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 50px;
+		height: 40px;
+		background-color: #007bff;
+		color: white;
+		border: none;
+		border-radius: 5px;
+		font-family: sans-serif;
+		cursor: pointer;
+		overflow: hidden;
+		padding: 0 10px;
+		transition: width 0.3s ease;
+	}
 
-    .rollout-button:hover {
-      width: 100%;
-    }
+	.rollout-button:hover {
+		width: 100%;
+	}
 
-    .icon {
-      z-index: 1;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
+	.icon {
+		z-index: 1;
+		font-size: 20px;
+		flex-shrink: 0;
+	}
 
-    .label {
-      position: relative;
-      left: 40px; /* Start to the right of the icon */
-      white-space: nowrap;
-      display:none;
-      transform: translateX(-30px);
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
+	.label {
+		position: relative;
+		left: 40px; /* Start to the right of the icon */
+		white-space: nowrap;
+		display: none;
+		transform: translateX(-30px);
+		transition:
+			opacity 0.3s ease,
+			transform 0.3s ease;
+	}
 
-    .rollout-button:hover .label {
-      display: block;
-      transform: translateX(-30px);
-    }
+	.rollout-button:hover .label {
+		display: block;
+		transform: translateX(-30px);
+	}
 	.rollout-button:hover .icon {
 		display: none;
 	}
@@ -367,8 +382,8 @@
 		background-color: var(--red-7);
 	}
 
-	    /* Resize Handles */
-		/* .resize-handle-vertical {
+	/* Resize Handles */
+	/* .resize-handle-vertical {
         grid-column: 2;
         cursor: col-resize;
         background-color: #ccc;
@@ -378,16 +393,15 @@
 		position: absolute;
     } */
 
-    .resize-handle-horizontal {
-        grid-row: 3;
-        cursor: row-resize;
-        background-color: #ccc;
-        height: 3px;
-        width: 100%;
-        z-index: 3;
-    }
+	.resize-handle-horizontal {
+		grid-row: 3;
+		cursor: row-resize;
+		background-color: #ccc;
+		height: 3px;
+		width: 100%;
+		z-index: 3;
+	}
 	/* .smooth-resize {
         transition: none;
     } */
-
 </style>

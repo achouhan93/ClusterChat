@@ -172,8 +172,6 @@
 		// Scroll to the bottom of the message container after each update
 		scrollToBottom(document.querySelector('.scroll-area') as HTMLDivElement);
 	});
-
-
 </script>
 
 <div class="chat-side">
@@ -263,7 +261,6 @@
 </div>
 
 <style>
-
 	input {
 		background-color: var(--surface-4-light);
 		color: var(--text-2-light);

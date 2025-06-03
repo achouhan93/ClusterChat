@@ -8,9 +8,8 @@ import {
 	loadLables,
 	getNodeColor,
 	getAssociatedLeafs,
-	LoadNodesByCluster,
+	LoadNodesByCluster
 } from './readcluster';
-
 
 import {
 	nodes,
@@ -28,10 +27,7 @@ import {
 	selectedNodesCount
 } from '$lib/stores/nodeStore';
 
-import {
-	hierarchicalLabels,
-	document_specific
-} from '$lib/stores/uiStore'
+import { hierarchicalLabels, document_specific } from '$lib/stores/uiStore';
 
 // Other
 import '../app.css';
@@ -118,19 +114,17 @@ const handleNodeClick = async (clickedNode: Node) => {
  */
 const handleLabelClick = async (node: Node) => {
 	if (node.isClusterNode && node.id !== '') {
-
-		if (!selectMultipleClusters){
-			SelectedClusters.set([node.id])
+		if (!selectMultipleClusters) {
+			SelectedClusters.set([node.id]);
 		} else {
-			get(SelectedClusters).push(node.id)
+			get(SelectedClusters).push(node.id);
 		}
 
-			// get all the rendered nodes and filter the ones that have the cluster ids
-			const cluster_ids: string[] = getAssociatedLeafs(node.id, node.title);
-			LoadNodesByCluster(cluster_ids);
-			const set_cluster_ids = new Set(cluster_ids);
-			const filteredNodes = getRenderedNodes().filter((node) => set_cluster_ids.has(node.cluster));
-
+		// get all the rendered nodes and filter the ones that have the cluster ids
+		const cluster_ids: string[] = getAssociatedLeafs(node.id, node.title);
+		LoadNodesByCluster(cluster_ids);
+		const set_cluster_ids = new Set(cluster_ids);
+		const filteredNodes = getRenderedNodes().filter((node) => set_cluster_ids.has(node.cluster));
 
 		if (!get(isSelectionActive)) {
 			selectedNodes.set(filteredNodes);
@@ -159,37 +153,39 @@ const handleLabelClick = async (node: Node) => {
  *
  * @param {[Date, Date] | [number, number]} selection - The selected date or numeric range from the timeline.
  */
-const handleTimelineSelection = async(selection:[Date,Date] | [number,number]) => {
-	
-	if(getRenderedNodes().length !=0){
-		if(selection.length === 2 && selection[0] instanceof Date && selection[1] instanceof Date){SelectedDateRange.set(selection)}
-
-		const nodesToSelect:Node[]=getRenderedNodes().filter(node => 
-			node.date != undefined && new Date(node.date) >= selection[0] && new Date(node.date) <= selection[1])
-			
-		if (getSelectedNodes().length == 0)	{
-
-			//setSelectedNodes(nodesToSelect)
-			selectedNodes.set(nodesToSelect)
-			const graphNodesToSelect = nodesToSelect.concat(get(allClusterNodes))
-			graph.selectNodes(graphNodesToSelect)
+const handleTimelineSelection = async (selection: [Date, Date] | [number, number]) => {
+	if (getRenderedNodes().length != 0) {
+		if (selection.length === 2 && selection[0] instanceof Date && selection[1] instanceof Date) {
+			SelectedDateRange.set(selection);
 		}
-		else {
+
+		const nodesToSelect: Node[] = getRenderedNodes().filter(
+			(node) =>
+				node.date != undefined &&
+				new Date(node.date) >= selection[0] &&
+				new Date(node.date) <= selection[1]
+		);
+
+		if (getSelectedNodes().length == 0) {
+			//setSelectedNodes(nodesToSelect)
+			selectedNodes.set(nodesToSelect);
+			const graphNodesToSelect = nodesToSelect.concat(get(allClusterNodes));
+			graph.selectNodes(graphNodesToSelect);
+		} else {
 			// TODO
-			const nodesToSelectSet = new Set(nodesToSelect.map(node => node.id))
-			const nodesToShowonGraph = getSelectedNodes().filter(node => nodesToSelectSet.has(node.id))
-			selectedNodes.set(nodesToShowonGraph)
-			const graphNodesToSelect = nodesToShowonGraph.concat(get(allClusterNodes))
-			graph.selectNodes(graphNodesToSelect)
-		 } 
+			const nodesToSelectSet = new Set(nodesToSelect.map((node) => node.id));
+			const nodesToShowonGraph = getSelectedNodes().filter((node) => nodesToSelectSet.has(node.id));
+			selectedNodes.set(nodesToShowonGraph);
+			const graphNodesToSelect = nodesToShowonGraph.concat(get(allClusterNodes));
+			graph.selectNodes(graphNodesToSelect);
+		}
 
 		// TODO: for some reason the graph selection only appears,
 		// when the user clicks outside the blue timeline selection box!
 		// so setting the selection to [0,0] emulates that
-		timeline.setSelection([0,0])
+		timeline.setSelection([0, 0]);
 	}
-
-}
+};
 
 const handleOnZoomStartHierarchical = async () => {
 	const ZoomLevel: number = graph.getZoomLevel() || 10;
@@ -530,10 +526,7 @@ function showLabelsfor(nodes: Node[]) {
 // 	return get(selectedNodesCount) !== 0;
 // }
 
-export let isSelectionActive = derived(
-  selectedNodesCount,
-  ($count) => $count !== 0
-);
+export let isSelectionActive = derived(selectedNodesCount, ($count) => $count !== 0);
 
 export function getClusterNodesByClusterIds(cluster_ids: string[]): Node[] {
 	const ClusterNodeIds = new Set(cluster_ids);

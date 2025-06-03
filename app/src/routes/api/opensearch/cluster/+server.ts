@@ -3,7 +3,7 @@ import { Client } from '@opensearch-project/opensearch';
 import {
 	OPENSEARCH_USERNAME,
 	OPENSEARCH_PASSWORD,
-	CLUSTER_TALK_CLUSTER_INFORMATION_INDEX,
+	CLUSTER_CHAT_CLUSTER_INFORMATION_INDEX,
 	OPENSEARCH_NODE
 } from '$env/static/private';
 
@@ -19,7 +19,7 @@ const client = new Client({
 export async function GET({ params }) {
 	try {
 		const response = await client.search({
-			index: CLUSTER_TALK_CLUSTER_INFORMATION_INDEX,
+			index: CLUSTER_CHAT_CLUSTER_INFORMATION_INDEX,
 			body: {
 				query: {
 					match_all: {}
