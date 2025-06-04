@@ -33,3 +33,7 @@ export const dataloaded = writable(false);
 export let allClusters = writable<Cluster[]>([]);
 export let allClusterNodes = writable<Node[]>([]);
 export let ClustersTree = writable<{ [depth: number]: string[] }>([]);
+
+// acceleratedGraph.ts
+export let isSelectionActive = writable<boolean>(false)
+export let selectedPointsIds = writable<string[]>([])

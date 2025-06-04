@@ -6,7 +6,6 @@ import type {
 } from 'cosmograph-v2';
 import { Cosmograph, CosmographTimeline } from 'cosmograph-v2';
 
-import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
 
 import {
 	load10k,
@@ -17,8 +16,6 @@ import {
 } from '../readcluster';
 
 import {
-	nodes,
-	links,
 	SelectedDateRange,
 	SelectedSearchQuery,
 	SelectedClusters,
@@ -29,74 +26,94 @@ import {
 	allClusters,
 	allClusterNodes,
 	ClustersTree,
-	selectNodeRange
+	selectNodeRange,
+	isSelectionActive,
+	selectedPointsIds
 } from '$lib/stores/nodeStore';
 
-import { hierarchicalLabels, document_specific } from '$lib/stores/uiStore';
+import { hierarchicalLabels, document_specific, pageCount } from '$lib/stores/uiStore';
+
 
 // Other
 import '../../app.css';
 import type { Node, Link, Cluster, Point } from '$lib/types';
-//import { DragSelect } from '$lib/components/graph/DragSelect';
-// import { dragSelection } from './components/graph/D3DragSelection';
-import { get, derived } from 'svelte/store';
+;
+import { get, derived, writable } from 'svelte/store';
 import { LabelsKeys, type CosmographPointInput } from 'cosmograph-v2/cosmograph/config';
+import { page } from '$app/state';
 
 // Useful global variables
 let graph: Cosmograph;
 let timeline: CosmographTimeline
-
-let cachedIds = new Set<string>();
-let lastSelected = [];
+const HOVERED_NODE_SIZE: number = 0.5;
 
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
+isSelectionActive.subscribe((active) => {
+    console.log(`isSelectionActive?: ${active}`)
+    pageCount.set(active ? getSelectedPointsCount() : 0);
+})
 
 const handlePointClick = async (index:number) => {
-	if (index && !isSelectionActive() && get(document_specific)) {
-		graph.selectPoint(index);
-		console.log(index)
-		//graph.showLabelsfor
-	}
+    if (index && !get(isSelectionActive) && get(document_specific)) {
+        setSelectPoint(index)
+    }
 };
+
+const handlePointsFiltered = async () => {
+        if (!get(isSelectionActive) && getSelectedPointsCount() !== 0) {
+        isSelectionActive.set(true)
+    }
+}
+
+// For logging REMOVE FOR PRODUCTION
+const outputLog = async (index:number) => {
+    console.log(await graph.getPointIdsByIndices([index]))
+}
+function outputLogIds (){
+    const indices = graph.getSelectedPointIndices() ?? [1]
+    // const pointIds = await graph.getPointIdsByIndices(indices)
+    console.log(indices)
+
+}
 /* ====================================== Config for the Graph and Timeline ====================================== */
 const GraphConfig: CosmographConfig = {
-	backgroundColor: '#ffffff',
-	pointGreyoutOpacity: 0.01,
-	pointSize: 3, 
-	// pointSizeByFn?,
-	renderLinks: false,
-	focusPointOnClick: true,
-	fitViewOnInit: true,
-	showDynamicLabels: false,
-	showHoveredPointLabel: false,
-	showTopLabels: true,
-	showTopLabelsLimit: 10,
-	showClusterLabels: true,
-	hoveredPointLabelClassName: 'cosmograph-hovered-node-label',
-	hoveredPointCursor: 'pointer',
-	onClick(pointIndex) {
-		if(pointIndex) handlePointClick(pointIndex)
-	},
-	onPointMouseOver(hoveredNodeId) {
-		if(!isSelectionActive()){
+    backgroundColor: '#ffffff',
+    pointGreyoutOpacity: 0.04,
+    pointSize: 3, 
+    // pointSizeByFn?,
+    renderLinks: false,
+    focusPointOnClick: true,
+    fitViewOnInit: true,
+    showDynamicLabels: false,
+    showHoveredPointLabel: false,
+    showTopLabels: true,
+    showTopLabelsLimit: 10,
+    showClusterLabels: true,
+    hoveredPointLabelClassName: 'cosmograph-hovered-node-label',
+    hoveredPointCursor: 'pointer',
+	selectPointOnLabelClick: false,
+  
+    onPointMouseOver(hoveredPointIndex) {
+        if(hoveredPointIndex && !get(isSelectionActive) && get(document_specific)){
+			GraphConfig.pointSize = (hNode) => hNode === hoveredPointIndex ? HOVERED_NODE_SIZE : 0.04
+        }
+    },
+    // very useful for date selection
+    onPointsFiltered() {
+        handlePointsFiltered()	
+    },
+    onGraphRebuilt(stats){
+        console.log(`Stats of the Graph: ${stats}`)
+    }
 
-		}
-	},
-	onPointsFiltered() {}
 
 
 } 
 
 const TimelineConfig: CosmographTimelineConfig = {
 	accessor: 'date',
-	allowPointerEvents: true,
 	barRadius: 3,
-	barPadding: 0.5
-	
-
-	// formatter(date) {
-	// 	return new Date(date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-	// },
+	barPadding: 0.5,
 
 }
 
@@ -139,49 +156,19 @@ export function toggleHierarchicalLabels() {}
 
 /* ====================================== Graph Methods ====================================== */
 
-async function initializeGraph() {}
 
-export function updateGraphConfig(config: CosmographInputConfig<Point, Link>) {
+export function setGraphConfig(config: CosmographConfig) {
 	graph.setConfig(config);
 }
 
-// export function updateTimelineConfig(config: CosmographTimelineInputConfig)
 
 export function updateGraphData() {
-	// const startTime = new Date().getTime();
-	// console.log('Updating the graph');
-	// Points.subscribe((PointsArray) => {
-	//     graph.setData(PointsArray, get(links));
-	// });
-	// const endTime = new Date().getTime();
-	// const duration = Math.round(endTime - startTime) / 1000;
-	// console.log(`Time to set Data: ${duration} sec`);
-}
 
-export function updatePoints(newPoints: Point[]) {
-	// make sure you update only unique
-	// Points.update((existingPoints) => {
-	//     const existingIds = new Set(existingPoints.map((Point) => Point.id));
-	//     const uniqueNewPoints = newPoints.filter((newPoint) => !existingIds.has(newPoint.id));
-	//     return [...existingPoints, ...uniqueNewPoints];
-	// });
 }
 
 export function selectPointsInRange(arr: [[number, number], [number, number]]) {
-	// // TODO: fix this function
-	// graph.selectPointsInRange(arr);
-	// selectedPoints.set(getSelectedPoints() as Point[]);
 }
 
-export function unselectPoints() {
-	// selectedPoints.set([]);
-	// graph.unselectPoints();
-	// SelectedDateRange.set(undefined);
-	// const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
-	// search_bar_input.value = '';
-	// SelectedSearchQuery.set('');
-	// SelectedClusters.set([]);
-}
 
 /**
  * Gets all the selected Point objects.
@@ -189,25 +176,42 @@ export function unselectPoints() {
  * @todo very slow for 5M Points, need another way.
  */
 
-export function getSelectedPoints() {
-	// return get(selectedPoints);
-	return graph.getSelectedPointIndices()
+export function getSelectedPointsIndices() {
+	return graph.getSelectedPointIndices() || []
 }
 
 export function getSelectedPointsCount() {
-	return graph.getSelectedPointIndices()?.length
+	return getSelectedPointsIndices()?.length || 0
 }
 
-
-export function isSelectedPoint(Point: Point): boolean {
-	// const current = getSelectedPoints();
-	// // Rebuild the set only if the selection changed
-	// if (current !== lastSelected) {
-	//     cachedIds = new Set(current.map((n) => n.id));
-	//     lastSelected = current;
-	// }
-	// return cachedIds.has(Point.id);
+export function setSelectPoint(index:number) {
+	graph.selectPoint(index)
+	isSelectionActive.set(true)
 }
+export const setSelectedPointsIds = async (indices: number[]) => {
+	const pointIds = await graph.getPointIdsByIndices(indices) || []
+	selectedPointsIds.set(pointIds)
+}
+export function setSelectPoints(indices:number[]) {
+	graph.selectPoints(indices)
+	isSelectionActive.set(true)
+}
+
+export function unselectAllPoints() {
+	graph.unselectAllPoints()
+	isSelectionActive.set(false)
+	selectedPointsIds.set([])
+}
+
+export function unselectPoint() {
+	graph.unselectPoint()
+	if(getSelectedPointsCount() === 0) {
+		isSelectionActive.set(false)
+	}
+	
+}
+
+export function isPointSelectedByIndex(): boolean {}
 
 export function getClusterPoints() {
 	// return get(allClusterPoints);
@@ -227,14 +231,7 @@ export function setSelectedPointsOnGraph(Points: Point[]) {
 	// graph.selectPoints(Points);
 }
 
-export function updateSelectedPoints(thePoints: Point[]) {
-	// selectedPoints.update((existingPoints) => {
-	//     const existingIds = new Set(existingPoints.map((n) => n.id));
-	//     const uniqueNewPoints = thePoints.filter((newPoint) => !existingIds.has(newPoint.id));
-	//     return [...existingPoints, ...uniqueNewPoints];
-	// });
-	// graph.selectPoints(getSelectedPoints());
-}
+export function updateSelectedPoints(thePoints: Point[]) {}
 
 export function conditionalSelectPoints(thePoints: Point[]) {
 	// get the matches
@@ -244,7 +241,7 @@ export function conditionalSelectPoints(thePoints: Point[]) {
 }
 
 export function fitViewofGraph() {
-	// graph.fitView();
+	graph.fitView();
 }
 
 function showLabelsfor(Points: Point[]) {
@@ -266,10 +263,10 @@ function showLabelsfor(Points: Point[]) {
 
 
 
-export function isSelectionActive(): boolean {
-	if (getSelectedPointsCount() as number > 0) return true
-	return false
-}
+// export function isSelectionActive(): boolean {
+// 	if (getSelectedPointsCount() as number > 0) return true
+// 	return false
+// }
 export function getClusterPointsByClusterIds(cluster_ids: string[]): Point[] {
 	// const ClusterPointIds = new Set(cluster_ids);
 	// const filteredPoints = getRenderedPoints().filter(
