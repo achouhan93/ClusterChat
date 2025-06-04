@@ -1,25 +1,24 @@
 <script lang="ts">
-  	import '../../app.css';
+	import '../../app.css';
 	import 'open-props/style';
 	import 'open-props/normalize';
 	import 'open-props/buttons';
 	import 'open-props/animations';
 
-  import { Combine, BringToFront, LoaderCircle, BoxSelect, Binoculars, Menu } from 'lucide-svelte';
+	import { Combine, BringToFront, LoaderCircle, BoxSelect, Binoculars, Menu } from 'lucide-svelte';
 
-  import introJs from 'intro.js';
+	import introJs from 'intro.js';
 	import 'intro.js/minified/introjs.min.css';
 
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
 	import SearchBar from '$lib/components/search/SearchBar.svelte';
-	import InfoView from '$lib/components/v2/graph/InfoView.svelte';
+	import InfoView from '$lib/components/graph/InfoView.svelte';
 
-  import { toggleMultipleClustersMode, toggleHierarchicalLabels, fitViewofGraph } from '$lib/v2/acceleratedGraph';
+	import { toggleMultipleClustersMode, toggleHierarchicalLabels, fitViewofGraph } from '$lib/graph';
 
 	import { hierarchicalLabels } from '$lib/stores/uiStore';
 	import { selectMultipleClusters, dataloaded } from '$lib/stores/nodeStore';
 	import { onMount } from 'svelte';
-
 
 	let sideCollapsed = false;
 
@@ -37,7 +36,7 @@
 		? '0 minmax(200px, 12%) 1fr 1fr'
 		: 'max(35%) minmax(200px, 12%) 0.5fr 1.5fr';
 
-function startTour() {
+	function startTour() {
 		introJs()
 			.setOptions({
 				steps: [
@@ -92,23 +91,7 @@ function startTour() {
 			.start();
 	}
 
-    onMount(async () => {
-    try {
-        $dataloaded = true;
-        const pointsFile = '/data/updated-cosmograph-points-200K.arrow'
-        const configFile = '/data/cosmograph-config.json'
-        const { createGraph, createTimeline } = await import('$lib/v2/acceleratedGraph');
-        await createGraph(pointsFile,configFile)
-        await createTimeline()
-     
-    } catch (err) {
-        console.error('Error loading arrow file:', err);
-    }
-    
-    
-});
-
-let isResizingHorizontal = false;
+	let isResizingHorizontal = false;
 	let initialInfoHeight = 40; // Default info height percentage
 	let initialMousePositionY = 0;
 
@@ -145,6 +128,12 @@ let isResizingHorizontal = false;
 		document.body.style.cursor = 'default';
 	}
 
+	onMount(async () => {
+		$dataloaded = true;
+		const { createGraph, createTimeline } = await import('$lib/graph');
+		createGraph();
+		createTimeline();
+	});
 
 	onMount(() => {
 		// Resizable Handles
@@ -175,7 +164,9 @@ let isResizingHorizontal = false;
 	{#if !$dataloaded}
 		<div class="loader"><LoaderCircle size="48" /></div>
 	{:else}
-		<div id="main-graph"></div>
+		<div id="main-graph">
+			<svg id="selection-svg" />
+		</div>
 		<div id="main-search-bar" class="cosmograph-search">
 			<SearchBar />
 		</div>
@@ -403,10 +394,3 @@ let isResizingHorizontal = false;
         transition: none;
     } */
 </style>
-
-
-
-
-
-   
-

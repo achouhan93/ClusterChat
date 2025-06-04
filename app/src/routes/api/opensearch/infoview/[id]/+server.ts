@@ -27,7 +27,7 @@ export async function GET({ params }) {
 					}
 				},
 				_source: {
-					includes: ['abstract', 'authors:name', 'keywords:name', 'journal:title']
+					includes: ['title','date','abstract', 'authors:name', 'keywords:name', 'journal:title']
 				},
 				size: 1
 			}
