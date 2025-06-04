@@ -29,36 +29,109 @@ import {
 	allClusters,
 	allClusterNodes,
 	ClustersTree,
-	selectedNodesCount
+	selectNodeRange
 } from '$lib/stores/nodeStore';
 
 import { hierarchicalLabels, document_specific } from '$lib/stores/uiStore';
 
 // Other
-import '../app.css';
-import type { Node, Link, Cluster } from '$lib/types';
+import '../../app.css';
+import type { Node, Link, Cluster, Point } from '$lib/types';
 //import { DragSelect } from '$lib/components/graph/DragSelect';
 // import { dragSelection } from './components/graph/D3DragSelection';
 import { get, derived } from 'svelte/store';
+import { LabelsKeys, type CosmographPointInput } from 'cosmograph-v2/cosmograph/config';
 
 // Useful global variables
 let graph: Cosmograph;
-let timeline: CosmographTimeline;
+let timeline: CosmographTimeline
 
 let cachedIds = new Set<string>();
-let lastSelected: Node[] = [];
+let lastSelected = [];
 
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
 
+const handlePointClick = async (index:number) => {
+	if (index && !isSelectionActive() && get(document_specific)) {
+		graph.selectPoint(index);
+		console.log(index)
+		//graph.showLabelsfor
+	}
+};
 /* ====================================== Config for the Graph and Timeline ====================================== */
+const GraphConfig: CosmographConfig = {
+	backgroundColor: '#ffffff',
+	pointGreyoutOpacity: 0.01,
+	pointSize: 3, 
+	// pointSizeByFn?,
+	renderLinks: false,
+	focusPointOnClick: true,
+	fitViewOnInit: true,
+	showDynamicLabels: false,
+	showHoveredPointLabel: false,
+	showTopLabels: true,
+	showTopLabelsLimit: 10,
+	showClusterLabels: true,
+	hoveredPointLabelClassName: 'cosmograph-hovered-node-label',
+	hoveredPointCursor: 'pointer',
+	onClick(pointIndex) {
+		if(pointIndex) handlePointClick(pointIndex)
+	},
+	onPointMouseOver(hoveredNodeId) {
+		if(!isSelectionActive()){
 
-const GraphConfig: CosmographConfig = {};
+		}
+	},
+	onPointsFiltered() {}
+
+
+} 
+
+const TimelineConfig: CosmographTimelineConfig = {
+	accessor: 'date',
+	allowPointerEvents: true,
+	barRadius: 3,
+	barPadding: 0.5
+	
+
+	// formatter(date) {
+	// 	return new Date(date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+	// },
+
+}
 
 /* ====================================== Functions to Create Graph and Timeline ====================================== */
 
-export function createGraph() {}
 
-export function createTimeline() {}
+
+export async function createGraph(pointsPath:string, pointsConfigPath:string) {
+	const points = await fetch(pointsPath).then(res => res.blob())
+	const pointsConfig = await fetch(pointsConfigPath).then(res => res.json())
+	const pointsFile = new File([points], 'cosmograph-points.arrow', { type: 'application/octet-stream' })
+	const container: HTMLElement = document.getElementById('main-graph');
+	const ConfigData: CosmographConfig = { 
+		points: pointsFile, 
+		...pointsConfig,
+		...GraphConfig
+	}
+	graph = new Cosmograph(container, ConfigData)
+}
+
+export async function createTimeline() {
+	const timelineContainer = document.getElementById('main-timeline') as HTMLDivElement;
+	timeline = new CosmographTimeline(graph, timelineContainer, TimelineConfig)
+}
+
+// Alternative Way for createGraph
+	// const arrowFile = await fetch("src/lib/data/cosmograph-points.arrow")
+	// const points = await tableFromIPC(arrowFile)
+	// console.table([...points]);
+	// const config = await fetch("src/lib/data/cosmograph-config.json")
+	// console.log(points)
+	// console.log(config)
+	// createGraph(points,config)
+
+// export function createTimeline() {}
 
 // control buttons functions
 export function toggleMultipleClustersMode() {}
@@ -68,7 +141,7 @@ export function toggleHierarchicalLabels() {}
 
 async function initializeGraph() {}
 
-export function updateGraphConfig(config: CosmographInputConfig<Node, Link>) {
+export function updateGraphConfig(config: CosmographInputConfig<Point, Link>) {
 	graph.setConfig(config);
 }
 
@@ -77,32 +150,32 @@ export function updateGraphConfig(config: CosmographInputConfig<Node, Link>) {
 export function updateGraphData() {
 	// const startTime = new Date().getTime();
 	// console.log('Updating the graph');
-	// nodes.subscribe((nodesArray) => {
-	//     graph.setData(nodesArray, get(links));
+	// Points.subscribe((PointsArray) => {
+	//     graph.setData(PointsArray, get(links));
 	// });
 	// const endTime = new Date().getTime();
 	// const duration = Math.round(endTime - startTime) / 1000;
 	// console.log(`Time to set Data: ${duration} sec`);
 }
 
-export function updateNodes(newNodes: Node[]) {
+export function updatePoints(newPoints: Point[]) {
 	// make sure you update only unique
-	// nodes.update((existingNodes) => {
-	//     const existingIds = new Set(existingNodes.map((node) => node.id));
-	//     const uniqueNewNodes = newNodes.filter((newNode) => !existingIds.has(newNode.id));
-	//     return [...existingNodes, ...uniqueNewNodes];
+	// Points.update((existingPoints) => {
+	//     const existingIds = new Set(existingPoints.map((Point) => Point.id));
+	//     const uniqueNewPoints = newPoints.filter((newPoint) => !existingIds.has(newPoint.id));
+	//     return [...existingPoints, ...uniqueNewPoints];
 	// });
 }
 
-export function selectNodesInRange(arr: [[number, number], [number, number]]) {
+export function selectPointsInRange(arr: [[number, number], [number, number]]) {
 	// // TODO: fix this function
-	// graph.selectNodesInRange(arr);
-	// selectedNodes.set(getSelectedNodes() as Node[]);
+	// graph.selectPointsInRange(arr);
+	// selectedPoints.set(getSelectedPoints() as Point[]);
 }
 
-export function unselectNodes() {
-	// selectedNodes.set([]);
-	// graph.unselectNodes();
+export function unselectPoints() {
+	// selectedPoints.set([]);
+	// graph.unselectPoints();
 	// SelectedDateRange.set(undefined);
 	// const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
 	// search_bar_input.value = '';
@@ -111,66 +184,73 @@ export function unselectNodes() {
 }
 
 /**
- * Gets all the selected Node objects.
- * @return An array of selected Node objects.
- * @todo very slow for 5M Nodes, need another way.
+ * Gets all the selected Point objects.
+ * @return An array of selected Point objects.
+ * @todo very slow for 5M Points, need another way.
  */
 
-export function getSelectedNodes() {
-	// return get(selectedNodes);
+export function getSelectedPoints() {
+	// return get(selectedPoints);
+	return graph.getSelectedPointIndices()
 }
 
-export function isSelectedNode(node: Node): boolean {
-	// const current = getSelectedNodes();
+export function getSelectedPointsCount() {
+	return graph.getSelectedPointIndices()?.length
+}
+
+
+export function isSelectedPoint(Point: Point): boolean {
+	// const current = getSelectedPoints();
 	// // Rebuild the set only if the selection changed
 	// if (current !== lastSelected) {
 	//     cachedIds = new Set(current.map((n) => n.id));
 	//     lastSelected = current;
 	// }
-	// return cachedIds.has(node.id);
+	// return cachedIds.has(Point.id);
 }
 
-export function getClusterNodes() {
-	// return get(allClusterNodes);
+export function getClusterPoints() {
+	// return get(allClusterPoints);
 }
 
-export function getRenderedNodes() {
-	// return get(nodes);
+export function getRenderedPoints() {
+	// return get(Points);
 }
 
-export function setSelectedNodes(nodes: Node[]) {
-	// selectedNodes.set(nodes);
-	// graph.selectNodes(get(selectedNodes));
-	//graph.addNodesFilter()
+export function setSelectedPoints(Points: Point[]) {
+	// selectedPoints.set(Points);
+	// graph.selectPoints(get(selectedPoints));
+	//graph.addPointsFilter()
 }
 
-export function setSelectedNodesOnGraph(nodes: Node[]) {
-	// graph.selectNodes(nodes);
+export function setSelectedPointsOnGraph(Points: Point[]) {
+	// graph.selectPoints(Points);
 }
 
-export function updateSelectedNodes(thenodes: Node[]) {
-	// selectedNodes.update((existingNodes) => {
-	//     const existingIds = new Set(existingNodes.map((n) => n.id));
-	//     const uniqueNewNodes = thenodes.filter((newNode) => !existingIds.has(newNode.id));
-	//     return [...existingNodes, ...uniqueNewNodes];
+export function updateSelectedPoints(thePoints: Point[]) {
+	// selectedPoints.update((existingPoints) => {
+	//     const existingIds = new Set(existingPoints.map((n) => n.id));
+	//     const uniqueNewPoints = thePoints.filter((newPoint) => !existingIds.has(newPoint.id));
+	//     return [...existingPoints, ...uniqueNewPoints];
 	// });
-	// graph.selectNodes(getSelectedNodes());
+	// graph.selectPoints(getSelectedPoints());
 }
 
-export function conditionalSelectNodes(theNodes: Node[]) {
+export function conditionalSelectPoints(thePoints: Point[]) {
 	// get the matches
-	// const newNodes = new Set(theNodes.map((n) => n.id));
-	// const nodesToShowonGraph = getSelectedNodes().filter((n) => newNodes.has(n.id));
-	// setSelectedNodes(nodesToShowonGraph);
+	// const newPoints = new Set(thePoints.map((n) => n.id));
+	// const PointsToShowonGraph = getSelectedPoints().filter((n) => newPoints.has(n.id));
+	// setSelectedPoints(PointsToShowonGraph);
 }
 
 export function fitViewofGraph() {
 	// graph.fitView();
 }
 
-function showLabelsfor(nodes: Node[]) {
-	// if (nodes) {
-	//     GraphConfig.showLabelsFor = nodes;
+function showLabelsfor(Points: Point[]) {
+	
+	// if (Points) {
+	//     GraphConfig.showLabelsFor = Points;
 	//     updateGraphConfig(GraphConfig);
 	// } else {
 	//     GraphConfig.showLabelsFor = undefined;
@@ -179,15 +259,21 @@ function showLabelsfor(nodes: Node[]) {
 }
 
 // export function isSelectionActive(): boolean {
-// 	return get(selectedNodesCount) !== 0;
+// 	return get(selectedPointsCount) !== 0;
 // }
 
-export let isSelectionActive = derived(selectedNodesCount, ($count) => $count !== 0);
+// export let isSelectionActive = derived(selectedPointsCount, ($count) => $count !== 0);
 
-export function getClusterNodesByClusterIds(cluster_ids: string[]): Node[] {
-	// const ClusterNodeIds = new Set(cluster_ids);
-	// const filteredNodes = getRenderedNodes().filter(
-	//     (node) => ClusterNodeIds.has(node.id) && node.isClusterNode
+
+
+export function isSelectionActive(): boolean {
+	if (getSelectedPointsCount() as number > 0) return true
+	return false
+}
+export function getClusterPointsByClusterIds(cluster_ids: string[]): Point[] {
+	// const ClusterPointIds = new Set(cluster_ids);
+	// const filteredPoints = getRenderedPoints().filter(
+	//     (Point) => ClusterPointIds.has(Point.id) && Point.isClusterPoint
 	// );
-	// return filteredNodes;
+	// return filteredPoints;
 }

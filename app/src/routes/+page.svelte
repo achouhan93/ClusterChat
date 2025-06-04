@@ -107,13 +107,6 @@
 	}
 
 	function handleMouseMove(event: MouseEvent) {
-		// if (isResizingVertical) {
-		//     // Calculate width as a percentage of the viewport width
-		//     const newChatWidth = (event.clientX / window.innerWidth) * 100;
-		//     const clampedChatWidth = Math.min(40, Math.max(30, newChatWidth)); // Restrict between 20% and 40%
-		//     document.documentElement.style.setProperty("--chat-width", `${clampedChatWidth}%`);
-		// }
-
 		if (isResizingHorizontal) {
 			// Calculate the vertical delta from the starting position
 			const deltaY = event.clientY - initialMousePositionY;
@@ -289,10 +282,6 @@
 		overflow-y: auto;
 		overflow-x: hidden;
 		transition: width 0.5s var(--ease-5);
-	}
-
-	#multiple-node-btn.active {
-		background-color: var(--surface-1-dark);
 	}
 	.loader {
 		animation: var(--animation-spin);
