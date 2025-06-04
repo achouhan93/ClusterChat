@@ -2,7 +2,7 @@
 	import { downloadCosmographData } from 'cosmograph-v2';
 	import type { CosmographDataPrepConfig } from 'cosmograph-v2';
 
-	async function generateFiles() {
+	async function getPointsFromOpenSearch() {
 		const res = await fetch('/api/prepare');
 		const documents = await res.json();
 
@@ -13,6 +13,7 @@
 				pointXBy: 'x',
 				pointYBy: 'y',
 				pointLabelBy: 'title',
+				pointClusterBy: 'cluster_id',
 				pointIncludeColumns: ['date']
 			}
 		};
@@ -24,9 +25,9 @@
 	}
 </script>
 
-<button on:click={generateFiles}>
+<button on:click={getPointsFromOpenSearch}>
 	Download Cosmograph Data
 </button>
-<input type="number" step="10000" id="n_points" name="number_of_points" min="10000" max="5_000_000">
-<label for="n_points">between 10K and 5M Points</label>
+<!-- <input type="number" step="10000" id="n_points" name="number_of_points" min="10000" max="5_000_000">
+<label for="n_points">between 10K and 5M Points</label> -->
 
