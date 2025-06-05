@@ -2,7 +2,8 @@
 import type {
 	CosmographConfig,
 	CosmographTimelineConfig,
-	CosmographDataPrepConfig
+	CosmographDataPrepConfig,
+	CosmographData
 } from 'cosmograph-v2';
 import { Cosmograph, CosmographTimeline } from 'cosmograph-v2';
 
@@ -19,16 +20,10 @@ import {
 	SelectedDateRange,
 	SelectedSearchQuery,
 	SelectedClusters,
-	selectedNodes,
-	selectMultipleClusters,
-	hNode,
-	hoveredNodeId,
-	allClusters,
-	allClusterNodes,
-	ClustersTree,
 	selectNodeRange,
 	isSelectionActive,
-	selectedPointsIds
+	selectedPointsIds,
+	numberOfSelectedPoints
 } from '$lib/stores/nodeStore';
 
 import { hierarchicalLabels, document_specific, pageCount } from '$lib/stores/uiStore';
@@ -43,27 +38,31 @@ import { LabelsKeys, type CosmographPointInput } from 'cosmograph-v2/cosmograph/
 import { page } from '$app/state';
 
 // Useful global variables
-let graph: Cosmograph;
+export let graph: Cosmograph;
+// export let graph = writable<Cosmograph>
 let timeline: CosmographTimeline
-const HOVERED_NODE_SIZE: number = 0.5;
 
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
 isSelectionActive.subscribe((active) => {
     console.log(`isSelectionActive?: ${active}`)
-    pageCount.set(active ? getSelectedPointsCount() : 0);
+	if(!active) numberOfSelectedPoints.set(0)
 })
+// numberOfSelectedPoints.subscribe()
+
+//     pageCount.set(active ? get(numberOfSelectedPoints) : 0);
+// 	console.log(`pageCount: ${get(pageCount)}`)
 
 const handlePointClick = async (index:number) => {
     if (index && !get(isSelectionActive) && get(document_specific)) {
         setSelectPoint(index)
     }
 };
-
-const handlePointsFiltered = async () => {
-        if (!get(isSelectionActive) && getSelectedPointsCount() !== 0) {
+const handlePointsFiltered = async (table: CosmographData) => {
+		numberOfSelectedPoints.set(table.numRows)
         isSelectionActive.set(true)
-    }
 }
+
+
 
 // For logging REMOVE FOR PRODUCTION
 const outputLog = async (index:number) => {
@@ -75,10 +74,11 @@ function outputLogIds (){
     console.log(indices)
 
 }
+
 /* ====================================== Config for the Graph and Timeline ====================================== */
 const GraphConfig: CosmographConfig = {
     backgroundColor: '#ffffff',
-    pointGreyoutOpacity: 0.04,
+    pointGreyoutOpacity: 0.02,
     pointSize: 3, 
     // pointSizeByFn?,
     renderLinks: false,
@@ -92,15 +92,25 @@ const GraphConfig: CosmographConfig = {
     hoveredPointLabelClassName: 'cosmograph-hovered-node-label',
     hoveredPointCursor: 'pointer',
 	selectPointOnLabelClick: false,
-  
+    onClick(pointIndex) {
+        if(pointIndex){ 
+            handlePointClick(pointIndex) 
+            outputLog(pointIndex)
+        } else {
+            unselectAllPoints()
+        }
+        
+        
+    },
     onPointMouseOver(hoveredPointIndex) {
-        if(hoveredPointIndex && !get(isSelectionActive) && get(document_specific)){
-			GraphConfig.pointSize = (hNode) => hNode === hoveredPointIndex ? HOVERED_NODE_SIZE : 0.04
+        if(!get(isSelectionActive)){
+
         }
     },
     // very useful for date selection
-    onPointsFiltered() {
-        handlePointsFiltered()	
+    onPointsFiltered(SelectedPointsTable) {
+		console.log(`onPointsFiltered: ${SelectedPointsTable.numRows}`)
+        handlePointsFiltered(SelectedPointsTable)	
     },
     onGraphRebuilt(stats){
         console.log(`Stats of the Graph: ${stats}`)
@@ -114,6 +124,8 @@ const TimelineConfig: CosmographTimelineConfig = {
 	accessor: 'date',
 	barRadius: 3,
 	barPadding: 0.5,
+	tickStep: 15_778_560_000, // approx. 6 months
+	// dataStep: 2_629_743_590,  // approx. 1 month
 
 }
 
@@ -176,26 +188,29 @@ export function selectPointsInRange(arr: [[number, number], [number, number]]) {
  * @todo very slow for 5M Points, need another way.
  */
 
-export function getSelectedPointsIndices() {
-	return graph.getSelectedPointIndices() || []
+export function getSelectedPointIndices() {
+	const indices = graph.getSelectedPointIndices() 
+	if (indices) return indices
+	return null
 }
 
-export function getSelectedPointsCount() {
-	return getSelectedPointsIndices()?.length || 0
+export function getSelectedPointCount() {
+	return get(numberOfSelectedPoints) || 0
 }
 
 export function setSelectPoint(index:number) {
 	graph.selectPoint(index)
 	isSelectionActive.set(true)
 }
-export const setSelectedPointsIds = async (indices: number[]) => {
+export function setSelectPoints(indices:number[]) {
+	graph.selectPoints(indices)
+	console.log(`setSelectPoints after .selectPoints: ${get(numberOfSelectedPoints)}`)
+}
+export const setArrayofSelectedPointIds = async (indices: number[]) => {
 	const pointIds = await graph.getPointIdsByIndices(indices) || []
 	selectedPointsIds.set(pointIds)
 }
-export function setSelectPoints(indices:number[]) {
-	graph.selectPoints(indices)
-	isSelectionActive.set(true)
-}
+
 
 export function unselectAllPoints() {
 	graph.unselectAllPoints()
@@ -205,10 +220,13 @@ export function unselectAllPoints() {
 
 export function unselectPoint() {
 	graph.unselectPoint()
-	if(getSelectedPointsCount() === 0) {
+	if(get(numberOfSelectedPoints) === 0) { //getSelectedPointCount() === 0
 		isSelectionActive.set(false)
 	}
-	
+}
+
+export async function getPointIndicesByIds(ids:string[]){
+	return await graph.getPointIndicesByIds(ids)
 }
 
 export function isPointSelectedByIndex(): boolean {}

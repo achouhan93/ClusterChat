@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getSelectedPointsCount, getSelectedPointsIndices, unselectAllPoints, setSelectedPointsIds } from '$lib/v2/acceleratedGraph';
+    import { getSelectedPointCount, getSelectedPointIndices, unselectAllPoints, setArrayofSelectedPointIds } from '$lib/v2/acceleratedGraph';
 	import {
 		selectedNodes,
 		SelectedDateRange,
@@ -10,7 +10,10 @@
 		ClustersTree,
 		selectedClustersCount,
         isSelectionActive,
-        selectedPointsIds
+        selectedPointsIds,
+
+		numberOfSelectedPoints
+
 	} from '$lib/stores/nodeStore';
 
     import { pageCount } from '$lib/stores/uiStore';
@@ -19,7 +22,7 @@
 	import { get, writable } from 'svelte/store';
 	import { type Node, type Cluster, type InfoPanel, undefinedCluster } from '$lib/types';
 
-	let NodesToShow = writable<Node[]>([]);
+
 	let currentPage = writable<number>(1);
 	let currentInfoPanel = writable<InfoPanel>([]);
 
@@ -34,7 +37,7 @@
 	};
 
 	const handleRightClick = () => {
-		if ($currentPage != $pageCount) currentPage.update((value) => value + 1);
+		if ($currentPage != $numberOfSelectedPoints) currentPage.update((value) => value + 1);
 	};
 
     const handleClearTags = () => {
@@ -76,9 +79,9 @@
     
     fetchInfoPanelById($selectedPointsIds[$currentPage -1])
  }
-$: if ($isSelectionActive) {
+$: if ($isSelectionActive && $numberOfSelectedPoints > 0) {
     (async () => {
-        await setSelectedPointsIds(getSelectedPointsIndices());
+        await setArrayofSelectedPointIds(getSelectedPointIndices());
     })();
 }
 </script>
@@ -89,11 +92,11 @@ $: if ($isSelectionActive) {
 
 			
 
-		{#if $isSelectionActive && $pageCount > 0}
+		{#if $isSelectionActive && $numberOfSelectedPoints > 0}
             <div class="pagation-btns">
 					<button class="pagation-btn" on:click={handleLeftClick}><ChevronLeft /></button>
 					<button class="pagation-btn" on:click={handleRightClick}><ChevronRight /></button>
-					{$currentPage} of {$pageCount}
+					{$currentPage} of {$numberOfSelectedPoints}
 				</div>
 
 			<div class="info-field">
