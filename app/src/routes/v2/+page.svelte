@@ -11,7 +11,7 @@
 	import 'intro.js/minified/introjs.min.css';
 
 	import ChatInterface from '$lib/components/chat/ChatInterface.svelte';
-	import SearchBar from '$lib/components/search/SearchBar.svelte';
+	import SearchBar from '$lib/components/v2/search/SearchBar.svelte';
 	import InfoView from '$lib/components/v2/graph/InfoView.svelte';
 
   import { toggleMultipleClustersMode, toggleHierarchicalLabels, fitViewofGraph } from '$lib/v2/acceleratedGraph';
