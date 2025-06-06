@@ -1,19 +1,29 @@
-from opensearchpy.helpers import bulk
-from opensearchpy import NotFoundError
+"""
+Module for creating and indexing cluster documents into OpenSearch.
+"""
+
 import logging
+from typing import Dict, Any
 from tqdm import tqdm
+from opensearchpy import OpenSearch, NotFoundError
+from opensearchpy.helpers import bulk
 
-log = logging.getLogger(__name__)
-BATCH_SIZE = 50
-MAX_PATH_BYTES = 32766
+logger = logging.getLogger(__name__)
+
+BATCH_SIZE: int = 50
+MAX_PATH_BYTES: int = 32_766
 
 
-def create_cluster_index(os_connection, cluster_index_name):
+def create_cluster_index(os_connection: OpenSearch, cluster_index_name: str) -> None:
     """
-    Create the cluster index in OpenSearch if it doesn't exist.
+    Create the cluster index in OpenSearch if it does not already exist.
+
+    Args:
+        os_connection (OpenSearch): The OpenSearch client.
+        cluster_index_name (str): Name of the index to be created.
     """
     if not os_connection.indices.exists(index=cluster_index_name):
-        cluster_index_body = {
+        cluster_index_body: Dict[str, Any] = {
             "settings": {
                 "number_of_shards": 3,
                 "number_of_replicas": 1,
@@ -62,30 +72,47 @@ def create_cluster_index(os_connection, cluster_index_name):
             },
         }
         os_connection.indices.create(index=cluster_index_name, body=cluster_index_body)
+        logger.info(f"Created cluster index: {cluster_index_name}")
+    else:
+        logger.info(f"Cluster index {cluster_index_name} already exists")
 
 
-def index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddings):
+def index_clusters(
+    os_connection: OpenSearch,
+    cluster_index_name: str,
+    clusters: Dict[str, Dict[str, Any]],
+    cluster_embeddings: Dict[str, Any],
+) -> None:
     """
-    Index clusters into OpenSearch.
+    Index a dictionary of clusters and their embeddings into OpenSearch.
+
+    Args:
+        os_connection (OpenSearch): The OpenSearch client.
+        cluster_index_name (str): Target index name.
+        clusters (Dict[str, Dict[str, Any]]): Cluster metadata keyed by cluster ID.
+        cluster_embeddings (Dict[str, np.ndarray]): Cluster embedding vectors keyed by cluster ID.
     """
-    log.info(f"Indexing the cluster information in OpenSearch started")
+    logger.info("Started indexing cluster information into OpenSearch.")
     cluster_actions = []
 
     for cluster_id, cluster in tqdm(
-        clusters.items(), total=len(clusters), desc="indexing cluster information"
+        clusters.items(), total=len(clusters), desc="Indexing cluster information"
     ):
         # --- Check if the document already exists in OpenSearch ---
         try:
             os_connection.get(index=cluster_index_name, id=cluster_id)
-            log.debug(f"Cluster {cluster_id} already exists in OpenSearch. Skipping.")
+            logger.debug(
+                f"Cluster {cluster_id} already exists in OpenSearch. Skipping."
+            )
             continue  # Skip if already exists
         except NotFoundError:
-            pass  # Proceed with indexing
+            pass  # Proceed to index new cluster
         except Exception as e:
-            log.error(f"Error checking existence of cluster {cluster_id}: {e}")
-            continue  # Skip on unexpected error
+            logger.error(f"Error checking existence of cluster {cluster_id}: {e}")
+            continue
 
         try:
+            # Prepare topic and similarity data
             formatted_topic_information = (
                 [
                     {"word": word, "score": score}
@@ -94,18 +121,19 @@ def index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddin
                 if cluster["topic_information"] is not None
                 else None
             )
+
             formatted_pairwise_similarity = [
                 {"other_cluster_id": other_id, "similarity_score": score}
                 for other_id, score in cluster["pairwise_similarity"].items()
             ]
 
-            # --- Safe truncation for path ---
+            # Truncate path if it exceeds byte limit
             raw_path = cluster.get("path", "")
             if (
                 isinstance(raw_path, str)
                 and len(raw_path.encode("utf-8")) > MAX_PATH_BYTES
             ):
-                log.warning(
+                logger.warning(
                     f"Truncating 'path' for cluster {cluster_id} to fit byte limit"
                 )
                 truncated_path = raw_path.encode("utf-8")[: MAX_PATH_BYTES - 10].decode(
@@ -114,6 +142,7 @@ def index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddin
             else:
                 truncated_path = raw_path
 
+            # Compose document
             action = {
                 "_index": cluster_index_name,
                 "_id": cluster_id,
@@ -135,27 +164,28 @@ def index_clusters(os_connection, cluster_index_name, clusters, cluster_embeddin
             }
             cluster_actions.append(action)
         except Exception as e:
-            log.error(f"Error formatting cluster {cluster_id}: {e}")
+            logger.error(f"Error preparing cluster {cluster_id} for indexing: {e}")
             continue
 
         # Perform bulk indexing in batches
-        if len(cluster_actions) == BATCH_SIZE:
+        if len(cluster_actions) >= BATCH_SIZE:
             try:
                 bulk(os_connection, cluster_actions)
-                log.info(f"Indexed {BATCH_SIZE} clusters into OpenSearch.")
+                logger.info(f"Indexed batch of {BATCH_SIZE} clusters into OpenSearch.")
             except Exception as e:
-                log.error(f"Error indexing batch ending with cluster {cluster_id}: {e}")
-
+                logger.error(
+                    f"Error indexing batch ending with cluster {cluster_id}: {e}"
+                )
             cluster_actions.clear()
 
     # Index any remaining actions
     if cluster_actions:
         try:
             bulk(os_connection, cluster_actions)
-            log.info(
+            logger.info(
                 f"Indexed remaining {len(cluster_actions)} clusters into OpenSearch."
             )
         except Exception as e:
-            log.error(f"Error indexing final batch: {e}")
+            logger.error(f"Error indexing final batch: {e}")
 
-    log.info(f"Indexing the cluster information in OpenSearch completed")
+    logger.info(f"Indexing the cluster information in OpenSearch completed")

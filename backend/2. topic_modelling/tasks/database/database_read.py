@@ -2,37 +2,50 @@
 Module for fetching embeddings from OpenSearch.
 """
 
-import numpy as np
 import logging
+from typing import Generator, List, Tuple, Dict, Any
+from datetime import date
+import numpy as np
 from tqdm import tqdm
-from datetime import timedelta, datetime, date
 
+# Constants
 CONST_EUTILS_DEFAULT_MINDATE = "1800-01-01"
 CONST_EUTILS_DEFAULT_MAXDATE = date.today().strftime("%Y-%m-%d")
 
+# Configure module-level logger
+logger = logging.getLogger(__name__)
+
 
 class DataFetcher:
-    """Class to fetch embeddings from OpenSearch in batches."""
+    """
+    Class to fetch document embeddings and metadata from OpenSearch in batches.
+    """
 
-    def __init__(self, opensearch_connection, index_name):
+    def __init__(self, opensearch_connection: Any, index_name: str) -> None:
         """
-        Initialize the DataFetcher.
+        Initialize the DataFetcher with an OpenSearch connection and index name.
 
         Args:
-            opensearch_connection (OpenSearch): OpenSearch client connection.
-            index_name (str): Name of the OpenSearch index.
-            start_date (str): Start date in 'YYYY-MM-DD' format.
-            end_date (str): End date in 'YYYY-MM-DD' format.
+            opensearch_connection (Any): OpenSearch client instance.
+            index_name (str): Name of the OpenSearch index to query.
         """
         self.client = opensearch_connection
         self.os_index_name = index_name
 
-    def fetch_embeddings(self, start_date, end_date):
+    def fetch_embeddings(
+        self, start_date: str, end_date: str
+    ) -> Generator[Tuple[np.ndarray, List[Dict[str, Any]]], None, None]:
         """
-        Generator function to fetch embeddings from OpenSearch in batches.
+        Generator that yields batches of embeddings and their associated metadata.
+
+        Args:
+            start_date (str): Start date in 'YYYY-MM-DD' format.
+            end_date (str): End date in 'YYYY-MM-DD' format.
 
         Yields:
-            tuple: A tuple containing a batch of embeddings and their corresponding IDs.
+            Tuple[np.ndarray, List[Dict[str, Any]]]: A tuple containing:
+                - NumPy array of embedding vectors.
+                - List of metadata dictionaries for corresponding documents.
         """
         fields_to_include = [
             "documentID",
@@ -67,28 +80,33 @@ class DataFetcher:
             "_source": fields_to_include,
         }
 
-        # Execute the initial search request
-        response = self.client.search(
-            index=self.os_index_name,
-            scroll="10m",
-            size=5000,
-            body=search_params,
-        )
+        try:
+            # Execute the initial search request
+            response = self.client.search(
+                index=self.os_index_name,
+                scroll="10m",
+                size=5000,
+                body=search_params,
+            )
+        except Exception as e:
+            logger.error(f"Initial OpenSearch search query failed: {str(e)}")
+            return
 
-        # Get the scroll ID and hits from the initial search request
-        scroll_id = response["_scroll_id"]
-        hits = response["hits"]["hits"]
-        total_docs = response["hits"]["total"]["value"]  # Total number of documents
+        scroll_id: str = response.get("_scroll_id", "")
+        hits: List[Dict[str, Any]] = response["hits"]["hits"]
+        total_docs: int = response["hits"]["total"]["value"]
 
-        with tqdm(total=total_docs) as pbar:
+        with tqdm(total=total_docs, desc="Fetching documents") as pbar:
             while hits:
-                try:
-                    logging.info(f"considered {len(hits)} documents for processing")
-                    embeddings_batch = []
-                    ids_batch = []
+                embeddings_batch: List[List[float]] = []
+                ids_batch: List[Dict[str, Any]] = []
 
-                    for doc in tqdm(hits):
+                try:
+                    logger.info(f"Considered {len(hits)} documents for processing")
+
+                    for doc in tqdm(hits, leave=False, desc="Processing batch"):
                         embedding = doc["_source"].get("pubmed_bert_vector")
+
                         if embedding:
                             embeddings_batch.append(embedding)
                             ids_batch.append(
@@ -114,23 +132,32 @@ class DataFetcher:
                     if embeddings_batch:
                         yield np.array(embeddings_batch, dtype=np.float32), ids_batch
                     else:
-                        logging.warning("No embeddings found in the current batch.")
+                        logger.warning("No embeddings found in the current batch.")
 
                 except Exception as e:
-                    logging.error(
+                    logger.error(
                         f"Error during vector create and storage operation due to error {e}"
                     )
 
                 pbar.update(len(hits))
 
-                # Paginate through the search results using the scroll parameter
-                response = self.client.scroll(scroll_id=scroll_id, scroll="10m")
-                hits = response["hits"]["hits"]
-                scroll_id = response["_scroll_id"]
+                try:
+                    # Paginate through the search results using the scroll parameter
+                    response = self.client.scroll(scroll_id=scroll_id, scroll="10m")
+                    hits = response["hits"]["hits"]
+                    scroll_id = response.get("_scroll_id", "")
+                except Exception as e:
+                    logger.error(f"Error during OpenSearch scroll: {str(e)}")
+                    break
 
-            # Clear the scroll
-            self.client.clear_scroll(scroll_id=scroll_id)
+            try:
+                # Clear the scroll
+                self.client.clear_scroll(scroll_id=scroll_id)
+                logger.info("Scroll context cleared.")
+            except Exception as e:
+                logger.warning(f"Failed to clear scroll context: {str(e)}")
+
             pbar.close()
-            logging.info(
-                f"Processing completed for the date range: {start_date} to {end_date}"
+            logger.info(
+                f"Completed fetching embeddings for date range {start_date} to {end_date}."
             )

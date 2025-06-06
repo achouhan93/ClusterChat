@@ -1,24 +1,38 @@
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-from opensearchpy.helpers import bulk
-import logging
+"""
+Module for creating and indexing documents into OpenSearch using UMAP embeddings and clustering.
+"""
+
+import os
 import gc
 import psutil
+import logging
+import numpy as np
 from time import sleep
-import os
+from typing import Any
+from tqdm import tqdm
+from opensearchpy import OpenSearch
+from opensearchpy.helpers import bulk
+from sklearn.metrics.pairwise import cosine_similarity
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
-def _log_memory_usage():
+def _log_memory_usage() -> None:
+    """
+    Log current memory usage of the process in GB.
+    """
     if psutil:
         mem = psutil.Process(os.getpid()).memory_info().rss / (1024**3)
-        log.info(f"[Memory Usage] Current process memory: {mem:.2f} GB")
+        logger.info(f"[Memory Usage] Current process memory: {mem:.2f} GB")
 
 
-def create_document_index(os_connection, document_index_name):
+def create_document_index(os_connection: OpenSearch, document_index_name: str) -> None:
     """
-    Create the document index in OpenSearch if it doesn't exist.
+    Create a document index in OpenSearch with predefined settings and mappings if it does not exist.
+
+    Args:
+        os_connection (OpenSearch): OpenSearch client instance.
+        document_index_name (str): Name of the index to be created.
     """
     if not os_connection.indices.exists(index=document_index_name):
         document_index_body = {
@@ -58,21 +72,33 @@ def create_document_index(os_connection, document_index_name):
         os_connection.indices.create(
             index=document_index_name, body=document_index_body
         )
+        logger.info(f"Created document index: {document_index_name}")
+    else:
+        logger.info(f"Document index '{document_index_name}' already exists.")
 
 
 def index_documents(
-    os_connection,
-    document_index_name,
-    data_fetcher,
-    umap_model,
-    merged_topic_embeddings_array,
-    batch_size_umap=500,
-    batch_size_indexing=1000,
-):
+    os_connection: OpenSearch,
+    document_index_name: str,
+    data_fetcher: Any,
+    umap_model: Any,
+    merged_topic_embeddings_array: np.ndarray,
+    batch_size_umap: int = 500,
+    batch_size_indexing: int = 1000,
+) -> None:
     """
-    Fetches documents, assigns clusters, transforms embeddings, and indexes them into OpenSearch.
+    Index document data with topic assignment and 2D UMAP embeddings into OpenSearch.
+
+    Args:
+        os_connection (OpenSearch): OpenSearch client.
+        document_index_name (str): Index to store document information.
+        data_fetcher (object): Object that yields batches of embeddings and metadata.
+        umap_model (object): Fitted UMAP model for dimensionality reduction.
+        merged_topic_embeddings_array (np.ndarray): Cluster centroids for similarity computation.
+        batch_size_umap (int): Batch size for UMAP transformation.
+        batch_size_indexing (int): Batch size for OpenSearch indexing.
     """
-    log.info(f"Started indexing document information")
+    logger.info(f"Started indexing document information")
 
     try:
         # Fetch and process documents in batches
@@ -88,7 +114,7 @@ def index_documents(
             assigned_topics = np.argmax(similarity, axis=1)
 
             # --- UMAP Transformation ---
-            log.info(f"UMAP embedding creation for the batch")
+            logger.info(f"UMAP embedding creation for the batch")
 
             document_umap_embeddings = []
 
@@ -99,7 +125,7 @@ def index_documents(
                     transformed = umap_model.transform(batch)
                     document_umap_embeddings.extend(transformed)
                 except Exception as e:
-                    log.error(f"UMAP transformation failed on batch {i}: {str(e)}")
+                    logger.error(f"UMAP transformation failed on batch {i}: {str(e)}")
                     document_umap_embeddings.extend([[0.0, 0.0]] * len(batch))
 
             # Transform document embeddings using the pre-fitted UMAP model
@@ -138,7 +164,7 @@ def index_documents(
                 # Index in batches to OpenSearch
                 if len(document_actions) >= batch_size_indexing:
                     bulk(os_connection, document_actions)
-                    log.info(
+                    logger.info(
                         f"Inserted {len(document_actions)} document information in OpenSearch"
                     )
                     document_actions = []
@@ -146,7 +172,7 @@ def index_documents(
             # Index any remaining documents in the current batch
             if document_actions:
                 bulk(os_connection, document_actions)
-                log.info(
+                logger.info(
                     f"Inserted final {len(document_actions)} documents of current batch."
                 )
 
@@ -165,6 +191,6 @@ def index_documents(
             _log_memory_usage()
 
     except Exception as e:
-        log.error(f"Batch processing failed: {str(e)}")
+        logger.error(f"Batch processing failed: {str(e)}")
 
-    log.info(f"Document Indexing Pipeline completed")
+    logger.info(f"Document Indexing Pipeline completed")

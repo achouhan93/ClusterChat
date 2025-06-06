@@ -1,33 +1,52 @@
-import utils
+import logging
+from typing import Any
+
 from opensearchpy import OpenSearch
 
+import utils
 
-# Postgres and OpenSearch configuration details
-CONFIG = utils.loadConfigFromEnv()
+# Configure logger
+logger = logging.getLogger(__name__)
+
+# Load environment-based configuration
+CONFIG = utils.load_config_from_env()
 
 
-def opensearch_connection():
+def opensearch_connection() -> OpenSearch:
     """
-    Establish the OpenSearch connection
+    Establishes a secure connection to an OpenSearch cluster.
 
     Returns:
-        object: opensearch connection object
-    """
-    # OpenSearch Connection Setting
-    user_name = CONFIG["OPENSEARCH_USERNAME"]
-    password = CONFIG["OPENSEARCH_PASSWORD"]
-    os = OpenSearch(
-        hosts=[
-            {
-                "host": CONFIG["CLUSTER_CHAT_OPENSEARCH_HOST"],
-                "port": CONFIG["OPENSEARCH_PORT"],
-            }
-        ],
-        http_auth=(user_name, password),
-        use_ssl=True,
-        verify_certs=True,
-        ssl_assert_hostname=False,
-        ssl_show_warn=False,
-    )
+        OpenSearch: An authenticated OpenSearch client instance.
 
-    return os
+    Raises:
+        KeyError: If required configuration keys are missing.
+        Exception: If connection initialization fails for any other reason.
+    """
+    try:
+        # Retrieve credentials and host details from environment configuration
+        username: str = CONFIG["OPENSEARCH_USERNAME"]
+        password: str = CONFIG["OPENSEARCH_PASSWORD"]
+        host: str = CONFIG["CLUSTER_CHAT_OPENSEARCH_HOST"]
+        port: int = int(CONFIG["OPENSEARCH_PORT"])
+
+        # Initialize OpenSearch client
+        client = OpenSearch(
+            hosts=[{"host": host, "port": port}],
+            http_auth=(username, password),
+            use_ssl=True,
+            verify_certs=True,
+            ssl_assert_hostname=False,
+            ssl_show_warn=False,
+        )
+
+        logger.info("OpenSearch connection established..")
+        return client
+
+    except KeyError as ke:
+        logger.error(f"Missing configuration key: {str(ke)}")
+        raise
+
+    except Exception as e:
+        logger.exception(f"Failed to initialize OpenSearch connection: {str(e)}")
+        raise

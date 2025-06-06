@@ -1,17 +1,25 @@
-def opensearch_pubmedbert_mapping():
-    # """"""""""
-    # Functionality: Creation of the mapping for the ElasticSearch or OpenSearch Index
-    #
-    # For this project mapping is created from JSON using https://json-to-es-mapping.netlify.app/
-    #
-    # Signature of the function:
-    #  Input:
-    #       No input is required for this function, as it is executed to create an object for mapping
-    #
-    #  Output:
-    #       os_mapping: Mapping setting for the ElasticSearch or OpenSearch Index
-    # """"""""""
-    os_mapping = {
+import logging
+from typing import Dict, Any
+
+# Configure logger
+logger = logging.getLogger(__name__)
+
+
+def opensearch_pubmedbert_mapping() -> Dict[str, Any]:
+    """
+    Constructs the OpenSearch index mapping for PubMedBERT document vectors.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing settings and mappings for the OpenSearch index.
+
+    Notes:
+        - This configuration enables KNN vector search using `lucene` HNSW engine.
+        - The analyzer used is a custom analyzer with lowercase and preserve_original filters.
+        - This mapping is suitable for semantic indexing of biomedical text embeddings.
+    """
+    logger.info("Generating OpenSearch mapping for PubMedBERT vector index.")
+
+    os_mapping: Dict[str, Any] = {
         "settings": {
             "number_of_shards": 3,
             "number_of_replicas": 1,
@@ -67,4 +75,7 @@ def opensearch_pubmedbert_mapping():
         },
     }
 
+    logger.info(
+        "OpenSearch mapping for PubMedBERT vector index generated successfully."
+    )
     return os_mapping

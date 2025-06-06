@@ -1,40 +1,31 @@
 import logging
-import dotenv
-from time import time
+from typing import Dict
+from dotenv import find_dotenv, dotenv_values
 
 log = logging.getLogger(__name__)
 
 
-def loadConfigFromEnv():
-    """_summary_
+def load_config_from_env() -> Dict[str, str]:
+    """
+    Load configuration key-value pairs from a .env file.
 
     Returns:
-        dict: loads all configration data from dotenv file
+        Dict[str, str]: A dictionary containing environment variables loaded
+                        from the nearest .env file found.
+
+    Raises:
+        FileNotFoundError: If no .env file is found in the expected directory hierarchy.
+
+    Notes:
+        - This function uses `python-dotenv` to locate and load the environment file.
+        - Values in the returned dictionary are all strings.
     """
+    dotenv_path = find_dotenv()
 
-    DOTENVPATH = dotenv.find_dotenv()
-    CONFIG = dotenv.dotenv_values(DOTENVPATH)
+    if not dotenv_path:
+        log.error("No .env file found in the directory hierarchy.")
+        raise FileNotFoundError("Environment configuration file (.env) not found.")
 
-    return CONFIG
+    config = dotenv_values(dotenv_path)
 
-
-def secondsToText(secs):
-    days = secs // 86400
-    hours = (secs - days * 86400) // 3600
-    minutes = (secs - days * 86400 - hours * 3600) // 60
-    seconds = secs - days * 86400 - hours * 3600 - minutes * 60
-    result = (
-        ("{0} day{1}, ".format(days, "s" if days != 1 else "") if days else "")
-        + ("{0} hour{1}, ".format(hours, "s" if hours != 1 else "") if hours else "")
-        + (
-            "{0} minute{1}, ".format(minutes, "s" if minutes != 1 else "")
-            if minutes
-            else ""
-        )
-        + (
-            "{0} second{1}, ".format(round(seconds, 2), "s" if seconds != 1 else "")
-            if seconds
-            else ""
-        )
-    )
-    return result
+    return config

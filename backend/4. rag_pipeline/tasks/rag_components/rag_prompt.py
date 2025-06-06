@@ -1,30 +1,36 @@
-class ragPrompt:
-    """
-    A class to manage prompt templates for language model input.
+import logging
 
-    This class provides different templates for generating prompts which are used to instruct
-    a language model on how to process and respond to user queries.
+# Configure logging
+log = logging.getLogger(__name__)
+
+
+class RagPrompt:
+    """
+    A class to manage prompt templates for language model input in Retrieval-Augmented Generation (RAG) settings.
+
+    This class provides standardized instructions to ensure that the model's answers
+    remain grounded in the retrieved context.
     """
 
     def __init__(self) -> None:
         """
-        Initializes the ragPrompt instance.
+        Initializes the RagPrompt instance.
 
-        The constructor currently does not carry out any operations.
+        Currently a placeholder for future configuration if needed.
         """
-        pass
+        log.info("RagPrompt initialized.")
 
     def prompt_template(self) -> str:
         """
-        Provides a prompt template for scenarios where contextual information is available.
+        Returns a context prompt template to guide the language model's responses.
 
-        This template is used when there is additional context (e.g., related texts or documents)
-        that can help the model in generating a more informed answer.
+        This prompt enforces strict adherence to context, avoids hallucinations,
+        and provides fallback instructions if the question is not relevant to the context.
 
         Returns:
-            A string containing the template with placeholders for context and the user's question.
+            str: A string prompt template with `{context}` and `{question}` placeholders.
         """
-        prompt = """
+        return """
         Your primary task is to answer questions based STRICTLY on the provided context.
         <context>
         CONTEXT: {context}
@@ -44,4 +50,3 @@ class ragPrompt:
 
         ANSWER: 
         """
-        return prompt

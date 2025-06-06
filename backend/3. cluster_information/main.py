@@ -1,20 +1,45 @@
+import argparse
+import gc
 import logging
-from tasks import *
+import os
+import pickle
+from time import sleep
+from typing import Any
+
 import joblib
 import numpy as np
-import os
-from utils import load_config_from_env
-import argparse
-import pickle
 from sklearn.utils import shuffle
 from umap import UMAP
-import gc
-from time import sleep
+
+from tasks import (
+    opensearch_connection,
+    process_models,
+    deduplicate_topics,
+    build_custom_hierarchy,
+    create_cluster_index,
+    index_clusters,
+    update_cluster_paths,
+    create_document_index,
+    index_documents,
+    DataFetcher,
+)
+from utils import load_config_from_env
+
 
 CONFIG = load_config_from_env()
 
 
-def main():
+def main() -> None:
+    """
+    Main function to execute the clustering and indexing pipeline for chat data.
+    It includes the following stages:
+        - Argument parsing
+        - Data fetching
+        - Topic processing and deduplication
+        - UMAP model loading/training
+        - Hierarchy construction
+        - Indexing into OpenSearch
+    """
     try:
         if not os.path.exists(CONFIG["CLUSTER_CHAT_LOG_PATH"]):
             os.makedirs(CONFIG["CLUSTER_CHAT_LOG_PATH"])
@@ -31,13 +56,13 @@ def main():
 
         os_connection = opensearch_connection()
 
-        # Initialize DataFetcher
+        # Extract configuration
         os_index = CONFIG["CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_COMPLETE"]
         cluster_index_name = CONFIG["CLUSTER_CHAT_CLUSTER_INFORMATION_INDEX"]
         document_index_name = CONFIG["CLUSTER_CHAT_DOCUMENT_INFORMATION_INDEX"]
         model_path = CONFIG["MODEL_PATH"]
 
-        # parse command line arguments
+        # Parse CLI arguments
         parser = argparse.ArgumentParser(description="Clustering Pipeline")
         parser.add_argument(
             "-c",
@@ -63,7 +88,7 @@ def main():
                 end_date=end_date,
             )
 
-            # Step 2: Process BERTopic models
+            # Load or process BERTopic model data
             merged_topics_path = os.path.join(model_path, "merged_topics.pkl")
             topic_label_path = os.path.join(model_path, "topic_label.pkl")
             topic_description_path = os.path.join(model_path, "topic_description.pkl")
@@ -101,7 +126,7 @@ def main():
                     topic_words,
                 ) = process_models(model_path)
 
-            # Step 3: Deduplicate topics
+            # Deduplicate topics
             cleaned_merged_topics_path = os.path.join(
                 model_path, "cleaned_merged_topics.pkl"
             )
@@ -159,16 +184,17 @@ def main():
 
                 logging.info("Saved deduplicated topics to cleaned_topics.pkl")
 
-            del merged_topics
-            del topic_label
-            del topic_description
-            del topic_words
+            del (
+                merged_topics,
+                topic_label,
+                topic_description,
+                topic_words,
+            )
             del merged_topic_embeddings_array
             gc.collect()
             sleep(2)
 
-            # Step 4: Load UMAP model
-            logging.info(f"Loading the trained UMAP model")
+            # Load or train UMAP model
             umap_path = os.path.join(model_path, "umap_2_components.joblib")
 
             if os.path.exists(umap_path):
@@ -176,6 +202,7 @@ def main():
                 with open(umap_path, "rb") as f:
                     umap_model = joblib.load(f)
             else:
+                logging.info(f"Training new UMAP model.")
                 embeddings = shuffle(
                     cleaned_merged_topic_embeddings_array, random_state=42
                 )
@@ -189,7 +216,7 @@ def main():
 
             logging.info(f"Loading the UMAP model completed")
 
-            # Step 5: Build hierarchy
+            # Load or build hierarchy
             cluster_path = os.path.join(model_path, "clusters.pkl")
             cluster_embeddings_path = os.path.join(model_path, "cluster_embeddings.pkl")
 
@@ -212,19 +239,16 @@ def main():
                     model_path,
                 )
 
-            # Step 6: Index clusters into OpenSearch
+            # Indexing clusters into OpenSearch
             create_cluster_index(os_connection, cluster_index_name)
             index_clusters(
                 os_connection, cluster_index_name, clusters, cluster_embeddings
             )
-
-            # Step 7: Update cluster paths in OpenSearch
+            # Update cluster paths in OpenSearch
             update_cluster_paths(os_connection, cluster_index_name)
 
-            # Step 8: Index documents into OpenSearch
+            # Indexing documents into OpenSearch
             create_document_index(os_connection, document_index_name)
-
-            # Index documents
             index_documents(
                 os_connection,
                 document_index_name,

@@ -1,26 +1,38 @@
 import os
 import gc
 import json
-import numpy as np
+import pickle
 import logging
+from time import sleep
+from typing import List, Tuple, Dict, Any, Optional, Union
+
+import numpy as np
 from bertopic import BERTopic
 from openai import OpenAI
-import pickle
-from utils import load_config_from_env
-from time import sleep
 from sklearn.metrics.pairwise import cosine_similarity
 from difflib import SequenceMatcher
 
-log = logging.getLogger(__name__)
-CONFIG = load_config_from_env()
+from utils import load_config_from_env
 
-# Initialize OpenAI client
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Load environment configuration and initialize OpenAI client
+CONFIG: Dict[str, str] = load_config_from_env()
 client = OpenAI(api_key=CONFIG["OPENAI_API_KEY"])
 
 
-def list_bertopic_models(model_path):
-    """Lists all BERTopic models stored in the given path."""
-    model_files = []
+def list_bertopic_models(model_path: str) -> List[str]:
+    """
+    List all BERTopic model files in the given directory.
+
+    Args:
+        model_path (str): Path to the directory containing BERTopic models.
+
+    Returns:
+        List[str]: List of file paths to BERTopic model pickle files.
+    """
+    model_files: List[str] = []
     for root, _, files in os.walk(model_path):
         for file in files:
             if file.startswith("bertopic_model_") and file.endswith(".pkl"):
@@ -28,7 +40,18 @@ def list_bertopic_models(model_path):
     return model_files
 
 
-def get_topic_metadata(topic_words):
+def get_topic_metadata(
+    topic_words: List[Tuple[str, float]]
+) -> Dict[str, Optional[str]]:
+    """
+    Generate structured metadata (label and description) for a topic using OpenAI.
+
+    Args:
+        topic_words (List[Tuple[str, float]]): Topic words with relevance scores.
+
+    Returns:
+        Dict[str, Optional[str]]: Dictionary with 'label' and 'description' or fallback values on error.
+    """
     prompt = (
         f"You are given topic keywords in order of importance: {', '.join([word for word, _ in topic_words])}. "
         f"Generate a JSON object with the following two fields:\n"
@@ -37,50 +60,87 @@ def get_topic_metadata(topic_words):
         f"Return only a valid JSON object and nothing else."
     )
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a helpful assistant that returns structured JSON data for topic modeling.",
-            },
-            {"role": "user", "content": prompt},
-        ],
-        max_tokens=50,
-        temperature=0.1,
-    )
-
-    content = response.choices[0].message.content.strip()
     try:
-        metadata = json.loads(content)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that returns structured JSON data for topic modeling.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=50,
+            temperature=0.1,
+        )
+
+        content = response.choices[0].message.content.strip()
+        return json.loads(content)
     except Exception as e:
-        metadata = {
+        logger.warning("OpenAI response parsing failed: %s", e)
+        return {
             "label": None,
             "description": None,
             "error": f"Failed to parse JSON: {e}",
-            "raw_output": content,
+            "raw_output": content if "content" in locals() else None,
         }
-    return metadata
 
 
-def save_checkpoint(checkpoint_path, checkpoint_data):
-    """Saves the current checkpoint data to a file."""
+def save_checkpoint(checkpoint_path: str, checkpoint_data: Dict[str, Any]) -> None:
+    """
+    Persist checkpoint data to disk.
+
+    Args:
+        checkpoint_path (str): Destination file path.
+        checkpoint_data (Dict[str, Any]): Serializable checkpoint data.
+    """
     with open(checkpoint_path, "wb") as f:
         pickle.dump(checkpoint_data, f)
-    log.info(f"Checkpoint saved at {checkpoint_path}.")
+    logger.info(f"Checkpoint saved at {checkpoint_path}.")
 
 
-def load_checkpoint(checkpoint_path):
-    """Loads checkpoint data from a file."""
+def load_checkpoint(checkpoint_path: str) -> Dict[str, Any]:
+    """
+    Load checkpoint data from disk.
+
+    Args:
+        checkpoint_path (str): File path to load checkpoint from.
+
+    Returns:
+        Dict[str, Any]: Deserialized checkpoint data.
+    """
     with open(checkpoint_path, "rb") as f:
         checkpoint_data = pickle.load(f)
-    log.info(f"Checkpoint loaded from {checkpoint_path}.")
+    logger.info(f"Checkpoint loaded from {checkpoint_path}.")
     return checkpoint_data
 
 
-def process_models(model_path):
+def process_models(
+    model_path: str,
+) -> Tuple[
+    Dict[str, List[Tuple[str, float]]],
+    np.ndarray,
+    Dict[str, str],
+    Dict[str, str],
+    Dict[str, List[str]],
+]:
+    """
+    Process and merge multiple BERTopic models from a given path.
+
+    Args:
+        model_path (str): Directory containing BERTopic model files.
+
+    Returns:
+        Tuple containing:
+            - merged_topics (Dict[str, List[Tuple[str, float]]])
+            - merged_topic_embeddings_array (np.ndarray)
+            - topic_label (Dict[str, str])
+            - topic_description (Dict[str, str])
+            - topic_words (Dict[str, List[str]])
+    """
     checkpoint_path = os.path.join(model_path, "checkpoint.pkl")
-    log.info("Starting the processing of the BERTopic Model")
+    logger.info("Starting the processing of the BERTopic Model")
+
     # Initialize or load checkpoint
     if os.path.exists(checkpoint_path):
         checkpoint = load_checkpoint(checkpoint_path)
@@ -105,16 +165,17 @@ def process_models(model_path):
 
     # List all BERTopic models
     model_paths = list_bertopic_models(model_path)
-    log.info(f"Found {len(model_paths)} BERTopic model(s) in {model_path}.")
-
-    # Filter out already processed models
     models_to_process = [m for m in model_paths if m not in processed_models]
-    log.info(f"{len(models_to_process)} model(s) left to process.")
+
+    logger.info(
+        f"Found {len(model_paths)} total models in path {model_path}. "
+        "{len(models_to_process)} model(s) to process"
+    )
 
     # Process models one at a time to minimize memory usage
     for model_num, path in enumerate(models_to_process, start=1):
         try:
-            log.info(
+            logger.info(
                 f"Processing Started for model {model_num + 1}/{len(model_paths)}: {path}"
             )
 
@@ -188,12 +249,12 @@ def process_models(model_path):
 
             save_checkpoint(checkpoint_path, checkpoint_data)
 
-            log.info(
+            logger.info(
                 f"Processing Completed for model {model_num + 1}/{len(model_paths)}: {path}"
             )
         except Exception as e:
-            log.error(f"Error processing model {path}: {e}")
-            log.error("Saving checkpoint before exiting.")
+            logger.error(f"Error processing model {path}: {e}")
+            logger.error("Saving checkpoint before exiting.")
             # Save the current state before exiting
             checkpoint_data = {
                 "merged_topics": merged_topics,
@@ -206,10 +267,10 @@ def process_models(model_path):
                 "processed_models": processed_models,
             }
             save_checkpoint(checkpoint_path, checkpoint_data)
-            log.info("Exiting the script due to errors.")
+            logger.info("Exiting the script due to errors.")
             raise  # Re-raise the exception after saving checkpoint
 
-    log.info(
+    logger.info(
         "Processing for all models completed and topics are merged with topic information"
     )
 
@@ -217,7 +278,7 @@ def process_models(model_path):
     merged_topic_embeddings_array = np.array(merged_topic_embeddings, dtype=np.float32)
     final_npy_path = os.path.join(model_path, "merged_topic_embeddings_array.npy")
     np.save(final_npy_path, merged_topic_embeddings_array)
-    log.info(f"Final merged_topic_embeddings_array.npy saved at {final_npy_path}.")
+    logger.info(f"Final merged_topic_embeddings_array.npy saved at {final_npy_path}.")
 
     # Optionally, save other merged data for future use
     with open(os.path.join(model_path, "merged_topics.pkl"), "wb") as f:
@@ -228,12 +289,13 @@ def process_models(model_path):
         pickle.dump(topic_description, f)
     with open(os.path.join(model_path, "topic_words.pkl"), "wb") as f:
         pickle.dump(topic_words, f)
-    log.info("All merged topic information saved as pickle files.")
+
+    logger.info("All merged topic information saved as pickle files.")
 
     # Optionally, remove the checkpoint file as processing is complete
     if os.path.exists(checkpoint_path):
         os.remove(checkpoint_path)
-        log.info(
+        logger.info(
             f"Checkpoint file {checkpoint_path} removed after successful processing."
         )
 
@@ -247,17 +309,39 @@ def process_models(model_path):
 
 
 def deduplicate_topics(
-    merged_topics,
-    topic_label,
-    topic_description,
-    topic_words,
-    merged_topic_embeddings_array,
-    model_path,
-    label_threshold=0.9,
-    embedding_similarity_threshold=0.9,
-):
+    merged_topics: Dict[str, List[Tuple[str, float]]],
+    topic_label: Dict[str, str],
+    topic_description: Dict[str, str],
+    topic_words: Dict[str, List[str]],
+    merged_topic_embeddings_array: np.ndarray,
+    model_path: str,
+    label_threshold: float = 0.9,
+    embedding_similarity_threshold: float = 0.9,
+) -> Tuple[
+    Dict[str, List[Tuple[str, float]]],
+    np.ndarray,
+    Dict[str, str],
+    Dict[str, str],
+    Dict[str, List[str]],
+]:
+    """
+    Deduplicate topics using fuzzy label matching and embedding similarity.
+
+    Args:
+        merged_topics (Dict[str, List[Tuple[str, float]]]): Merged topics dictionary.
+        topic_label (Dict[str, str]): Topic labels.
+        topic_description (Dict[str, str]): Topic descriptions.
+        topic_words (Dict[str, List[str]]): Topic keywords.
+        merged_topic_embeddings_array (np.ndarray): Topic embedding vectors.
+        model_path (str): Directory path to store checkpoint and outputs.
+        label_threshold (float): Minimum fuzzy label similarity ratio to consider for merging.
+        embedding_similarity_threshold (float): Minimum cosine similarity for merging.
+
+    Returns:
+        Tuple: Deduplicated versions of all inputs.
+    """
     checkpoint_path = os.path.join(model_path, "dedup_checkpoint.pkl")
-    log.info("Starting the topic deduplication process")
+    logger.info("Starting the topic deduplication process")
 
     if os.path.exists(checkpoint_path):
         checkpoint = load_checkpoint(checkpoint_path)
@@ -273,10 +357,11 @@ def deduplicate_topics(
     topic_ids = sorted(merged_topics.keys())
     topic_index_map = {tid: idx for idx, tid in enumerate(topic_ids)}
     sim_matrix = cosine_similarity(merged_topic_embeddings_array)
-    dedup_map = {}
-    seen = set()
+    dedup_map: Dict[str, str] = {}
+    seen: set = set()
 
-    def is_fuzzy_label_match(a, b):
+    def is_fuzzy_label_match(a: str, b: str) -> bool:
+        """Determine if two labels are similar enough."""
         a, b = a.strip().lower(), b.strip().lower()
         if a == b:
             return True
@@ -314,6 +399,7 @@ def deduplicate_topics(
     remap_ids = {}
 
     remaining_ids = list(merged_topics.keys())
+
     for new_id, tid in enumerate(remaining_ids):
         new_tid = str(new_id)
         remap_ids[tid] = new_tid
@@ -334,22 +420,23 @@ def deduplicate_topics(
         pickle.dump(new_topic_description, f)
     with open(os.path.join(model_path, "cleaned_topic_words.pkl"), "wb") as f:
         pickle.dump(new_topic_words, f)
+
     np.save(
         os.path.join(model_path, "cleaned_merged_topic_embeddings_array.npy"),
         dedup_embeddings_array,
     )
 
     checkpoint_data = {
-        "merged_topics": new_merged_topics,
-        "merged_topic_embeddings": dedup_embeddings_array,
-        "topic_label": new_topic_label,
-        "topic_description": new_topic_description,
-        "topic_words": new_topic_words,
+        "cleaned_merged_topics": new_merged_topics,
+        "cleaned_merged_topic_embeddings": dedup_embeddings_array,
+        "cleaned_topic_label": new_topic_label,
+        "cleaned_topic_description": new_topic_description,
+        "cleaned_topic_words": new_topic_words,
         "dedup_map": dedup_map,
         "remap_ids": remap_ids,
     }
     save_checkpoint(checkpoint_path, checkpoint_data)
-    log.info(
+    logger.info(
         f"Deduplication completed. {len(dedup_map)} topics merged. {len(new_merged_topics)} topics retained."
     )
 

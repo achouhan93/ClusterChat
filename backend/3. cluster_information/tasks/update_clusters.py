@@ -1,36 +1,56 @@
-from opensearchpy.helpers import scan, bulk
 import logging
+from typing import Dict, Any
+from opensearchpy import OpenSearch
+from opensearchpy.helpers import scan, bulk
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
-def update_cluster_paths(os_connection, cluster_index_name):
+def update_cluster_paths(os_connection: OpenSearch, cluster_index_name: str) -> None:
     """
-    Updates the 'path' field for each cluster in the OpenSearch index,
-    reconstructing the path from the root (highest depth) down to each node.
+    Update the 'path' field of clusters in the OpenSearch index.
+
+    This function reconstructs a hierarchical path for each cluster by tracing
+    parent-child relationships. If the original parent-child links are missing,
+    it attempts to infer the structure using the 'depth' field.
 
     Args:
-        os_connection (OpenSearch): The OpenSearch client connection.
-        cluster_index_name (str): The name of the cluster index in OpenSearch.
-    """
-    log.info(f"Started updating the cluster path")
-    # Step 1: Retrieve all clusters from the OpenSearch index
-    clusters = {}
-    child_to_parent = {}
+        os_connection (OpenSearch): An OpenSearch client instance.
+        cluster_index_name (str): The name of the OpenSearch index containing clusters.
 
-    log.info("Fetching all clusters from OpenSearch...")
+    Returns:
+        None
+    """
+    logger.info(f"Started updating the cluster path")
+
+    # Step 1: Retrieve all clusters from the OpenSearch index
+
+    # Initialize data structures to store cluster info and child-to-parent links
+    clusters: Dict[str, Dict[str, Any]] = {}
+    child_to_parent: Dict[str, str] = {}
+
+    logger.info("Fetching all clusters from OpenSearch...")
+
     for hit in scan(os_connection, index=cluster_index_name):
         cluster_id = hit["_source"]["cluster_id"]
         cluster = hit["_source"]
+        if not cluster_id:
+            continue  # Skip malformed entries
+
         clusters[cluster_id] = cluster
+
         # Build child-to-parent mapping using the 'children' field
         for child_id in cluster.get("children", []):
             child_to_parent[child_id] = cluster_id
 
+    # Step 2: Handle case where 'children' fields are missing or empty
     # Check if 'child_to_parent' mapping is correct
     if not child_to_parent:
-        log.error("The 'children' fields are empty or not populated correctly.")
-        log.error("Attempting to build 'child_to_parent' mapping using other methods.")
+        logger.error("The 'children' fields are empty or not populated correctly.")
+        logger.error(
+            "Attempting to build 'child_to_parent' mapping using other methods."
+        )
+
         # Alternative method: Use 'depth' field to infer parent-child relationships
         depth_to_clusters = {}
         for cluster_id, cluster in clusters.items():
@@ -50,23 +70,26 @@ def update_cluster_paths(os_connection, cluster_index_name):
                 parent_id = parent_clusters[0]
                 child_to_parent[child_id] = parent_id
 
+    # Step 3: Reconstruct 'children' fields if necessary
     # Now rebuild 'clusters' with the updated 'children' field
     for child_id, parent_id in child_to_parent.items():
         parent_cluster = clusters.get(parent_id)
         if parent_cluster:
             parent_cluster.setdefault("children", []).append(child_id)
 
+    # Step 4: Identify root clusters (those with no parent)
     # Identify root clusters (those without parents)
     all_cluster_ids = set(clusters.keys())
     child_cluster_ids = set(child_to_parent.keys())
     root_cluster_ids = all_cluster_ids - child_cluster_ids
 
     if not root_cluster_ids:
-        log.error("No root clusters found. Please check the cluster data.")
+        logger.error("No root clusters found. Please check the cluster data.")
         return
 
+    # Step 5: Construct path for each cluster by walking up the tree
     # Build paths from each cluster up to the root
-    log.info("Updating paths for all clusters...")
+    logger.info("Updating paths for all clusters...")
     for cluster_id in clusters.keys():
         path = []
         current_id = cluster_id
@@ -81,6 +104,7 @@ def update_cluster_paths(os_connection, cluster_index_name):
         path_str = "/".join(path)
         clusters[cluster_id]["path"] = path_str
 
+    # Step 6: Prepare and execute bulk update in OpenSearch
     # Prepare bulk update actions
     actions = []
     for cluster_id, cluster in clusters.items():
@@ -94,4 +118,4 @@ def update_cluster_paths(os_connection, cluster_index_name):
 
     # Execute bulk update
     bulk(os_connection, actions)
-    log.info("Cluster paths updated successfully.")
+    logger.info("Cluster paths updated successfully.")

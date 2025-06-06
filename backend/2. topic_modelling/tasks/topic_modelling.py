@@ -1,36 +1,39 @@
-from bertopic import BERTopic
-from umap import UMAP
-from hdbscan import HDBSCAN
-from tqdm import tqdm
+import os
+import gc
+import psutil
+import logging
+from time import sleep
+from typing import Optional, Tuple, Any
+
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+from umap import UMAP
+from hdbscan import HDBSCAN
+from bertopic import BERTopic
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.vectorizers import ClassTfidfTransformer
 from bertopic.representation import MaximalMarginalRelevance
-import psutil
-import os
-import gc
-import logging
-from time import sleep
 
-log = logging.getLogger(__name__)
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 class TopicModeller:
-    """Class to fetch embeddings from OpenSearch in batches."""
+    """
+    A class to train BERTopic models on embedding batches retrieved via a DataFetcher.
 
-    def __init__(self, model_path):
+    The model uses UMAP for dimensionality reduction and HDBSCAN for clustering.
+    """
+
+    def __init__(self, model_path: str) -> None:
         """
-        Initialize the DataFetcher.
+        Initialize the TopicModeller.
 
         Args:
-            opensearch_connection (OpenSearch): OpenSearch client connection.
-            index_name (str): Name of the OpenSearch index.
-            start_date (str): Start date in 'YYYY-MM-DD' format.
-            end_date (str): End date in 'YYYY-MM-DD' format.
+            model_path (str): Directory path where models and logs will be saved.
         """
         self.model_location = model_path
-
         os.makedirs(self.model_location, exist_ok=True)
         self.model_paths_file = os.path.join(self.model_location, "model_paths.txt")
 
@@ -44,6 +47,7 @@ class TopicModeller:
             min_cluster_size=15, metric="euclidean", cluster_selection_method="eom"
         )
 
+        # Vectorization and topic representation
         self.vectorizer_model = CountVectorizer(stop_words="english")
         self.ctfidf_model = ClassTfidfTransformer(
             bm25_weighting=True, reduce_frequent_words=True
@@ -52,35 +56,45 @@ class TopicModeller:
         # Representation model
         self.representation_model = MaximalMarginalRelevance(diversity=0.3)
 
-    def _log_memory_usage(self):
+    def _log_memory_usage(self) -> None:
+        """Logs the current memory usage of the Python process."""
         if psutil:
             mem = psutil.Process(os.getpid()).memory_info().rss / (1024**3)
-            log.info(f"[Memory Usage] Current process memory: {mem:.2f} GB")
+            logger.info(f"[Memory Usage] Current process memory: {mem:.2f} GB")
 
-    def _write_model_path(self, path):
+    def _write_model_path(self, path: str) -> None:
+        """
+        Appends the given model path to a persistent file.
+
+        Args:
+            path (str): The full path of the saved BERTopic model.
+        """
         with open(self.model_paths_file, "a") as f:
             f.write(path + "\n")
 
-    def train_bertopic_model(self, date_range, data_fetcher):
+    def train_bertopic_model(
+        self, date_range: Tuple[str, str], data_fetcher: Any
+    ) -> None:
         """
-        Train a BERTopic model on documents within the given date range.
+        Trains a BERTopic model on the embeddings for the specified date range.
 
         Args:
-            date_range (tuple): A tuple containing start and end dates.
-            data_fetcher (DataFetcher): An instance of DataFetcher to fetch data.
+            date_range (Tuple[str, str]): Tuple of start and end dates (YYYY-MM-DD).
+            data_fetcher (Any): Instance of a DataFetcher class that yields (embeddings, metadata).
 
         Returns:
-            str: The file path where the BERTopic model is saved.
+            Optional[str]: File path of the saved BERTopic model, or None if training failed.
         """
         start_date, end_date = date_range
 
-        # Fetch documents for the date range
+        # Storage for data
         embeddings_list, documents_list, document_ids_list = [], [], []
         document_date, document_title, document_journal = [], [], []
         document_mesh, document_chemicals, document_authors = [], [], []
         document_affiliations = []
 
         try:
+            logger.info(f"Fetching data from {start_date} to {end_date}")
             for embeddings_batch, ids_batch in data_fetcher.fetch_embeddings(
                 start_date, end_date
             ):
@@ -98,12 +112,16 @@ class TopicModeller:
                 )
 
             if not embeddings_list:
+                logger.warning(
+                    f"No embeddings found for the range {start_date} to {end_date}"
+                )
                 return None  # No data to process for this date range
 
             embeddings = np.array(embeddings_list)
             texts = documents_list
 
-            # Initialize BERTopic
+            logger.info("Initializing BERTopic model...")
+
             topic_model = BERTopic(
                 embedding_model=None,
                 umap_model=self.umap_model,
@@ -119,7 +137,8 @@ class TopicModeller:
                 low_memory=True,
             )
 
-            # Fit the model
+            # Train the model
+            logger.info("Training BERTopic model...")
             topics, _ = topic_model.fit_transform(texts, embeddings)
 
             # Create a DataFrame to store document info
@@ -150,7 +169,7 @@ class TopicModeller:
             self._log_memory_usage()
 
         except Exception as e:
-            log.error(f"[Error] Failed {start_date} to {end_date}: {str(e)}")
+            logger.error(f"[Error] Failed {start_date} to {end_date}: {str(e)}")
 
         finally:
             # Explicit memory cleanup

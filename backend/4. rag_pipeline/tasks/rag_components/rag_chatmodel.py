@@ -1,34 +1,58 @@
 import logging
+from typing import List, Tuple, Dict, Any
+
+import utils
 from torch import cuda
+from tqdm import tqdm
+from transformers import AutoTokenizer
 from langchain_huggingface import HuggingFaceEndpoint
 from langchain_core.prompts import PromptTemplate
-from tqdm import tqdm
-import json
-import utils
-from transformers import AutoTokenizer
+
+# When OpenAI model is used
 from langchain_openai import OpenAI
 
-CONFIG = utils.loadConfigFromEnv()
-log = logging.getLogger(__name__)
+CONFIG: Dict[str, Any] = utils.loadConfigFromEnv()
+logger = logging.getLogger(__name__)
 
 
 class Document:
-    def __init__(self, page_content, metadata):
+    """
+    A lightweight representation of a document with content and metadata.
+    """
+
+    def __init__(self, page_content: str, metadata: Dict[str, Any]) -> None:
         self.page_content = page_content
         self.metadata = metadata
 
 
-class ragChat:
+class RagChat:
+    """
+    A class for Retrieval-Augmented Generation (RAG) chat using a vector store and language model.
+    """
+
     def __init__(
-        self, vector_store, prompt_object, prompt_vars, embedding_model, model_config
+        self,
+        vector_store: Any,
+        prompt_object: str,
+        prompt_vars: List[str],
+        embedding_model: Any,
+        model_config: Dict[str, Any],
     ) -> None:
         """
-        Initializes a ragChat object with specified configurations for text retrieval and generation.
+        Initializes the RAG chat pipeline with LLM, tokenizer, and vector index.
+
+        Args:
+            vector_store (Any): Vector store client (e.g., OpenSearch).
+            prompt_object (str): Prompt template string.
+            prompt_vars (List[str]): Variables used in the prompt template.
+            embedding_model (Any): Sentence embedding model.
+            model_config (Dict[str, Any]): Configuration for the generation model.
         """
         self.device = "cuda" if cuda.is_available() else "cpu"
         self.index = vector_store
         self.embed_model = embedding_model
         self.prompt = prompt_object
+
         self.max_context = model_config.get("n_ctx", 4096)  # Maximum number of tokens
         self.max_generated_token = model_config.get("max_tokens", 200)
 
@@ -49,41 +73,33 @@ class ragChat:
             template=self.prompt, input_variables=prompt_vars
         )
         self.llm_chain = self.llama_prompt | self.llm
-        log.info("ragChat initialized successfully.")
+        logger.info("RagChat initialized successfully.")
 
-    def process_results(self, results, max_tokens_for_knowledge):
+    def process_results(
+        self, results: List[Tuple[Document, float]], max_tokens_for_knowledge: int
+    ) -> Tuple[str, List[str]]:
         """
-        Processes results from a similarity search to fit within token limits
-        and dynamically determines the top K results to further process based
-        on a variety of truncation approaches using a strategy pattern.
-
-        **IMPORTANT**: dynamic_k selection will be implemented in this function
+        Processes retrieved documents into a knowledge string within a token limit.
 
         Args:
-            results (list): List of results from a similarity search.
-            max_tokens_for_knowledge (int): Maximum number of tokens allowed in the accumulated knowledge.
+            results (List[Tuple[Document, float]]): List of (document, score) pairs from retrieval.
+            max_tokens_for_knowledge (int): Maximum number of tokens to be used for knowledge input.
 
         Returns:
-            tuple: A tuple containing the concatenated knowledge text and a list of retrieved document IDs.
+            Tuple[str, List[str]]: Concatenated knowledge string and top document IDs (up to 5).
         """
         source_knowledge = ""
-        truncate_index = len(results)
-        truncated_results = []
-        retrieved_ids = []
+        retrieved_ids: List[str] = []
 
-        truncated_results = results[:truncate_index]
-
-        for result, _ in tqdm(
-            truncated_results, desc="Processing search results", leave=False
-        ):
+        for result, _ in tqdm(results, desc="Processing search results", leave=False):
             text = result.page_content
             updated_knowledge = (
                 source_knowledge + ("\n" if source_knowledge else "") + text
             )
-
             new_tokens_num = len(self.tokenizer.encode(updated_knowledge))
+
             if new_tokens_num > max_tokens_for_knowledge:
-                logging.warning("Token limit reached, stopping knowledge accumulation.")
+                logger.warning("Token limit reached, stopping knowledge accumulation.")
                 break
 
             source_knowledge = updated_knowledge
@@ -92,18 +108,27 @@ class ragChat:
         unique_ids = list(set(retrieved_ids))
         return source_knowledge, unique_ids[:5]
 
-    def vector_augment_prompt_api(self, query, top_k_value, document_ids):
+    def vector_augment_prompt_api(
+        self, query: str, top_k_value: int, document_ids: List[str]
+    ) -> Tuple[str, List[str]]:
         """
-        Augments a query prompt with retrieved knowledge based on top-k similarity search for API requests.
+        Augments a prompt with retrieved knowledge from a vector index.
+
+        Args:
+            query (str): The user query.
+            top_k_value (int): Number of top similar documents to retrieve.
+            document_ids (List[str]): Allowed document IDs for filtering retrieval.
+
+        Returns:
+            Tuple[str, List[str]]: Augmented knowledge and document IDs used.
         """
         try:
-            query_list = [query]
-
             # Encoding the query
             embed_query = self.embed_model.encode(
-                query_list, show_progress_bar=False
+                [query], show_progress_bar=False
             ).tolist()
 
+            # Compute available space for knowledge based on prompt and query
             max_tokens_for_knowledge = (
                 self.max_context
                 - len(self.tokenizer.encode(query))
@@ -153,6 +178,7 @@ class ragChat:
             )
 
             return source_knowledge, retrieved_ids
+
         except Exception as e:
-            logging.error(f"Failed to augment prompt: {e}")
+            logger.error(f"Failed to augment prompt: {e}")
             raise

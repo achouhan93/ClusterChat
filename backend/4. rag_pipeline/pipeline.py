@@ -1,15 +1,14 @@
-import logging
-from torch import cuda
-from sentence_transformers import SentenceTransformer
-import utils
 import json
-from tqdm import tqdm
-from typing import List, Tuple, Dict, Any
-from langchain.prompts import PromptTemplate
+import logging
 import re
+from typing import Any, Dict, List, Tuple
 
-# from langchain_openai import OpenAI
+from torch import cuda
+from tqdm import tqdm
+from sentence_transformers import SentenceTransformer
+from langchain.prompts import PromptTemplate
 
+import utils
 from tasks.rag_components import rag_chatmodel, rag_loader, rag_prompt
 
 log = logging.getLogger(__name__)
@@ -18,16 +17,28 @@ CONFIG = utils.loadConfigFromEnv()
 
 class Processor:
     """
-    Processor class to handle the text processing pipeline including text retrieval
-    and generation using language models.
+    Processor class for managing the text retrieval and response generation
+    pipeline using OpenSearch, SentenceTransformer embeddings, and LLMs.
     """
 
     def __init__(
-        self, opensearch_connection, embedding_os_index, embedding_model, model_config
-    ):
+        self,
+        opensearch_connection: Any,
+        embedding_os_index: str,
+        embedding_model: str,
+        model_config: Dict[str, Any],
+    ) -> None:
+        """
+        Initializes the Processor.
+
+        Args:
+            opensearch_connection (Any): Active OpenSearch connection.
+            embedding_os_index (str): Index name in OpenSearch to retrieve embeddings.
+            embedding_model (str): Name or path of the embedding model.
+            model_config (Dict[str, Any]): Configuration for the language model.
+        """
         self.os_connection = opensearch_connection
         self.embeddings_os_index_name = embedding_os_index
-
         self.device = f"cuda:{cuda.current_device()}" if cuda.is_available() else "cpu"
 
         self.embed_model = SentenceTransformer(
@@ -36,21 +47,19 @@ class Processor:
             device=self.device,
         )
 
-        self.scroll_size = 100
-
-        self.vector_store = rag_loader.ragLoader().get_opensearch_index(
+        self.vector_store = rag_loader.RagLoader().get_opensearch_index(
             self.embed_model, self.embeddings_os_index_name
         )
 
         self.model_config = model_config
+        self.prompt = rag_prompt.RagPrompt().prompt_template()
 
-        self.prompt = rag_prompt.ragPrompt().prompt_template()
-        self.chat_model = rag_chatmodel.ragChat(
-            self.vector_store,
-            self.prompt,
-            ["context", "question"],
-            self.embed_model,
-            self.model_config,
+        self.chat_model = rag_chatmodel.RagChat(
+            vector_store=self.vector_store,
+            prompt_object=self.prompt,
+            prompt_vars=["context", "question"],
+            embedding_model=self.embed_model,
+            model_config=self.model_config,
         )
 
         #!! Initialize OpenAI
@@ -61,6 +70,16 @@ class Processor:
         #     model="gpt-3.5-turbo-instruct"
         #     )
         self.llm = self.chat_model.llm
+
+        # Define the OpenSearch index names
+        self.cluster_information_index = CONFIG[
+            "CLUSTER_TALK_CLUSTER_INFORMATION_INDEX"
+        ]
+
+        self._init_prompt_chains()
+
+    def _init_prompt_chains(self) -> None:
+        """Initializes LangChain prompt chains for parsing and answering."""
 
         #!! Prompt when OpenAI is used
         # parse_query_template = """
@@ -83,6 +102,8 @@ class Processor:
         #     }}
         # }}
         # """
+
+        #! Prompt when Model from HuggingFace is Used
         parse_query_template = """
         You are an assistant that parses user queries into structured intents for querying a corpus.
 
@@ -137,14 +158,15 @@ class Processor:
         )
         self.generate_answer_chain = generate_answer_prompt | self.llm
 
-        # Define the OpenSearch index names
-        self.cluster_information_index = CONFIG[
-            "CLUSTER_TALK_CLUSTER_INFORMATION_INDEX"
-        ]
-
     def parse_user_query(self, user_query: str) -> Dict[str, Any]:
         """
-        Parses the user query to extract intent and parameters using LLM.
+        Uses LLM to parse user query into structured intent and parameters.
+
+        Args:
+            user_query (str): The user's input question.
+
+        Returns:
+            Dict[str, Any]: Parsed JSON with intent and parameters.
         """
         response = self.parse_query_chain.invoke({"user_query": user_query})
         try:
@@ -165,7 +187,10 @@ class Processor:
         self, intent: str, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Builds the OpenSearch query based on intent and parameters.
+        Builds OpenSearch query from the parsed intent and parameters.
+
+        Returns:
+            Dict[str, Any]: The query body for OpenSearch.
         """
         if intent == "list_topics_in_cluster":
             cluster_label = parameters.get("cluster_labels")
@@ -191,15 +216,21 @@ class Processor:
 
         elif intent == "get_corpus_info":
             # For general corpus information, you might aggregate data or fetch specific fields
-            query = {"bool": {"filter": {"range": {"depth": {"gte": 5}}}}}
-            return {"query": query, "size": 10000, "_source": ["label", "description"]}
+            return {
+                "query": {"bool": {"filter": {"range": {"depth": {"gte": 5}}}}},
+                "size": 10000,
+                "_source": ["label", "description"],
+            }
 
         else:
             raise ValueError(f"Unsupported intent: {intent}")
 
     def execute_opensearch_query(self, query: Dict[str, Any]) -> Any:
         """
-        Executes the given OpenSearch query and returns the results.
+        Executes an OpenSearch query.
+
+        Returns:
+            OpenSearch response as a dict.
         """
         try:
             response = self.os_connection.search(
@@ -212,7 +243,10 @@ class Processor:
 
     def generate_answer(self, user_query: str, retrieved_data: str) -> str:
         """
-        Generates a natural language answer using the retrieved data and user query.
+        Uses LLM to generate an answer from user query and retrieved corpus data.
+
+        Returns:
+            str: Generated natural language response.
         """
         response = self.generate_answer_chain.invoke(
             {"user_query": user_query, "retrieved_data": retrieved_data}
@@ -286,6 +320,7 @@ class Processor:
             # Extract relevant information from hits
             clusters = []
             sources = []
+
             for hit in hits:
                 source = hit["_source"]
                 cluster_id = hit.get("_id", "")
@@ -348,4 +383,13 @@ class Processor:
             raise RuntimeError(f"Error processing API request: {e}")
 
     def encode_text(self, text: str) -> List[float]:
+        """
+        Encodes a given text using the embedding model.
+
+        Args:
+            text (str): Input text to encode.
+
+        Returns:
+            List[float]: Vector embedding.
+        """
         return self.embed_model.encode(text).tolist()

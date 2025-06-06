@@ -1,20 +1,20 @@
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-
-from contextlib import asynccontextmanager
-from pydantic import BaseModel
-import logging
 import json
-import utils
+import logging
 import os
 from typing import List
 
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+from pydantic import BaseModel
+
+import utils
 from tasks.database import database_connection
 from pipeline import Processor
 
 # Load configuration
-CONFIG = utils.loadConfigFromEnv()
+CONFIG = utils.load_config_from_env()
 
 # Setup logging
 if not os.path.exists(CONFIG["CLUSTER_TALK_LOG_PATH"]):
@@ -27,11 +27,20 @@ logging.basicConfig(
     datefmt="%d-%m-%y %H:%M:%S",
     level=logging.INFO,
 )
+log = logging.getLogger(__name__)
+
+# Global processor instance
+processor: Processor
 
 
 # Initialize the models and processor at startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Context manager for startup/shutdown tasks.
+
+    Initializes the OpenSearch connection and the Processor instance.
+    """
     global processor
     # Database setup and indexing
     os_connection = database_connection.opensearch_connection()
@@ -46,8 +55,10 @@ async def lifespan(app: FastAPI):
         embedding_model=embedding_model,
         model_config=model_configs["mixtral7B"],
     )
+    log.info("Processor initialized and ready.")
     yield
     os_connection.close()
+    log.info("OpenSearch connection closed.")
 
 
 app = FastAPI(lifespan=lifespan)
@@ -73,10 +84,17 @@ class AnswerResponse(BaseModel):
 
 
 @app.post("/ask", response_model=AnswerResponse)
-def ask_question(request: QuestionRequest):
-    # Process the request
+def ask_question(request: QuestionRequest) -> AnswerResponse:
+    """
+    Accepts a user question and routes it to the appropriate processor method
+    depending on the question type.
+
+    Returns:
+        AnswerResponse: Answer text and a list of source document IDs.
+    """
     try:
         if request.question_type not in ["corpus-specific", "document-specific"]:
+            log.warning("Invalid question_type received: %s", request.question_type)
             raise HTTPException(
                 status_code=400,
                 detail="Invalid question_type. Must be 'corpus-specific' or 'document-specific'.",
@@ -94,30 +112,38 @@ def ask_question(request: QuestionRequest):
                 document_ids=request.supporting_information,
             )
 
+        log.info("Successfully processed question.")
         return AnswerResponse(answer=answer, sources=sources)
 
     except Exception as e:
-        logging.error(f"Error processing request: {e}")
+        log.error(f"Error processing request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/embed")
 async def get_embedding(request: Request):
     """
-    Accepts a JSON payload: { "query": "some query" }
-    Returns a n-dim embedding using the initialized processor.
+    Computes and returns the embedding for a given query.
+
+    Request body should be: { "query": "your input text" }
+
+    Returns:
+        JSONResponse: { "embedding": [...] }
     """
     try:
         body = await request.json()
         query_text = body.get("query")
+
         if not query_text:
+            log.warning("Missing 'query' in /embed request.")
             raise HTTPException(
                 status_code=400, detail="Missing 'query' field in body."
             )
 
-        embedding = processor.encode_text(query_text)  # Make sure this method exists
+        embedding = processor.encode_text(query_text)
+        log.info("Successfully generated embedding.")
         return JSONResponse(content={"embedding": embedding})
 
     except Exception as e:
-        logging.error(f"Error generating embedding: {e}")
+        log.error(f"Error generating embedding: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate embedding.")
