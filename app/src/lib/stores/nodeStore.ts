@@ -36,5 +36,5 @@ export let ClustersTree = writable<{ [depth: number]: string[] }>([]);
 
 // acceleratedGraph.ts
 export let isSelectionActive = writable<boolean>(false)
-export let selectedPointsIds = writable<string[]>([])
+export let selectedPointsIds = writable<number[]>([])
 export let numberOfSelectedPoints = writable<number>(0)

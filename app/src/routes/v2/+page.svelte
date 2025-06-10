@@ -14,7 +14,7 @@
 	import SearchBar from '$lib/components/v2/search/SearchBar.svelte';
 	import InfoView from '$lib/components/v2/graph/InfoView.svelte';
 
-  import { toggleMultipleClustersMode, toggleHierarchicalLabels, fitViewofGraph } from '$lib/v2/acceleratedGraph';
+  import { toggleMultipleClustersMode, toggleHierarchicalLabels, fitViewofGraph, startStreaming } from '$lib/v2/acceleratedGraph';
 
 	import { hierarchicalLabels } from '$lib/stores/uiStore';
 	import { selectMultipleClusters, dataloaded } from '$lib/stores/nodeStore';
@@ -94,10 +94,10 @@ function startTour() {
 
     onMount(async () => {
     try {
-        $dataloaded = true;
-        const pointsFile = '/data/updated-cosmograph-points-200K.arrow'
+        const pointsFile = '/data/updated-cosmograph-points-combined-1.arrow'
         const configFile = '/data/cosmograph-config.json'
-        const { createGraph, createTimeline } = await import('$lib/v2/acceleratedGraph');
+        const { createGraph, createTimeline, startStreaming, updateGraphDataInterval } = await import('$lib/v2/acceleratedGraph');
+		$dataloaded = true;
         await createGraph(pointsFile,configFile)
         await createTimeline()
      

@@ -82,16 +82,17 @@
 
 
 			if (!searchQuery || !searchType) return;
-			if ($SelectedSearchQuery != '') unselectAllPoints();
-
 			SelectedSearchQuery.set(searchQuery);
+			if ($SelectedSearchQuery !== '') unselectAllPoints();
+
+			
 
 			// send to opensearch and get the top 10k
 			const data = await fetchSearchQueryAnswer(searchType, searchAccessor, searchQuery);
 
 			if (Array.isArray(data)) {
-				const pointIdsToSelectFromSearch: string[] = data.map((item) => item._id);
-
+				const pointIdsToSelectFromSearch: number[] = data.map((item) => item._id);
+				console.log(pointIdsToSelectFromSearch)
                 // Scenario 1: No active Selection
 				if (!get(isSelectionActive)) {
                     console.log(`selection will be activated after this message`)

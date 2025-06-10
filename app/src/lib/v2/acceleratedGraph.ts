@@ -28,7 +28,7 @@ import {
 
 import { hierarchicalLabels, document_specific, pageCount } from '$lib/stores/uiStore';
 
-
+import { tableFromIPC, RecordBatchReader, RecordBatch } from 'apache-arrow';
 // Other
 import '../../app.css';
 import type { Node, Link, Cluster, Point } from '$lib/types';
@@ -39,18 +39,17 @@ import { page } from '$app/state';
 
 // Useful global variables
 export let graph: Cosmograph;
-// export let graph = writable<Cosmograph>
+let arrowReader: AsyncIterableIterator<any> | null = null
 let timeline: CosmographTimeline
+
+let batchCounter = writable<number>(2)
+let intervalId: NodeJS.Timeout | null = null
 
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
 isSelectionActive.subscribe((active) => {
     console.log(`isSelectionActive?: ${active}`)
 	if(!active) numberOfSelectedPoints.set(0)
 })
-// numberOfSelectedPoints.subscribe()
-
-//     pageCount.set(active ? get(numberOfSelectedPoints) : 0);
-// 	console.log(`pageCount: ${get(pageCount)}`)
 
 const handlePointClick = async (index:number) => {
     if (index && !get(isSelectionActive) && get(document_specific)) {
@@ -60,6 +59,14 @@ const handlePointClick = async (index:number) => {
 const handlePointsFiltered = async (table: CosmographData) => {
 		numberOfSelectedPoints.set(table.numRows)
         isSelectionActive.set(true)
+}
+const handleZoomEnd = async () => {
+	console.log("Entered handleZoomEnd")
+	// const points = await tableFromIPC(await fetch(`/data/cosmograph-points-batch-${batchCounter}.arrow`))
+	
+	 await updateGraphData(await loadNextBatch())
+
+	// batchCounter++;
 }
 
 
@@ -79,7 +86,7 @@ function outputLogIds (){
 const GraphConfig: CosmographConfig = {
     backgroundColor: '#ffffff',
     pointGreyoutOpacity: 0.02,
-    pointSize: 3, 
+    pointSize: 2, 
     // pointSizeByFn?,
     renderLinks: false,
     focusPointOnClick: true,
@@ -92,16 +99,14 @@ const GraphConfig: CosmographConfig = {
     hoveredPointLabelClassName: 'cosmograph-hovered-node-label',
     hoveredPointCursor: 'pointer',
 	selectPointOnLabelClick: false,
-    onClick(pointIndex) {
-        if(pointIndex){ 
-            handlePointClick(pointIndex) 
-            outputLog(pointIndex)
-        } else {
-            unselectAllPoints()
-        }
-        
-        
-    },
+    // onClick(pointIndex) {
+    //     if(pointIndex){ 
+    //         handlePointClick(pointIndex) 
+    //         outputLog(pointIndex)
+    //     } else {
+    //         unselectAllPoints()
+    //     }  
+    // },
     onPointMouseOver(hoveredPointIndex) {
         if(!get(isSelectionActive)){
 
@@ -112,10 +117,6 @@ const GraphConfig: CosmographConfig = {
 		console.log(`onPointsFiltered: ${SelectedPointsTable.numRows}`)
         handlePointsFiltered(SelectedPointsTable)	
     },
-    onGraphRebuilt(stats){
-        console.log(`Stats of the Graph: ${stats}`)
-    }
-
 
 
 } 
@@ -134,16 +135,59 @@ const TimelineConfig: CosmographTimelineConfig = {
 
 
 export async function createGraph(pointsPath:string, pointsConfigPath:string) {
-	const points = await fetch(pointsPath).then(res => res.blob())
+	// const points = await fetch(pointsPath).then(res => res.blob())
+	// const pointsFile = new File([points], 'cosmograph-points.arrow', { type: 'application/octet-stream' })
 	const pointsConfig = await fetch(pointsConfigPath).then(res => res.json())
-	const pointsFile = new File([points], 'cosmograph-points.arrow', { type: 'application/octet-stream' })
+	const pointsFile = await tableFromIPC(await fetch(pointsPath))
 	const container: HTMLElement = document.getElementById('main-graph');
 	const ConfigData: CosmographConfig = { 
-		points: pointsFile, 
+		points: pointsFile,
 		...pointsConfig,
 		...GraphConfig
 	}
 	graph = new Cosmograph(container, ConfigData)
+	console.log(pointsFile.schema)
+}
+
+
+export async function initArrowReaderOnce(url: string) {
+  if (arrowReader) return
+
+  const response = await fetch(url)
+  const reader = await RecordBatchReader.from(response.body!)
+  arrowReader = reader[Symbol.asyncIterator]() // get batch-by-batch access
+}
+
+export async function loadNextBatch() {
+  if (!arrowReader) return []
+
+  const { value: batch, done } = await arrowReader.next()
+  if (done || !batch) return []
+  return batch
+}
+export async function loadBatchEverySecond(){
+	const points = await loadNextBatch()
+	if(!points) clearInterval(intervalId)
+	updateGraphData(points)
+}
+
+export async function startStreaming(url: string) {
+  console.log('Starting streaming from', url)
+  await initArrowReaderOnce(url)
+  console.log('Reader initialized')
+  intervalId = setInterval(() => {
+    console.log('Interval triggered')
+    loadBatchEverySecond()
+  }, 5000)
+}
+
+
+
+function stopStreaming() {
+  if (intervalId) {
+    clearInterval(intervalId)
+    intervalId = null
+  }
 }
 
 export async function createTimeline() {
@@ -174,9 +218,26 @@ export function setGraphConfig(config: CosmographConfig) {
 }
 
 
-export function updateGraphData() {
+export async function updateGraphData(pointData:CosmographPointInput[]) {
+	graph.addPoints(pointData)
 
 }
+
+// export async function updateGraphDataInterval() {
+// 	const pointsPath = `/data/cosmograph-points-batch-${get(batchCounter)}.arrow`
+// 	const points = await fetch(pointsPath)
+// 	if(get(batchCounter) === 5) clearInterval(intervalId)
+// 	const pointsFile = await tableFromIPC(points)
+// 	intervalId = setInterval(() => {
+//     console.log('Interval triggered')
+// 	console.log(`Batch Counter: ${get(batchCounter)}`)
+//     updateGraphData(pointsFile)
+//   }, 30000)
+//   batchCounter.update((value) => value+1 )
+
+// }
+
+
 
 export function selectPointsInRange(arr: [[number, number], [number, number]]) {
 }
@@ -208,12 +269,13 @@ export function setSelectPoints(indices:number[]) {
 }
 export const setArrayofSelectedPointIds = async (indices: number[]) => {
 	const pointIds = await graph.getPointIdsByIndices(indices) || []
-	selectedPointsIds.set(pointIds)
+	selectedPointsIds.set(pointIds as unknown as number[])
 }
 
 
 export function unselectAllPoints() {
 	graph.unselectAllPoints()
+	console.log("unselectAllPoints")
 	isSelectionActive.set(false)
 	selectedPointsIds.set([])
 }
@@ -221,45 +283,49 @@ export function unselectAllPoints() {
 export function unselectPoint() {
 	graph.unselectPoint()
 	if(get(numberOfSelectedPoints) === 0) { //getSelectedPointCount() === 0
+		console.log("unselectPoint")
 		isSelectionActive.set(false)
 	}
 }
 
-export async function getPointIndicesByIds(ids:string[]){
-	return await graph.getPointIndicesByIds(ids)
-}
-
-export function isPointSelectedByIndex(): boolean {}
-
-export function getClusterPoints() {
-	// return get(allClusterPoints);
-}
-
-export function getRenderedPoints() {
-	// return get(Points);
-}
-
-export function setSelectedPoints(Points: Point[]) {
-	// selectedPoints.set(Points);
-	// graph.selectPoints(get(selectedPoints));
-	//graph.addPointsFilter()
-}
-
-export function setSelectedPointsOnGraph(Points: Point[]) {
-	// graph.selectPoints(Points);
-}
-
-export function updateSelectedPoints(thePoints: Point[]) {}
-
-export function conditionalSelectPoints(thePoints: Point[]) {
-	// get the matches
-	// const newPoints = new Set(thePoints.map((n) => n.id));
-	// const PointsToShowonGraph = getSelectedPoints().filter((n) => newPoints.has(n.id));
-	// setSelectedPoints(PointsToShowonGraph);
+export async function getPointIndicesByIds(ids:number[]){
+	return await graph.getPointIndicesByIds(ids as unknown as string[])
 }
 
 export function fitViewofGraph() {
 	graph.fitView();
+}
+
+async function streamArrow(url: string) {
+  const response = await fetch(url);
+
+  if (!response.body) {
+    throw new Error("Streaming not supported by this browser.");
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value!);
+  }
+
+  const fullBuffer = concatChunks(chunks);
+  const table = tableFromIPC(fullBuffer); // or use `tableFromIPC(chunks)` for some versions
+  return table;
+}
+
+function concatChunks(chunks: Uint8Array[]): Uint8Array {
+  const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return result;
 }
 
 function showLabelsfor(Points: Point[]) {
@@ -273,18 +339,6 @@ function showLabelsfor(Points: Point[]) {
 	// }
 }
 
-// export function isSelectionActive(): boolean {
-// 	return get(selectedPointsCount) !== 0;
-// }
-
-// export let isSelectionActive = derived(selectedPointsCount, ($count) => $count !== 0);
-
-
-
-// export function isSelectionActive(): boolean {
-// 	if (getSelectedPointsCount() as number > 0) return true
-// 	return false
-// }
 export function getClusterPointsByClusterIds(cluster_ids: string[]): Point[] {
 	// const ClusterPointIds = new Set(cluster_ids);
 	// const filteredPoints = getRenderedPoints().filter(
@@ -292,3 +346,52 @@ export function getClusterPointsByClusterIds(cluster_ids: string[]): Point[] {
 	// );
 	// return filteredPoints;
 }
+// async function fetchCosmographPoints(url: string): Promise<CosmographPointInput[]> {
+//   const response = await fetch(url);
+//   const table = await tableFromIPC(response);
+
+//   const rows: CosmographPointInput[] = [];
+
+//   for (const row of table) {
+//     const point: Record<string, any> = {};
+
+//     for (const key in row) {
+//       if (key === 'date') {
+//         // 🧠 Force strict integer (not float!) and no Date object
+//         point.date = Number.isFinite(row.date) ? Math.trunc(row.date as number) : 0;
+//       } else {
+//         point[key] = row[key];
+//       }
+//     }
+
+//     rows.push(point as CosmographPointInput);
+//   }
+
+//   return rows;
+// }
+// async function fetchArrowBatches(url: string) {
+//   const response = await fetch(url);
+//   const reader = await RecordBatchReader.from(response.body!);
+
+//   const points: any[] = [];
+
+//   for await (const batch of reader) {
+// 	const idCol = batch.getChild("id");
+//     const xCol = batch.getChild("x");
+//     const yCol = batch.getChild("y");
+//     const labelCol = batch.getChild("title"); // optional
+//     const dateCol = batch.getChild("date");   // 🚨 this retains timestamp[s] type
+
+//     for (let i = 0; i < batch.numRows; i++) {
+//       points.push({
+// 		id: idCol?.get(i),
+//         x: xCol?.get(i),
+//         y: yCol?.get(i),
+//         title: labelCol?.get(i),
+//         date: dateCol?.get(i), // ✅ remains timestamp[s], not JS double
+//       });
+//     }
+//   }
+
+//   return points;
+// }
