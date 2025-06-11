@@ -92,15 +92,23 @@ def splitTable(filename):
     table1 = table.slice(0, midpoint)
     table2 = table.slice(midpoint)
 
-    with pa.OSFile(f"{filename}-1.arrow", "wb") as sink1:
+
+    output_path1 = os.path.join(script_dir, '../static/data', 'updated-1' + filename)
+    output_path1 = os.path.normpath(output_path1)
+
+    output_path2 = os.path.join(script_dir, '../static/data', 'updated-2' + filename)
+    output_path2 = os.path.normpath(output_path2)
+
+    with pa.OSFile(output_path1, "wb") as sink1:
         with ipc.new_file(sink1, table1.schema) as writer:
             writer.write(table1)
 
-    with pa.OSFile(f"{filename}-2.arrow", "wb") as sink2:
+    with pa.OSFile(output_path2, "wb") as sink2:
         with ipc.new_file(sink2, table2.schema) as writer:
             writer.write(table2)
 
 if __name__ == "__main__":
     # combineFiles('../static/data')
-    # updateCols('cosmograph-points-combined.arrow')
+    updateCols('cosmograph-points-combined.arrow')
     splitTable('updated-cosmograph-points-combined.arrow')
+

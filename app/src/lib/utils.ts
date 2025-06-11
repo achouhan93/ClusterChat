@@ -43,3 +43,7 @@ export function formatDate(dateString: string) {
 		return new Date(+year, +month - 1, +day);
 	}
 }
+
+export function epochToDate(epoch:GLfloat){
+	
+}

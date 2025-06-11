@@ -87,7 +87,7 @@ const GraphConfig: CosmographConfig = {
     backgroundColor: '#ffffff',
     pointGreyoutOpacity: 0.02,
     pointSize: 2, 
-    // pointSizeByFn?,
+    // pointSizeByFn: ,
     renderLinks: false,
     focusPointOnClick: true,
     fitViewOnInit: true,
@@ -99,14 +99,6 @@ const GraphConfig: CosmographConfig = {
     hoveredPointLabelClassName: 'cosmograph-hovered-node-label',
     hoveredPointCursor: 'pointer',
 	selectPointOnLabelClick: false,
-    // onClick(pointIndex) {
-    //     if(pointIndex){ 
-    //         handlePointClick(pointIndex) 
-    //         outputLog(pointIndex)
-    //     } else {
-    //         unselectAllPoints()
-    //     }  
-    // },
     onPointMouseOver(hoveredPointIndex) {
         if(!get(isSelectionActive)){
 
@@ -127,6 +119,10 @@ const TimelineConfig: CosmographTimelineConfig = {
 	barPadding: 0.5,
 	tickStep: 15_778_560_000, // approx. 6 months
 	// dataStep: 2_629_743_590,  // approx. 1 month
+	onSelection(selection, isManuallySelected) {
+		console.log("Selection:",selection)
+	},
+	
 
 }
 
@@ -346,52 +342,3 @@ export function getClusterPointsByClusterIds(cluster_ids: string[]): Point[] {
 	// );
 	// return filteredPoints;
 }
-// async function fetchCosmographPoints(url: string): Promise<CosmographPointInput[]> {
-//   const response = await fetch(url);
-//   const table = await tableFromIPC(response);
-
-//   const rows: CosmographPointInput[] = [];
-
-//   for (const row of table) {
-//     const point: Record<string, any> = {};
-
-//     for (const key in row) {
-//       if (key === 'date') {
-//         // 🧠 Force strict integer (not float!) and no Date object
-//         point.date = Number.isFinite(row.date) ? Math.trunc(row.date as number) : 0;
-//       } else {
-//         point[key] = row[key];
-//       }
-//     }
-
-//     rows.push(point as CosmographPointInput);
-//   }
-
-//   return rows;
-// }
-// async function fetchArrowBatches(url: string) {
-//   const response = await fetch(url);
-//   const reader = await RecordBatchReader.from(response.body!);
-
-//   const points: any[] = [];
-
-//   for await (const batch of reader) {
-// 	const idCol = batch.getChild("id");
-//     const xCol = batch.getChild("x");
-//     const yCol = batch.getChild("y");
-//     const labelCol = batch.getChild("title"); // optional
-//     const dateCol = batch.getChild("date");   // 🚨 this retains timestamp[s] type
-
-//     for (let i = 0; i < batch.numRows; i++) {
-//       points.push({
-// 		id: idCol?.get(i),
-//         x: xCol?.get(i),
-//         y: yCol?.get(i),
-//         title: labelCol?.get(i),
-//         date: dateCol?.get(i), // ✅ remains timestamp[s], not JS double
-//       });
-//     }
-//   }
-
-//   return points;
-// }

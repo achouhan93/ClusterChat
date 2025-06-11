@@ -94,7 +94,7 @@ function startTour() {
 
     onMount(async () => {
     try {
-        const pointsFile = '/data/updated-cosmograph-points-combined-1.arrow'
+        const pointsFile = '/data/updated-1-cosmograph-points-combined.arrow'
         const configFile = '/data/cosmograph-config.json'
         const { createGraph, createTimeline, startStreaming, updateGraphDataInterval } = await import('$lib/v2/acceleratedGraph');
 		$dataloaded = true;

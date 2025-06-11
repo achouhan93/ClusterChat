@@ -18,7 +18,7 @@
 
     import { pageCount } from '$lib/stores/uiStore';
 
-	import { ChevronRight, ChevronLeft, X, ExternalLink } from 'lucide-svelte';
+	import { ChevronRight, ChevronLeft, X, ExternalLink, LoaderCircle } from 'lucide-svelte';
 	import { get, writable } from 'svelte/store';
 	import { type Node, type Cluster, type InfoPanel, undefinedCluster } from '$lib/types';
 
@@ -92,12 +92,52 @@ $: if ($isSelectionActive && $numberOfSelectedPoints > 0) {
 
 			
 
-		{#if $isSelectionActive && $numberOfSelectedPoints > 0}
+		{#if $isSelectionActive && $numberOfSelectedPoints > 0 && $currentInfoPanel.pubmed_id !== undefined}
+
+			<!--Control Buttons-->
             <div class="pagation-btns">
 					<button class="pagation-btn" on:click={handleLeftClick}><ChevronLeft /></button>
 					<button class="pagation-btn" on:click={handleRightClick}><ChevronRight /></button>
 					{$currentPage} of {$numberOfSelectedPoints}
 				</div>
+
+
+
+
+			<!-- Tags -->
+
+			{#if $SelectedDateRange !== undefined || $SelectedSearchQuery !== '' || $SelectedClusters.length !== 0}
+				<div class="filter-tags">
+					{#if $SelectedDateRange !== undefined}
+						<div class="selected-date-range">
+							<span><b>Date:</b> {$SelectedDateRange}</span>
+						</div>
+					{/if}
+
+					{#if $SelectedSearchQuery !== ''}
+						<div class="selected-search">
+							<span><b>Search:</b> {$SelectedSearchQuery}</span>
+						</div>
+					{/if}
+
+					{#if $SelectedClusters.length !== 0}
+						<div class="selected-cluster">
+							{#if $SelectedClusters.length === 1}
+								<span><b>Cluster:</b> {get(SelectedClusters)[0]}</span>
+							{:else}
+								<span
+									><b>Clusters:</b>{get(SelectedClusters).map(getClusterLabelById).join(', ')}</span
+								>
+							{/if}
+						</div>
+					{/if}
+
+					<button class="clear-btn" on:click={handleClearTags}><X /></button>
+				</div>
+			{/if}
+
+
+
 
 			<div class="info-field">
 				<span class="info-field-title">Pubmed ID</span>
@@ -125,7 +165,7 @@ $: if ($isSelectionActive && $numberOfSelectedPoints > 0) {
 					{showMoreAbstract ? 'Read Less' : 'Read More'}
 				</button>
 			</div>
-<!--TODO: make cluster dynamic -->
+				<!--TODO: make cluster dynamic -->
             			<div class="info-field">
 				<span class="info-field-title">Cluster</span>
 				<div class="info-field-content">
@@ -160,6 +200,9 @@ $: if ($isSelectionActive && $numberOfSelectedPoints > 0) {
 				<span class="info-field-title">Keywords</span>
 				<div class="info-field-content">{$currentInfoPanel.keywords}</div>
 			</div>
+		
+		{:else if $isSelectionActive && $currentInfoPanel.pubmed_id === undefined}
+		<div class="loader"><LoaderCircle size="48" /></div>
 		{/if}
 	</div>
 </div>
@@ -296,4 +339,19 @@ $: if ($isSelectionActive && $numberOfSelectedPoints > 0) {
 		content: '••• '; /* Add bullet manually */
 		color: darkred; /* Adjust color as you like */
 	}
+		.loader {
+		animation: var(--animation-spin);
+		animation-duration: 2s;
+		animation-timing-function: linear;
+		animation-iteration-count: infinite;
+		position: relative;
+		/* top: 0;
+		right: 0; */
+		width: fit-content;
+		height: fit-content;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		cursor: wait;
+		}
 </style>
