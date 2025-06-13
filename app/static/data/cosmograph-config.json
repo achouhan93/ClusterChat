@@ -1,0 +1,9 @@
+{
+  "pointIdBy": "id",
+  "pointXBy": "x",
+  "pointYBy": "y",
+  "pointIncludeColumns": [
+    "date"
+  ],
+  "pointIndexBy": "idx"
+}

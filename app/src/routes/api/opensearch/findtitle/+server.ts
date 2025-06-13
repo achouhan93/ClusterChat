@@ -3,7 +3,7 @@ import { Client } from '@opensearch-project/opensearch';
 import {
 	OPENSEARCH_USERNAME,
 	OPENSEARCH_PASSWORD,
-	CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX,
+	CLUSTER_CHAT_DOCUMENT_INFORMATION_INDEX,
 	OPENSEARCH_NODE
 } from '$env/static/private';
 
@@ -35,7 +35,7 @@ export async function POST({ request }) {
 
 		// Perform the OpenSearch query
 		const response = await client.search({
-			index: CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX,
+			index: CLUSTER_CHAT_DOCUMENT_INFORMATION_INDEX,
 			body: {
 				query: {
 					terms: { document_id: ids }

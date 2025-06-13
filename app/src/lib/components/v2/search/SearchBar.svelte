@@ -9,20 +9,32 @@
 		conditionalSelectNodes,
 		unselectNodes
 	} from '$lib/graph';
-	import { SelectedSearchQuery, selectedNodes } from '$lib/stores/nodeStore';
-	import { document_specific } from '$lib/stores/uiStore';
-	import type { Node } from '$lib/types';
-	import { getClusterNodes, setSelectedNodesOnGraph } from '$lib/graph';
-	import { writable } from 'svelte/store';
+	import { SelectedSearchQuery, isSelectionActive, numberOfSelectedPoints, selectedPointsIds} from '$lib/stores/nodeStore';
+	import { document_specific, pageCount } from '$lib/stores/uiStore';
+	import { writable, get } from 'svelte/store';
+	import { getPointIndicesByIds, getSelectedPointCount, getSelectedPointIndices, setArrayofSelectedPointIds, setSelectPoints, unselectAllPoints, graph } from '$lib/v2/acceleratedGraph';
 
 	let checked_1 = writable<boolean>(false);
-	// let checked_2=writable<boolean>(false)
 
+/**
+ * Sends a search query request to the OpenSearch API and retrieves up to 10,000 matching nodes.
+ *
+ * This function performs a `GET` request using the provided search parameters and returns
+ * the parsed JSON response. If the request fails or an error occurs, it logs the error
+ * and returns `null`.
+ *
+ * @param searchType - The type of search to perform (e.g. "semantic", "lexical").
+ * @param search_accessor - The backend accessor/index to search against.
+ * @param search_query - The actual search string entered by the user.
+ *
+ * @todo - Adapt query to return the number of matches and a scroll id. Return ALL ids.
+ * @returns A Promise resolving to the search result (usually an array of objects) or `null` on failure.
+ */
 	async function fetchSearchQueryAnswer(
 		searchType: string,
 		search_accessor: string,
 		search_query: string
-	) {
+    ): Promise<JSON | null> {
 		/* Requests OpenSearch and fetches to 10k nodes */
 		try {
 			const response = await fetch(
@@ -42,6 +54,23 @@
 		search_bar_input.value = '';
 		SelectedSearchQuery.set('');
 	}
+
+    /**
+ * Handles the search form submission event. This function extracts the form data,
+ * performs a search query using OpenSearch, and selects points based on the results.
+ *
+ * The behavior changes depending on whether a selection is currently active:
+ * 
+ * - If no selection is active, it selects all returned points.
+ * - If a selection is active, it will compute and handle the intersection 
+ *   between currently selected points and the search result (logic pending).
+ *
+ * @param event - The submit event from the search form.
+ *
+ * @todo 
+ * Implement intersection logic when selection is active.
+ */
+
 	async function handleSearch(event: Event) {
 		if (document_specific) {
 			const form = event.currentTarget as HTMLFormElement;
@@ -50,45 +79,55 @@
 			const searchQuery = formData.get('search-query') as string;
 			const searchType = formData.get('search-type') as string;
 			const searchAccessor = formData.get('search-accessor') as string;
-			// console.dir([...formData.entries()])
 
-			/** different index based on lexical or semantic*/
 
 			if (!searchQuery || !searchType) return;
-			if ($SelectedSearchQuery != '') unselectNodes();
-
 			SelectedSearchQuery.set(searchQuery);
+			if ($SelectedSearchQuery !== '') unselectAllPoints();
+
+			
 
 			// send to opensearch and get the top 10k
 			const data = await fetchSearchQueryAnswer(searchType, searchAccessor, searchQuery);
 
 			if (Array.isArray(data)) {
-				const nodeIdsToSelect: Set<string> = new Set(data.map((item) => item._id));
-				if (getSelectedNodes()?.length === 0 && getSelectedNodes() != undefined) {
-					// get all nodes with these ids
-					const nodesToSelect: Node[] = getRenderedNodes().filter((node) =>
-						nodeIdsToSelect.has(node.id)
-					);
-					selectedNodes.set(nodesToSelect);
-					const graphNodesToSelect = nodesToSelect.concat(getClusterNodes());
-					setSelectedNodesOnGraph(graphNodesToSelect);
-				} else if (
-					getSelectedNodes() != undefined &&
-					getSelectedNodes() != null &&
-					getSelectedNodes()?.length != 0
-				) {
-					// TODO
-					const nodesToSelect: Node[] = getSelectedNodes().filter((node) =>
-						nodeIdsToSelect.has(node.id)
-					);
-					selectedNodes.set(nodesToSelect);
-					const nodesToShowonGraph = nodesToSelect.concat(getClusterNodes());
-					setSelectedNodesOnGraph(nodesToShowonGraph);
+				const pointIdsToSelectFromSearch: number[] = data.map((item) => item._id);
+				console.log(pointIdsToSelectFromSearch)
+                // Scenario 1: No active Selection
+				if (!get(isSelectionActive)) {
+                    console.log(`selection will be activated after this message`)
+					const pointIndicesToSelect = await getPointIndicesByIds(pointIdsToSelectFromSearch) || [0]
+                    setSelectPoints(pointIndicesToSelect)
+                    selectedPointsIds.set(pointIdsToSelectFromSearch)
+                // Scenario 2: Selection is Active
+				} else if (get(isSelectionActive) && get(numberOfSelectedPoints)>0){
+					    // Step 1: Get currently selected point IDs
+                        console.log(`Selected Indices Count in total ${get(numberOfSelectedPoints)}`)
+                        console.log(`Search Results Ids (arr1): ${pointIdsToSelectFromSearch.length}`)
+                        console.log(`Current selected point Ids (arr2): ${get(selectedPointsIds).length}`)
+                        const currentSelectedIds = get(selectedPointsIds);
+
+                        // Step 2: Use a Set for O(1) lookup
+                        const searchIdSet = new Set(pointIdsToSelectFromSearch);
+
+                        // Step 3: Intersect both ID arrays
+                        const intersectedIds = currentSelectedIds.filter(id => searchIdSet.has(id));
+
+                        // Step 4: Get indices of intersected IDs
+                        const pointIndicesToSelect = await getPointIndicesByIds(intersectedIds) || [];
+                        console.log(`pointIndicesToSelect: ${pointIndicesToSelect.length}`)
+                        // Step 5: Apply the new selection
+                        // setSelectPoints(pointIndicesToSelect);
+
+                        setSelectPoints(pointIndicesToSelect)
+                        selectedPointsIds.set(intersectedIds);
+                        console.log(`Updated Point Counts ${get(numberOfSelectedPoints)}`)
 				}
 			}
 		} else {
 			alert('Change to Document Specific!');
 		}
+    
 	}
 </script>
 
@@ -131,46 +170,6 @@
 				{/if}
 			</select>
 		</div>
-
-		<!-- Toggle Buttons -->
-
-		<!-- <div class="search-options-part"> -->
-
-		<!-- {#if !$checked_1}
-
-			<input class="toggle-btns" form=search-form type="hidden" name=search-metadata value={$checked_2 ? "Abstract" : "Title" }/>
-			<input type="checkbox" id="toggle-2" class="toggleCheckbox" bind:checked={$checked_2}
-			/>
-			<label for="toggle-2" class='toggleContainer'>
-			<div>Title</div>   
-			<div>Abstract</div>
-			</label>
-
-			{:else}
-			<input class="toggle-btns" form=search-form type="hidden" name=search-metadata value="Abstract"/>
-			<input type="checkbox" id="toggle-2" class="toggleCheckbox" checked disabled
-			/>
-			<label for="toggle-2" class='toggleContainer'>
-			<div>Title</div>   
-			<div>Abstract</div>
-			</label>
-			{/if} -->
-
-		<!-- <Toggle
-			form="search-form"
-			name="search-type"
-			button_id="semantic-lexical-btn"
-			label_1="Semantic"
-			label_2="Lexical"		
-			/>
-			<Toggle
-			form="search-form"
-			name="search-metadata"
-			button_id="abstract-title-btn"
-			label_1="Abstract"
-			label_2="Title"
-			/> -->
-		<!-- </div> -->
 	</div>
 </form>
 

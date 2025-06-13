@@ -19,7 +19,7 @@ def opensearch_connection(CONFIG):
     os = OpenSearch(
         hosts=[
             {
-                "host": CONFIG["CLUSTER_TALK_OPENSEARCH_HOST"],
+                "host": CONFIG["CLUSTER_CHAT_OPENSEARCH_HOST"],
                 "port": CONFIG["OPENSEARCH_PORT"],
             }
         ],
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     CONFIG = loadConfigFromEnv()
     os_client = opensearch_connection(CONFIG)
-    index_name = CONFIG["CLUSTER_TALK_DOCUMENT_INFORMATION_INDEX"]
+    index_name = CONFIG["CLUSTER_CHAT_DOCUMENT_INFORMATION_INDEX"]
     scroll_time = "2m"
     query =  {
 				"query": {

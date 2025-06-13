@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { unselectNodes } from '$lib/graph';
+    import { getSelectedPointCount, getSelectedPointIndices, unselectAllPoints, setArrayofSelectedPointIds } from '$lib/v2/acceleratedGraph';
 	import {
 		selectedNodes,
 		SelectedDateRange,
@@ -9,56 +9,59 @@
 		allClusters,
 		ClustersTree,
 		selectedClustersCount,
-		isSelectionActive
+        isSelectionActive,
+        selectedPointsIds,
+
+		numberOfSelectedPoints
+
 	} from '$lib/stores/nodeStore';
 
-	import { ChevronRight, ChevronLeft, X, ExternalLink } from 'lucide-svelte';
+    import { pageCount } from '$lib/stores/uiStore';
+
+	import { ChevronRight, ChevronLeft, X, ExternalLink, LoaderCircle } from 'lucide-svelte';
 	import { get, writable } from 'svelte/store';
 	import { type Node, type Cluster, type InfoPanel, undefinedCluster } from '$lib/types';
 
-	let NodesToShow = writable<Node[]>([]);
+
 	let currentPage = writable<number>(1);
-	let pageCount = writable<number>(0);
 	let currentInfoPanel = writable<InfoPanel>([]);
 
 	let showMoreCluster: boolean = false;
 	let showMoreAbstract: boolean = false;
 
-	// Toggle function to show/hide content
-
-	function toggleShowMoreAbstract() {
-		showMoreAbstract = !showMoreAbstract;
+    function toggleShowMoreAbstract() {
+    showMoreAbstract = !showMoreAbstract;
 	}
 	const handleLeftClick = () => {
 		if ($currentPage != 1) currentPage.update((value) => value - 1);
 	};
 
 	const handleRightClick = () => {
-		if ($currentPage != $pageCount) currentPage.update((value) => value + 1);
+		if ($currentPage != $numberOfSelectedPoints) currentPage.update((value) => value + 1);
 	};
 
-	const handleClearTags = () => {
-		// Reverse Selection (maybe make a variable that stores the selection from the search)
-		SelectedDateRange.set(undefined);
-		SelectedSearchQuery.set('');
-		SelectedClusters.set([]);
-		unselectNodes();
+    const handleClearTags = () => {
+        // Reverse Selection (maybe make a variable that stores the selection from the search)
+        SelectedDateRange.set(undefined);
+        SelectedSearchQuery.set('');
+        SelectedClusters.set([]);
+        unselectAllPoints();
 	};
 
-	async function fetchInfoPanelByNode(node: Node) {
+    async function fetchInfoPanelById(pointId: string) {
 		// getting ["abstract","authors:name","keywords:name","journal:title"]
 		// have pubmed id, title, cluster id, date
-		const response = await fetch(`/api/opensearch/infoview/${node.id}`);
+		const response = await fetch(`/api/opensearch/infoview/${pointId}`);
 		const data = await response.json();
 
 		const currentInfo: InfoPanel[] = data.map(
-			(item) =>
+			(item:any) =>
 				({
 					pubmed_id: item._id, // change to node.id after test
-					title: item._source["title"],
-					abstract: item._source["abstract"],
-					date: item._source["date"] || undefined,
-					cluster_top: getClusterInformationFromNode(node),
+					title: item._source['title'],
+					abstract: item._source['abstract'],
+					date: item._source['date'] || undefined,
+					cluster_top: ["cluster","cluster","cluster"],//getClusterInformationFromNode(node),
 					authors_name: item._source['authors:name'],
 					journal_title: item._source['journal:title'],
 					keywords: item._source['keywords:name']
@@ -67,103 +70,47 @@
 		currentInfoPanel.set(currentInfo[0]);
 	}
 
-	function getClusterLabelById(cluster_id: string) {
-		const foundCluster = get(allClusters).find((cluster) => cluster.id === cluster_id);
-		if (foundCluster != undefined) return foundCluster.label;
+    function getClusterLabelById(){}
+    function formatDateRange(date: [Date,Date]) {}
+    // function getClusterInformationFromNode(){}
 
-		return 'error';
-	}
-	function formatDateRange(date: [Date, Date]) {
-		return `${date[0].toLocaleString('en-US', { month: 'short' })} ${date[0].getDate()} -  
-        ${date[1].toLocaleString('en-US', { month: 'short' })} ${date[1].getDate()}, ${date[1].getFullYear()}`;
-	}
-	function getClusterRange(cluster_path: string[], searchCluster: string): string[] {
-		const index = cluster_path.indexOf(searchCluster);
-		if (index === 0) {
-			return [cluster_path[0], cluster_path[1], cluster_path[2]];
-		} else if (index === 1) {
-			return [cluster_path[1], cluster_path[2], cluster_path[3]];
-		}
-		return [cluster_path[index - 2], cluster_path[index - 1], cluster_path[index]];
-	}
 
-	function getClusterInformationFromNode(node: Node): string[] {
-		const cluster_id: string = node.cluster;
-		const theClusters: Cluster[] = get(allClusters);
-		const clusterinfo: Cluster =
-			theClusters.find((cluster) => cluster.id === cluster_id && cluster.isLeaf) ??
-			undefinedCluster;
-		const clusterLinage = new Set(clusterinfo.path.split('/') /* .slice(-3) */);
-		const foundClusters = theClusters.filter((cluster) => clusterLinage.has(cluster.id));
-		foundClusters.sort((c1, c2) => c2.depth - c1.depth);
-		const foundClusterName: string[] = foundClusters.map((c) => c.label);
-		if ($SelectedClusters.length !== 0) {
-			const selected_cluster: Cluster =
-				theClusters.find((cluster) => cluster.id === $SelectedClusters[0]) ?? undefinedCluster;
-			return getClusterRange(foundClusterName, selected_cluster.label);
-		} else {
-			return getClusterRange(foundClusterName, clusterinfo.label);
-		}
-	}
-
-	selectedNodes.subscribe((newnodes) => {
-		NodesToShow.set(newnodes);
-		if ($selectedNodes.length == 0) {
-			pageCount.set(0);
-		} else {
-			pageCount.set(newnodes.length);
-		}
-	});
-
-	hNode.subscribe((n) => {
-		if (!n || $hNode.isClusterNode) return;
-
-		if (get(isSelectionActive)) {
-			const nodes = get(NodesToShow);
-			const foundNodeIndex = nodes.findIndex((node) => node.id === n.id);
-
-			if (foundNodeIndex !== -1) {
-				const currentPageVal = $currentPage;
-				const newPageIndex = foundNodeIndex + 1;
-
-				// Only update if needed
-				if (newPageIndex !== currentPageVal) {
-					currentPage.set(newPageIndex);
-				}
-
-				fetchInfoPanelByNode(nodes[foundNodeIndex]);
-			} else {
-				console.warn('Node not found in NodesToShow:', n);
-			}
-		} else {
-			NodesToShow.set([$hNode]);
-		}
-	});
-
-	// TODO: update
-	$: if ($NodesToShow.length != 0) {
-		fetchInfoPanelByNode(get(NodesToShow)[$currentPage - 1]);
-	}
+ $: if($selectedPointsIds.length !== 0) {
+    
+    fetchInfoPanelById($selectedPointsIds[$currentPage -1])
+ }
+$: if ($isSelectionActive && $numberOfSelectedPoints > 0) {
+    (async () => {
+        await setArrayofSelectedPointIds(getSelectedPointIndices());
+    })();
+}
 </script>
-
 <div class="node-information-view">
 	<h4>Node Information</h4>
 	<div class="node-info-list">
-		{#if $NodesToShow.length !== 0 && !$NodesToShow[$currentPage - 1].isClusterNode}
-			{#if $NodesToShow.length > 1}
-				<div class="pagation-btns">
+                				
+
+			
+
+		{#if $isSelectionActive && $numberOfSelectedPoints > 0 && $currentInfoPanel.pubmed_id !== undefined}
+
+			<!--Control Buttons-->
+            <div class="pagation-btns">
 					<button class="pagation-btn" on:click={handleLeftClick}><ChevronLeft /></button>
 					<button class="pagation-btn" on:click={handleRightClick}><ChevronRight /></button>
-					{$currentPage} of {$pageCount}
+					{$currentPage} of {$numberOfSelectedPoints}
 				</div>
-			{/if}
 
-			<!-- {#if get(isSelectionActive)} -->
+
+
+
+			<!-- Tags -->
+
 			{#if $SelectedDateRange !== undefined || $SelectedSearchQuery !== '' || $SelectedClusters.length !== 0}
 				<div class="filter-tags">
 					{#if $SelectedDateRange !== undefined}
 						<div class="selected-date-range">
-							<span><b>Date:</b> {formatDateRange($SelectedDateRange)}</span>
+							<span><b>Date:</b> {$SelectedDateRange}</span>
 						</div>
 					{/if}
 
@@ -176,7 +123,7 @@
 					{#if $SelectedClusters.length !== 0}
 						<div class="selected-cluster">
 							{#if $SelectedClusters.length === 1}
-								<span><b>Cluster:</b> {getClusterLabelById(get(SelectedClusters)[0])}</span>
+								<span><b>Cluster:</b> {get(SelectedClusters)[0]}</span>
 							{:else}
 								<span
 									><b>Clusters:</b>{get(SelectedClusters).map(getClusterLabelById).join(', ')}</span
@@ -188,6 +135,9 @@
 					<button class="clear-btn" on:click={handleClearTags}><X /></button>
 				</div>
 			{/if}
+
+
+
 
 			<div class="info-field">
 				<span class="info-field-title">Pubmed ID</span>
@@ -215,8 +165,8 @@
 					{showMoreAbstract ? 'Read Less' : 'Read More'}
 				</button>
 			</div>
-
-			<div class="info-field">
+				<!--TODO: make cluster dynamic -->
+            			<div class="info-field">
 				<span class="info-field-title">Cluster</span>
 				<div class="info-field-content">
 					<ul class="topic-list">
@@ -250,6 +200,9 @@
 				<span class="info-field-title">Keywords</span>
 				<div class="info-field-content">{$currentInfoPanel.keywords}</div>
 			</div>
+		
+		{:else if $isSelectionActive && $currentInfoPanel.pubmed_id === undefined}
+		<div class="loader"><LoaderCircle size="48" /></div>
 		{/if}
 	</div>
 </div>
@@ -386,4 +339,19 @@
 		content: '••• '; /* Add bullet manually */
 		color: darkred; /* Adjust color as you like */
 	}
+		.loader {
+		animation: var(--animation-spin);
+		animation-duration: 2s;
+		animation-timing-function: linear;
+		animation-iteration-count: infinite;
+		position: relative;
+		/* top: 0;
+		right: 0; */
+		width: fit-content;
+		height: fit-content;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		cursor: wait;
+		}
 </style>
