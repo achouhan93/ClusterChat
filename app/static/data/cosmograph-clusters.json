@@ -1,0 +1,12 @@
+{
+  "pointIdBy": "id",
+  "pointXBy": "x",
+  "pointYBy": "y",
+  "pointLabelBy": "label",
+  "pointIncludeColumns": [
+    "depth",
+    "path",
+    "is_leaf"
+  ],
+  "pointIndexBy": "idx"
+}

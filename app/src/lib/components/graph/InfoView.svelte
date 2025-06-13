@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { unselectNodes, isSelectionActive } from '$lib/graph';
+	import { unselectNodes } from '$lib/graph';
 	import {
 		selectedNodes,
 		SelectedDateRange,
@@ -8,7 +8,8 @@
 		hNode,
 		allClusters,
 		ClustersTree,
-		selectedClustersCount
+		selectedClustersCount,
+		isSelectionActive
 	} from '$lib/stores/nodeStore';
 
 	import { ChevronRight, ChevronLeft, X, ExternalLink } from 'lucide-svelte';
@@ -54,9 +55,9 @@
 			(item) =>
 				({
 					pubmed_id: item._id, // change to node.id after test
-					title: node.title,
-					abstract: item._source.abstract,
-					date: node.date || undefined,
+					title: item._source["title"],
+					abstract: item._source["abstract"],
+					date: item._source["date"] || undefined,
 					cluster_top: getClusterInformationFromNode(node),
 					authors_name: item._source['authors:name'],
 					journal_title: item._source['journal:title'],

@@ -10,7 +10,7 @@ import { Cosmograph, CosmographTimeline } from 'cosmograph-v2';
 
 import {
 	load10k,
-	loadLables,
+	loadLabels,
 	getNodeColor,
 	getAssociatedLeafs,
 	LoadNodesByCluster

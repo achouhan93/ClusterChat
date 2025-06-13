@@ -133,6 +133,7 @@
 		const { createGraph, createTimeline } = await import('$lib/graph');
 		createGraph();
 		createTimeline();
+
 	});
 
 	onMount(() => {
@@ -149,8 +150,8 @@
 	async function toggleSide() {
 		sideCollapsed = !sideCollapsed;
 	}
-</script>
 
+</script>
 <main
 	id="main-frame"
 	style="
@@ -393,4 +394,5 @@
 	/* .smooth-resize {
         transition: none;
     } */
+
 </style>

@@ -20,6 +20,34 @@
 		return payload
 	}
 
+	async function fetchClusters(){
+		const res = await fetch("/api/opensearch/clusters")
+		if(!res.ok){
+			error = `Server error: ${res.status}`;
+			return;
+		}
+		const data = await res.json()
+
+		// calculate the color of cluster here
+
+
+		const config: CosmographDataPrepConfig = {
+		outputFormat: 'arrow',
+		points: {
+			pointIdBy: 'cluster_id',
+			pointXBy: 'x',
+			pointYBy: 'y',
+			pointLabelBy: 'label',
+			pointIncludeColumns: ['depth','path','is_leaf'],
+			outputFilename: `cosmograph-clusters`
+		}
+	};
+
+		
+
+	const cosmographConfig = await downloadCosmographData(config, data)
+	}
+
 	async function fetchOtherBatches(payload:JSON) {
 		const res = await fetch('/api/prepare/scroll', {
 		method: 'POST',
@@ -41,7 +69,7 @@
 			error = '';
 		}
 	}
-	function getBatchSizes(total, batchSize) {
+	function getBatchSizes(total:number, batchSize:number) {
 		const batches = [];
 		while (total > 0) {
 			const currentBatch = Math.min(batchSize, total);
@@ -58,17 +86,16 @@
 		const batchSize = 1_000_000
 		const batchSizes = getBatchSizes(requestedPoints,batchSize)
 		const numberOfBatches = batchSizes.length
-		console.log(batchSizes)
 
 			for (let i=0; i < numberOfBatches; i++){
 				
-				const remaining = requestedPoints -i * batchSize;
-				const scroll_limit = batchSizes[i];
+				// const remaining = requestedPoints -i * batchSize;
+				const scroll_limit:number = batchSizes[i];
 			
 				const sendPayload = {
 					scroll_id : first.scroll_id,
 					scroll_time : first.scroll_time,
-					scroll_limit: scroll_limit
+					scroll_limit: (i===0) ? scroll_limit - 10_000 : scroll_limit
 				}
 
 
@@ -82,7 +109,6 @@
 						pointClusterBy: 'cluster_id',
 						pointIncludeColumns: ['date'],
 						pointColorBy: 'cluster_id',
-						pointColorByFn: (v:string) => getColorForCluster(v),
 						outputFilename: `cosmograph-points-batch-${i+1}`
 					}
 				};
@@ -114,8 +140,14 @@
 		max="5000000"
 		required
 	/>
-	<button type="submit">Download Cosmograph Data</button>
-	{#if error}
-		<p style="color: red;">{error}</p>
-	{/if}
+	<button type="submit">Download Cosmograph Points</button>
+
 </form>
+<br/>
+<form on:submit={fetchClusters}>
+		<button type="submit">Download Cosmograph Clusters</button>
+</form>
+<br/>
+{#if error}
+	<p style="color: red;">{error}</p>
+{/if}

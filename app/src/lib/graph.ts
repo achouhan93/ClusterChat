@@ -5,7 +5,7 @@ import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
 import {
 	load10k,
-	loadLables,
+	loadLabels,
 	getNodeColor,
 	getAssociatedLeafs,
 	LoadNodesByCluster
@@ -24,7 +24,8 @@ import {
 	allClusters,
 	allClusterNodes,
 	ClustersTree,
-	selectedNodesCount
+	selectedNodesCount,
+	isSelectionActive
 } from '$lib/stores/nodeStore';
 
 import { hierarchicalLabels, document_specific } from '$lib/stores/uiStore';
@@ -203,7 +204,7 @@ const handleOnZoomStartHierarchical = async () => {
 	}
 	GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
 	updateGraphConfig(GraphConfig);
-	// console.log(ZoomLevel);
+	console.log(ZoomLevel);
 };
 
 const handleOnZoomStartTopLabel = () => {
@@ -218,8 +219,18 @@ const handleOnZoomStartTopLabel = () => {
 	}
 	GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
 	updateGraphConfig(GraphConfig);
-	// console.log(ZoomLevel);
+	console.log(ZoomLevel)
+	
 };
+async function getVisibleLabels(ZoomLevel,minLabels,maxLabels,zoomFactor) {
+// Logarithmic scaling (smooth increase)
+	const visibleLabels = Math.min(
+		minLabels * Math.pow(zoomFactor, ZoomLevel - 30),
+		maxLabels
+	);
+	console.log("Visible labels count:",Math.floor(visibleLabels))
+	return Math.floor(visibleLabels);
+}
 
 /* ====================================== Config for the Graph and Timeline ====================================== */
 
@@ -313,18 +324,26 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		// updateGraphConfig(GraphConfig)
 		// console.log(ZoomLevel)
 
-		const ZoomLevel: number = graph.getZoomLevel() || 10;
-		let ClusterLabelsToShow: string[] = [];
-		if (ZoomLevel < 200) {
-			GraphConfig.showTopLabelsLimit = 6;
-		} else if (ZoomLevel > 200 && ZoomLevel < 600) {
-			GraphConfig.showTopLabelsLimit = Math.floor(ZoomLevel / 10);
-		} else if (ZoomLevel > 600) {
-			GraphConfig.showTopLabelsLimit = get(allClusters).length;
-		}
-		GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
-		updateGraphConfig(GraphConfig);
+		// const ZoomLevel: number = graph.getZoomLevel() || 10;
+		// let ClusterLabelsToShow: string[] = [];
+		// if (ZoomLevel < 50) {
+		// 	GraphConfig.showTopLabelsLimit = 6;
+		// } else if (ZoomLevel > 200 && ZoomLevel < 600) {
+		// 	GraphConfig.showTopLabelsLimit = Math.floor(ZoomLevel / 10);
+		// } else if (ZoomLevel > 400) {
+		// 	GraphConfig.showTopLabelsLimit = get(allClusters).length;
+		// }
+		// GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
+		// updateGraphConfig(GraphConfig);
 		// console.log(ZoomLevel);
+
+		// handleOnZoomStartTopLabel()
+		const ZoomLevel: number = graph.getZoomLevel() || 10;
+		const maxLabels = get(allClusters).length; // Total available labels
+		const minLabels = 30;    // Minimum labels to show (zoomed out)
+		const zoomFactor = 1.05; // Adjust for sensitivity (higher = faster label increase)
+		getVisibleLabels(ZoomLevel,minLabels,maxLabels,zoomFactor)
+
 
 		// change all
 		/* 		if(userDriven && e.sourceEvent.type != "mousedown"){		
@@ -339,8 +358,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 
 const TimelineConfig: CosmographTimelineInputConfig<Node> = {
 	accessor: (d) => (d.date ? new Date(d.date) : new Date('2024-01-01')),
-	dataStep: 1000 * 3600 * 12,
-	tickStep: 31557600000 / 12, // One year in milliseconds,
+	tickStep: 15_778_560_000, // 6 montsh
 	//axisTickHeight: 30,
 	filterType: 'nodes',
 	formatter(d) {
@@ -401,7 +419,7 @@ export function toggleHierarchicalLabels() {
 /* ====================================== Graph Methods ====================================== */
 
 async function initializeGraph() {
-	await loadLables();
+	await loadLabels();
 	await load10k(0, INITIAL_BATCH_SIZE);
 	graph.setData(get(nodes), get(links));
 }
@@ -448,6 +466,7 @@ export function unselectNodes() {
 	search_bar_input.value = '';
 	SelectedSearchQuery.set('');
 	SelectedClusters.set([]);
+	isSelectionActive.set(false)
 }
 
 /**
@@ -483,11 +502,13 @@ export function getRenderedNodes() {
 export function setSelectedNodes(nodes: Node[]) {
 	selectedNodes.set(nodes);
 	graph.selectNodes(get(selectedNodes));
+	isSelectionActive.set(true)
 	//graph.addNodesFilter()
 }
 
 export function setSelectedNodesOnGraph(nodes: Node[]) {
 	graph.selectNodes(nodes);
+	isSelectionActive.set(true)
 }
 
 export function updateSelectedNodes(thenodes: Node[]) {
@@ -526,7 +547,11 @@ function showLabelsfor(nodes: Node[]) {
 // 	return get(selectedNodesCount) !== 0;
 // }
 
-export let isSelectionActive = derived(selectedNodesCount, ($count) => $count !== 0);
+// export let isSelectionActive = derived(selectedNodesCount, ($count) => $count !== 0);
+isSelectionActive.subscribe((active) => {
+	console.log(`isSelectionActive?: ${active}`)
+	if(!active) selectedNodesCount.set(0)
+})
 
 export function getClusterNodesByClusterIds(cluster_ids: string[]): Node[] {
 	const ClusterNodeIds = new Set(cluster_ids);

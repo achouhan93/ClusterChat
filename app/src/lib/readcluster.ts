@@ -4,6 +4,7 @@ import type { Node, Link, Cluster } from '$lib/types';
 import { writable, get } from 'svelte/store';
 import { formatDate } from './utils';
 import { interpolateRgb } from 'd3';
+import { tableFromIPC, type Table, type Vector, RecordBatchReader, RecordBatch } from 'apache-arrow';
 
 import {
 	nodes,
@@ -146,7 +147,7 @@ export function getColorForCluster(clusterId: string): string{
 }
 
 export async function getLabelsfromOpenSearch() {
-	const response = await fetch(`/api/opensearch/cluster`);
+	const response = await fetch(`/api/opensearch/clusters`);
 	const data = await response.json();
 
 	if (Array.isArray(data)) {
@@ -184,12 +185,213 @@ export async function getLabelsfromOpenSearch() {
 	ColorPalette = generateClusterColors(get(allClusters).map((c) => c.id));
 }
 
+async function extractClustersFromTable(table:Table){
+	const newClusters:Cluster[] = []
+	const clusterLabelNodes:Node[] = []
+
+	for (const batch of table.batches) {
+		const numRows = batch.numRows;
+
+		const idVec = batch.getChild("id");
+		const xVec = batch.getChild("x");
+		const yVec = batch.getChild("y");
+		const labelVec = batch.getChild("label");
+		const depthVec = batch.getChild("depth");
+		const isLeafVec = batch.getChild("is_leaf");
+		const pathVec = batch.getChild("path");
+
+		// Preallocate output arrays (optional, useful if you know total count)
+		const clusters: Cluster[] = new Array(numRows);
+		const labelNodes: Node[] = new Array(numRows);
+
+		for (let i = 0; i < numRows; i++) {
+			const id = idVec?.get(i);
+			const x = xVec?.get(i);
+			const y = yVec?.get(i);
+			const label = labelVec?.get(i);
+			const depth = depthVec?.get(i);
+			const isLeaf = isLeafVec?.get(i);
+			const path = pathVec?.get(i);
+
+			clusters[i] = {
+			id,
+			xCenter: x,
+			yCenter: y,
+			label,
+			depth,
+			isLeaf,
+			path
+			};
+
+			labelNodes[i] = {
+			id,
+			title: label,
+			x,
+			y,
+			isClusterNode: true,
+			cluster: path,
+			date: depth,
+			color: '#fff'
+			};
+		}
+
+		// Append all at once (faster than push per iteration)
+		newClusters.push(...clusters);
+		clusterLabelNodes.push(...labelNodes);	
+	}
+
+		return {newClusters,clusterLabelNodes}
+}
+
+async function fetchLabelsfromArrow(filename:string){
+	const response = await fetch(filename);
+	const table: Table = await tableFromIPC(await response.arrayBuffer());
+	console.log("Table Schema",table.schema)
+	if(table) {
+
+		const {newClusters, clusterLabelNodes} = await extractClustersFromTable(table)
+		console.log(newClusters[0])
+		allClusters.update((existingClusters) => {
+			return [...existingClusters, ...newClusters];
+		});
+		nodes.update((existingNodes) => {
+			return [...existingNodes, ...clusterLabelNodes];
+		});
+
+		allClusterNodes.set(clusterLabelNodes);
+	
+
+		if (get(allClusters).length != 0) ClustersTree.set(createDepthClusterDict(get(allClusters)));
+		ColorPalette = generateClusterColors(get(allClusters).map((c) => c.id));
+	} else {
+		console.error('Expected an array but got:', response);
+	}
+
+}
+
 /* function getClusterDepth(cluster_id:string){
 	const foundMatch= allClusters.find(cluster =>
 		cluster.id as string === cluster_id || `cluster_${cluster_id}` === cluster_id 
 	)
 	return foundMatch?.depth || foundMatch
 } */
+
+
+// Use it in your main function
+async function extractPointsFromTable(table:Table){
+	const numRows = table.numRows;
+	const startTime = Date.now();
+	const idVec = table.getChild("id");
+	const titleVec = table.getChild("title");
+	const xVec = table.getChild("x");
+	const yVec = table.getChild("y");
+	const clusterIdVec = table.getChild("cluster_id");
+	const dateVec = table.getChild("date");
+
+	const newNodes: Node[] = new Array(numRows);
+	const newLinks: Link[] = new Array(numRows);
+
+	for (let i = 0; i < numRows; i++) {
+		const clusterId = clusterIdVec?.get(i);
+		const date = dateVec?.get(i);
+
+		newNodes[i] = {
+			id: idVec?.get(i),
+			title: titleVec?.get(i),
+			x: xVec?.get(i),
+			y: yVec?.get(i),
+			isClusterNode: false,
+			cluster: clusterId,
+			date,
+			color: ColorPalette[clusterId] || '#000'
+		};
+
+		newLinks[i] = {
+			source: '',
+			target: '',
+			date: formatDate(date)
+		};
+	}
+
+
+		const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+		console.log(`\rFetched: ${numRows} Rows | Time: ${elapsedSeconds}s`);
+	
+	return { newNodes, newLinks };
+
+}
+async function extractPointsFromTableTODO(table:Table){
+	const newNodes: Node[] = [];
+	const newLinks: Link[] = [];
+
+	const startTime = Date.now();
+
+	for (const batch of table.batches) {
+		const numRows = batch.numRows;
+
+		// Cache vectors outside loop
+		const idVec = batch.getChild("id");
+		const titleVec = batch.getChild("title");
+		const xVec = batch.getChild("x");
+		const yVec = batch.getChild("y");
+		const clusterIdVec = batch.getChild("cluster_id");
+		const dateVec = batch.getChild("date");
+
+		// Optional: Preallocate for slight perf boost on large batches
+		const nodes: Node[] = new Array(numRows);
+		const links: Link[] = new Array(numRows);
+
+		for (let i = 0; i < numRows; i++) {
+			const clusterId = clusterIdVec?.get(i);
+			const date = dateVec?.get(i);
+			
+			const node: Node = {
+			id: idVec?.get(i),
+			title: titleVec?.get(i),
+			x: xVec?.get(i),
+			y: yVec?.get(i),
+			isClusterNode: false,
+			cluster: clusterId,
+			date: date,
+			color: ColorPalette[clusterId] || '#000'  // safe fallback
+			};
+
+			const link: Link = {
+			source: '',      // Fill later if needed
+			target: '',      // Fill later if needed
+			date: formatDate(date)
+			};
+
+			nodes[i] = node;
+			links[i] = link;
+		}
+
+		newNodes.push(...nodes);
+		newLinks.push(...links);
+
+		const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+		console.log(`\rFetched: ${numRows} Rows | Time: ${elapsedSeconds}s`);
+	}
+
+	return { newNodes, newLinks };
+}
+async function fetchPointsfromArrow(filename: string) {
+	const response = await fetch(filename);
+	const table: Table = await tableFromIPC(await response.arrayBuffer());
+	if (table){
+		const {newNodes, newLinks} = await extractPointsFromTable(table)
+		nodes.update((existingNodes) => {
+			// Append new nodes to the existing ones
+			return [...existingNodes, ...newNodes];
+		});
+		links.update((existingLinks) => {
+			return [...existingLinks, ...newLinks];
+		});
+	} else {
+		console.error('Expected an array but got:', response);
+	}
+}
+
 
 export async function getNodesfromOpenSearch(from: number, size: number) {
 	const response = await fetch(`/api/opensearch/nodes/${from}/${size}`);
@@ -270,11 +472,15 @@ async function LoadNodesByCluster(cluster_ids: string[]) {
 }
 
 async function load10k(from: number, size: number) {
-	await getNodesfromOpenSearch(from, size);
+	// await getNodesfromOpenSearch(from, size);
+	const filename="/data/cosmograph-points-batch-1.arrow"
+	await fetchPointsfromArrow(filename)
 }
 
-async function loadLables() {
-	await getLabelsfromOpenSearch();
+async function loadLabels() {
+	// await getLabelsfromOpenSearch();
+	const filename="/data/cosmograph-clusters.arrow"
+	await fetchLabelsfromArrow(filename)
 }
 
-export { load10k, loadLables, LoadNodesByCluster };
+export { load10k, loadLabels, LoadNodesByCluster };
