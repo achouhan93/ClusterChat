@@ -17,11 +17,11 @@ from pipeline import Processor
 CONFIG = utils.load_config_from_env()
 
 # Setup logging
-if not os.path.exists(CONFIG["CLUSTER_TALK_LOG_PATH"]):
-    os.makedirs(CONFIG["CLUSTER_TALK_LOG_PATH"])
+if not os.path.exists(CONFIG["CLUSTER_CHAT_LOG_PATH"]):
+    os.makedirs(CONFIG["CLUSTER_CHAT_LOG_PATH"])
 
 logging.basicConfig(
-    filename=CONFIG["CLUSTER_TALK_LOG_EXE_PATH"],
+    filename=CONFIG["CLUSTER_CHAT_LOG_EXE_PATH"],
     filemode="a",
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%d-%m-%y %H:%M:%S",
@@ -44,8 +44,8 @@ async def lifespan(app: FastAPI):
     global processor
     # Database setup and indexing
     os_connection = database_connection.opensearch_connection()
-    embedding_model = CONFIG["CLUSTER_TALK_EMBEDDING_MODEL"]
-    embedding_index = CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_SENTENCE"]
+    embedding_model = CONFIG["CLUSTER_CHAT_EMBEDDING_MODEL"]
+    embedding_index = CONFIG["CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_SENTENCE"]
     model_configs = json.loads(CONFIG["MODEL_CONFIGS"])
 
     # Initialize Processor

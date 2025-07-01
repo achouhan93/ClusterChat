@@ -5,13 +5,13 @@ import utils
 from torch import cuda
 from tqdm import tqdm
 from transformers import AutoTokenizer
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_huggingface.llms.huggingface_endpoint import HuggingFaceEndpoint
 from langchain_core.prompts import PromptTemplate
 
 # When OpenAI model is used
 from langchain_openai import OpenAI
 
-CONFIG: Dict[str, Any] = utils.loadConfigFromEnv()
+CONFIG: Dict[str, Any] = utils.load_config_from_env()
 logger = logging.getLogger(__name__)
 
 
@@ -156,7 +156,7 @@ class RagChat:
             }
 
             results = self.index.client.search(
-                index=CONFIG["CLUSTER_TALK_OPENSEARCH_TARGET_INDEX_SENTENCE"],
+                index=CONFIG["CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_SENTENCE"],
                 body=search_query,
                 request_timeout=10,
             )

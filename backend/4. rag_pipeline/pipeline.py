@@ -12,7 +12,7 @@ import utils
 from tasks.rag_components import rag_chatmodel, rag_loader, rag_prompt
 
 log = logging.getLogger(__name__)
-CONFIG = utils.loadConfigFromEnv()
+CONFIG = utils.load_config_from_env()
 
 
 class Processor:
@@ -73,7 +73,7 @@ class Processor:
 
         # Define the OpenSearch index names
         self.cluster_information_index = CONFIG[
-            "CLUSTER_TALK_CLUSTER_INFORMATION_INDEX"
+            "CLUSTER_CHAT_CLUSTER_INFORMATION_INDEX"
         ]
 
         self._init_prompt_chains()

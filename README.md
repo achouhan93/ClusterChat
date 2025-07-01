@@ -82,7 +82,7 @@ The $\textit{ClusterChat}$ framework provides a web-based tool for exploring [Pu
 
 ### Frontend
 
-![Figure 1: Overview of the ClusterChat interface][clusterchat_interface] <p align="center">_Figure 1: Overview of the web-based $\textit{ClusterChat}$ interface. The interface includes four main features: 1) a chat panel on the top-left for corpus and document-level question answering; 2) a metadata information panel on the bottom-left for displaying metadata information of the selected documents; 3) a central cluster visualization map showing research topics like ``Cancer Treatment” and ``Genetic Disorders”; 4) a search panel at the top to perform a lexical and semantic search on ``Abstract'' text and a keyword search on ``Title'' text._</p>
+![Figure 1: Overview of the ClusterChat interface][clusterchat_interface] <p align="center">_Figure 1: Overview of the web-based $\textit{ClusterChat}$ interface. The interface includes four main features: 1) a chat panel on the top-left for corpus and document-level question answering; 2) a metadata information panel on the bottom-left for displaying metadata information of the selected documents; 3) a central cluster visualization map showing research topics like ''Cancer Treatment'' and ''Genetic Disorders''; 4) a search panel at the top to perform a lexical and semantic search on ''Abstract'' text and a keyword search on ''Title'' text._</p>
 
 **Folder:** `app/`
 
@@ -171,7 +171,7 @@ OPENSEARCH_NODE="https://your-opensearch-hostname:your-opensearch-port"
 
 5. Start the backend server:
    ```sh
-   cd backend/3.\ rag_pipeline
+   cd backend/4.\ rag_pipeline
    uvicorn main:app --reload --port 8100
    ```
 

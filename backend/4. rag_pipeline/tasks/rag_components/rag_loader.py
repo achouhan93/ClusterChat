@@ -26,7 +26,7 @@ class RagLoader:
     ) -> OpenSearchVectorSearch:
         user_name: str = CONFIG["OPENSEARCH_USERNAME"]
         password: str = CONFIG["OPENSEARCH_PASSWORD"]
-        host: str = CONFIG["CLUSTER_TALK_OPENSEARCH_HOST"]
+        host: str = CONFIG["CLUSTER_CHAT_OPENSEARCH_HOST"]
 
         logger.info(
             f"Initializing OpenSearchVectorSearch connection for index: {index}"
