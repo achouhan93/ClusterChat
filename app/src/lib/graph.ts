@@ -237,9 +237,9 @@ async function getVisibleLabels(ZoomLevel,minLabels,maxLabels,zoomFactor) {
 export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	//backgroundColor: '#151515',
 	backgroundColor: '#ffffff',
-	nodeGreyoutOpacity: 0.01,
+	nodeGreyoutOpacity: 0.05,
 	//showFPSMonitor: true, /* shows performance monitor on the top right */
-	nodeSize: (node: Node) => 0.01,
+	nodeSize: (node: Node) => 0.05,
 	nodeColor: (node: Node) => node.color,
 	nodeLabelAccessor: (node: Node) => node.title,
 	//nodeLabelClassName: (node: Node) => node.isClusterNode ? `cosmograph-cluster-label-${node.date}` : 'cosmograph-node-label', // getNodeLabelClassName
@@ -278,7 +278,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 				const main_frame = document.getElementById('main-graph');
 				main_frame.style.cursor = 'pointer';
 				GraphConfig.nodeSize = (node: Node) =>
-					node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.01;
+					node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.05;
 				updateGraphConfig(GraphConfig); // Update the graph configuration to reflect the new node size
 			}
 		}
@@ -290,7 +290,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		hNode.set(undefined);
 		if (get(hNode) === undefined) console.log('Node Not Hovered');
 		GraphConfig.nodeSize = (node: Node) =>
-			node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.01;
+			node.id === get(hoveredNodeId) ? HOVERED_NODE_SIZE : 0.05;
 		updateGraphConfig(GraphConfig); // Update the graph configuration to reset the node size
 		const main_frame = document.getElementById('main-graph');
 		main_frame.style.cursor = 'default';

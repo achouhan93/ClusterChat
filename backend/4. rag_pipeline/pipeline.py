@@ -216,8 +216,9 @@ class Processor:
 
         elif intent == "get_corpus_info":
             # For general corpus information, you might aggregate data or fetch specific fields
+            #! This hardcoding can be replaced by computing the max depth in clusterinformation index and then subtract 4 inorder to get top hierarchy cluster information
             return {
-                "query": {"bool": {"filter": {"range": {"depth": {"gte": 5}}}}},
+                "query": {"bool": {"filter": {"range": {"depth": {"gte": 35}}}}}, 
                 "size": 10000,
                 "_source": ["label", "description"],
             }
@@ -329,7 +330,6 @@ class Processor:
                 topic_words = source.get("topic_words", [])
                 clusters.append(
                     {
-                        "cluster_id": cluster_id,
                         "label": label,
                         "description": description,
                         "topic_words": topic_words,

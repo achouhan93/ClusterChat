@@ -43,48 +43,42 @@ function startTour() {
 				steps: [
 					{
 						element: document.getElementById('main-graph'),
-						intro: 'This tour will show you all the functionalities of this app.',
+						intro: 'Welcome to ClusterChat! This system enables advanced corpus exploration through interactive cluster visualization. This main view represents the cluster visualisation of the document corpus, where each node corresponds to a document and clusters represent groups derived using semantic embeddings.',
 						position: 'center'
 					},
 					{
 						element: document.getElementById('info-view'),
-						intro: 'Here you can see information about each paper you hover over or click',
+						intro: 'This panel displays detailed metadata for the document you hover over or select. It includes document id, publication year, journal, authorship, and more—providing immediate context for your exploration.',
 						position: 'right'
 					},
 					{
 						element: document.getElementById('chat-interface'),
-						intro: 'Here you can interact with the selected documents',
+						intro: 'This chat interface allows you to ask natural language questions either at the document level or across the entire corpus. It is powered by a Retrieval-Augmented Generation (RAG) pipeline.',
 						position: 'right'
 					},
 					{
 						element: document.querySelector('.toggle-container'),
-						intro: 'Chat either with the selected Documents or the whole Corpus',
+						intro: 'Use this toggle to switch between two modes of question answering: querying the selected documents or querying the entire corpus.',
 						position: 'right'
 					},
 					{
 						element: document.querySelector('.menu-button'),
-						intro: 'To start a new Chat session delete the old one',
+						intro: 'Use this menu to manage your chat sessions. If you wish to begin a new session, you can clear the previous one here to maintain context precision.',
 						position: 'right'
 					},
 					{
 						element: document.getElementById('main-search-bar'),
-						intro: 'When searching for a specific paper use the search bar',
-						position: 'bottom'
-					},
-					{
-						element: document.querySelector('.search-options-part'),
-						intro:
-							'You can tailor your query using these options. Semantic Search is only possible on Abstracts.',
+						intro: 'You can locate specific set of documents using the search bar. This supports keyword-based (lexical) search on titles and abstracts, as well as semantic search on abstracts using embeddings.',
 						position: 'bottom'
 					},
 					{
 						element: document.getElementById('main-timeline'),
-						intro: 'To select The documents based on the timeline you perform a drag selection',
+						intro: 'This timeline enables temporal filtering. Drag-select a time interval to narrow down documents by their publication date—useful for identifying recent trends or historical shifts.',
 						position: 'top'
 					},
 					{
 						element: document.querySelector('.control-buttons'),
-						intro: 'These buttons allow you to interact with the Graph directly',
+						intro: 'These controls let you interact with the visualization. You can zoom, reposition, and re-center the view to better inspect particular clusters or documents.',
 						position: 'right'
 					}
 				]
