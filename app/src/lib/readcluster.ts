@@ -473,7 +473,7 @@ async function LoadNodesByCluster(cluster_ids: string[]) {
 
 async function load10k(from: number, size: number) {
 	// await getNodesfromOpenSearch(from, size);
-	const filename="/data/cosmograph-points-batch-1.arrow"
+	const filename="/data/cosmograph-points-batch-2.arrow"
 	await fetchPointsfromArrow(filename)
 }
 

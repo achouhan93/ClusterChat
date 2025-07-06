@@ -40,12 +40,11 @@ export async function GET({ params }) {
 					knn: {
 						pubmed_bert_vector: {
 							vector: embedding,
-							k: 100
-							// TODO: change to threshold
+							k: 1000
 						}
 					}
 				},
-				_source: ['documentID', 'title', 'abstract_chunk']
+				_source: ['documentID']
 			}
 		});
 

@@ -43,15 +43,19 @@ body {
 }
 
 .cosmograph-cluster-label {
-	background-color: rgba(255, 255, 255, 0.2);
+	/* background-color: rgba(255, 255, 255, 0.2);
 	font-size: var(--size-6) !important;
-	max-width: 30ch;
+	max-width: 30ch; */
+	  /* font-family: Georgia, serif; */
+
+	background-color: rgba(233, 236, 239, 0.6);
+	font-size: var(--size-5);
 }
 
 /* Label sizes for different depths from smallest to largest */
 .cosmograph-cluster-label-0 {
 	background-color: rgba(255, 255, 255, 0.2);
-	font-size: 6px !important;
+	font-size: 8px !important;
 	max-width: 30ch;
 }
 
@@ -66,37 +70,37 @@ body {
 
 .cosmograph-cluster-label-2 {
 	background-color: rgba(255, 255, 255, 0.2);
-	font-size: var(--size-px-3) !important;
+	font-size: 12px !important;
 	max-width: 30ch;
 }
 .cosmograph-cluster-label-3 {
 	background-color: rgba(255, 255, 255, 0.2);
-	font-size: var(--size-px-4) !important;
+	font-size: 14px !important;
 	max-width: 30ch;
 }
 .cosmograph-cluster-label-4 {
 	background-color: rgba(255, 255, 255, 0.2);
-	font-size: var(--size-px-5) !important;
+	font-size: 16px !important;
 	max-width: 30ch;
 }
 .cosmograph-cluster-label-5 {
 	background-color: rgba(255, 255, 255, 0.2);
-	font-size: var(--size-px-6) !important;
+	font-size: 18px !important;
 	max-width: 30ch;
 }
 .cosmograph-cluster-label-6 {
 	background-color: rgba(255, 255, 255, 0.2);
-	font-size: var(--size-px-7) !important;
+	font-size: 20px !important;
 	max-width: 30ch;
 }
 .cosmograph-cluster-label-7 {
 	background-color: rgba(255, 255, 255, 0.2);
-	font-size: var(--size-px-8) !important;
+	font-size: 22px !important;
 	max-width: 30ch;
 }
 .cosmograph-cluster-label-8 {
 	background-color: rgba(255, 255, 255, 0.2);
-	font-size: var(--size-px-9) !important;
+	font-size: 24px !important;
 	max-width: 30ch;
 }
 

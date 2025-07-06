@@ -38,3 +38,6 @@ export let ClustersTree = writable<{ [depth: number]: string[] }>([]);
 export let isSelectionActive = writable<boolean>(false)
 export let selectedPointsIds = writable<number[]>([])
 export let numberOfSelectedPoints = writable<number>(0)
+
+
+export let searchInProgress = writable<boolean>(false)

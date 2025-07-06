@@ -19,6 +19,7 @@
 	import { hierarchicalLabels } from '$lib/stores/uiStore';
 	import { selectMultipleClusters, dataloaded } from '$lib/stores/nodeStore';
 	import { onMount } from 'svelte';
+	import { Circle } from 'svelte-loading-spinners';
 
 	let sideCollapsed = false;
 
@@ -26,7 +27,7 @@
 		? `'control-btns . . search-bar'
 		'. '
 		'.'
-		'timeline`
+		'timeline'`
 		: `'chat control-btns . search-bar'
 		'chat . . .'
 		'info . . .'
@@ -145,7 +146,18 @@
 		sideCollapsed = !sideCollapsed;
 	}
 
+
+	import Toasts from '$lib/components/ui/Toasts.svelte';
+	import { addToast } from '$lib/stores/toastStore';
+
+	
 </script>
+<div id="paper-title">
+	<div class="title-text">ClusterChat: Multi-Feature Search for Corpus Exploration</div>
+	<div class="qrcode">
+            <img src="/imgs/qr-code1.jpeg" alt="QR Code 1">
+    </div>
+</div>
 <main
 	id="main-frame"
 	style="
@@ -157,12 +169,14 @@
 	"
 >
 	{#if !$dataloaded}
-		<div class="loader"><LoaderCircle size="48" /></div>
+		<div class="loader"><Circle size="60" color="#007BFF" unit="px" duration="1s" /></div>
 	{:else}
+				
 		<div id="main-graph">
 			<svg id="selection-svg" />
 		</div>
 		<div id="main-search-bar" class="cosmograph-search">
+
 			<SearchBar />
 		</div>
 		<div class="control-buttons">
@@ -174,7 +188,26 @@
 			<button
 				id="multiple-node-btn"
 				class="btn rollout-button"
-				on:click={toggleMultipleClustersMode}
+				on:click={
+				() => {
+					
+					toggleMultipleClustersMode()
+					if($selectMultipleClusters){ 
+						addToast({
+						message:"Multiple Cluster Selection was activated!",
+						type:"success",
+						dismissible:true,
+						timeout:2500
+					})
+					} else {
+						addToast({message:"Multiple Cluster Selection was deactivated!",
+						type:"error",
+						dismissible:true,
+						timeout:2500
+					})
+					}
+				}
+				}
 				title={$selectMultipleClusters
 					? 'Multiple Cluster Selection is active'
 					: 'Single Cluster Selection is active'}
@@ -225,12 +258,31 @@
 			aria-label="Resize sidebar"
 		></div> -->
 
-		<div id="main-timeline" class="cosmograph-timeline"></div>
+		<div id="main-timeline" class="cosmograph-timeline">
+			<Toasts/>
+		</div>
 	{/if}
 	<slot />
 </main>
 
 <style>
+	#paper-title {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.title-text {
+		color: white;
+		font-family: var(--font-system-ui);
+		font-weight: var(--font-weight-7);
+	}
+	.qrcode {
+		text-align: right;
+	}
+	.qrcode img {
+		width: 50px;
+		height: 50px;
+	}
 	#main-graph,
 	#main-frame {
 		height: 100%;
@@ -279,10 +331,10 @@
 		transition: width 0.5s var(--ease-5);
 	}
 	.loader {
-		animation: var(--animation-spin);
+		/* animation: var(--animation-spin);
 		animation-duration: 2s;
 		animation-timing-function: linear;
-		animation-iteration-count: infinite;
+		animation-iteration-count: infinite; */
 		position: fixed;
 		top: 0;
 		right: 0;
@@ -384,6 +436,7 @@
 		height: 3px;
 		width: 100%;
 		z-index: 3;
+
 	}
 	/* .smooth-resize {
         transition: none;
