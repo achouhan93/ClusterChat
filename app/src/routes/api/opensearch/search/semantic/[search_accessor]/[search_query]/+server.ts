@@ -40,7 +40,7 @@ export async function GET({ params }) {
 					knn: {
 						pubmed_bert_vector: {
 							vector: embedding,
-							k: 100
+							k: 1000
 							// TODO: change to threshold
 						}
 					}

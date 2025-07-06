@@ -61,7 +61,7 @@
 
 			// send to opensearch and get the top 10k
 			const data = await fetchSearchQueryAnswer(searchType, searchAccessor, searchQuery);
-
+			if(searchType === "semantic") console.dir("Data from Semantic Search:",data)
 			if (Array.isArray(data)) {
 				const nodeIdsToSelect: Set<string> = new Set(data.map((item) => item._id));
 				if (getSelectedNodes()?.length === 0 && getSelectedNodes() != undefined) {

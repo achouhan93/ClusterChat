@@ -74,8 +74,14 @@
 		return 'error';
 	}
 	function formatDateRange(date: [Date, Date]) {
-		return `${date[0].toLocaleString('en-US', { month: 'short' })} ${date[0].getDate()} -  
-        ${date[1].toLocaleString('en-US', { month: 'short' })} ${date[1].getDate()}, ${date[1].getFullYear()}`;
+		if (date[0].getFullYear() === date[1].getFullYear()){
+			return `${date[0].toLocaleString('en-US', { month: 'short' })} ${date[0].getDate()} -  
+        	${date[1].toLocaleString('en-US', { month: 'short' })} ${date[1].getDate()}, ${date[1].getFullYear()}`;
+		} else {
+			return `${date[0].toLocaleString('en-US', { month: 'short' })} ${date[0].getDate()}, ${date[0].getFullYear()} -  
+        	${date[1].toLocaleString('en-US', { month: 'short' })} ${date[1].getDate()}, ${date[1].getFullYear()}`;
+		}
+
 	}
 	function getClusterRange(cluster_path: string[], searchCluster: string): string[] {
 		const index = cluster_path.indexOf(searchCluster);
@@ -116,9 +122,10 @@
 	});
 
 	hNode.subscribe((n) => {
-		if (!n || $hNode.isClusterNode) return;
+		if (!n || $hNode?.isClusterNode) return;
 
-		if (get(isSelectionActive)) {
+		console.log(`isSelectionActive: ${get(isSelectionActive)}`)
+		if ($isSelectionActive) {
 			const nodes = get(NodesToShow);
 			const foundNodeIndex = nodes.findIndex((node) => node.id === n.id);
 
@@ -149,6 +156,7 @@
 <div class="node-information-view">
 	<h4>Node Information</h4>
 	<div class="node-info-list">
+
 		{#if $NodesToShow.length !== 0 && !$NodesToShow[$currentPage - 1].isClusterNode}
 			{#if $NodesToShow.length > 1}
 				<div class="pagation-btns">
@@ -176,10 +184,10 @@
 					{#if $SelectedClusters.length !== 0}
 						<div class="selected-cluster">
 							{#if $SelectedClusters.length === 1}
-								<span><b>Cluster:</b> {getClusterLabelById(get(SelectedClusters)[0])}</span>
+								<span><b>Cluster:</b> {getClusterLabelById($SelectedClusters[0])}</span>
 							{:else}
 								<span
-									><b>Clusters:</b>{get(SelectedClusters).map(getClusterLabelById).join(', ')}</span
+									><b>Clusters:</b>{$SelectedClusters.map(getClusterLabelById).join(', ')}</span
 								>
 							{/if}
 						</div>
@@ -196,14 +204,14 @@
 						href={`https://pubmed.ncbi.nlm.nih.gov/${$currentInfoPanel.pubmed_id}`}
 						target="_blank"
 						rel="noopener noreferrer"
-						>{$currentInfoPanel.pubmed_id} <sup><ExternalLink size="12" /></sup></a
+						>{$currentInfoPanel?.pubmed_id} <sup><ExternalLink size="12" /></sup></a
 					>
 				</div>
 			</div>
 
 			<div class="info-field">
 				<span class="info-field-title">Title</span>
-				<div class="info-field-content">{$currentInfoPanel.title}</div>
+				<div class="info-field-content">{$currentInfoPanel?.title}</div>
 			</div>
 
 			<div class="info-field">
@@ -256,7 +264,6 @@
 
 <style>
 	h4 {
-		color: black;
 		text-align: center;
 		align-self: center;
 		padding: var(--size-2);

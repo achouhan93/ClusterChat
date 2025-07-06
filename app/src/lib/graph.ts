@@ -1,7 +1,7 @@
 // Cosmograph Imports
 import type { CosmographInputConfig, CosmographTimelineInputConfig } from '@cosmograph/cosmograph';
 
-import { type CosmosInputNode, type CosmosInputLink } from '@cosmograph/cosmos';
+import { type CosmosInputNode, type CosmosInputLink, Graph } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
 import {
 	load10k,
@@ -113,24 +113,30 @@ const handleNodeClick = async (clickedNode: Node) => {
  * @todo
  * Add MultiClusterSelection as an Option!
  */
-const handleLabelClick = async (node: Node) => {
+const handleLabelClickSingle = async (node: Node) => {
 	if (node.isClusterNode && node.id !== '') {
-		if (!selectMultipleClusters) {
-			SelectedClusters.set([node.id]);
-		} else {
-			get(SelectedClusters).push(node.id);
+		if (get(SelectedClusters).length > 0) {
+			selectedNodes.set([]);
+			SelectedDateRange.set(undefined);
+			const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
+			search_bar_input.value = '';
+			SelectedSearchQuery.set('');
+			SelectedClusters.set([]);
+			isSelectionActive.set(false)
 		}
 
-		// get all the rendered nodes and filter the ones that have the cluster ids
-		const cluster_ids: string[] = getAssociatedLeafs(node.id, node.title);
-		LoadNodesByCluster(cluster_ids);
-		const set_cluster_ids = new Set(cluster_ids);
-		const filteredNodes = getRenderedNodes().filter((node) => set_cluster_ids.has(node.cluster));
+		SelectedClusters.set([node.id]);
+		const cluster_id: string[] = getAssociatedLeafs(node.id, node.title);
+		LoadNodesByCluster(cluster_id);
+
+		const set_cluster_id = new Set(cluster_id);
+		const filteredNodes = getRenderedNodes().filter((node) => set_cluster_id.has(node.cluster));
 
 		if (!get(isSelectionActive)) {
 			selectedNodes.set(filteredNodes);
 			filteredNodes.push(node);
 			graph.selectNodes(filteredNodes);
+			isSelectionActive.set(true)
 		} else if (get(isSelectionActive)) {
 			const filteredNodesSet = new Set(filteredNodes.map((node) => node.id));
 			const nodesToShowonGraph = getSelectedNodes().filter((node) => filteredNodesSet.has(node.id));
@@ -140,6 +146,25 @@ const handleLabelClick = async (node: Node) => {
 		}
 	}
 };
+
+const handleLabelClickMultiple = async(node: Node) => {
+	if (node.isClusterNode && node.id !== '') {
+		SelectedClusters.update((clusters) => [...clusters, node.id]);
+		
+		const cluster_id: string[] = getAssociatedLeafs(node.id, node.title);
+		LoadNodesByCluster(cluster_id);
+
+		const set_cluster_ids = new Set(get(SelectedClusters));
+		let filteredNodes:Node[] = getRenderedNodes().filter((node) => set_cluster_ids.has(node.cluster));
+
+		selectedNodes.set(filteredNodes);
+		filteredNodes.push(node);
+		graph.selectNodes(filteredNodes);
+		isSelectionActive.set(true)
+	}
+
+}
+
 
 /**
  * Handles timeline range selection to filter and highlight nodes by date.
@@ -208,12 +233,14 @@ const handleOnZoomStartHierarchical = async () => {
 };
 
 const handleOnZoomStartTopLabel = () => {
+
 	const ZoomLevel: number = graph.getZoomLevel() || 10;
+	console.log("ZoomLevel: ",ZoomLevel)
 	let ClusterLabelsToShow: string[] = [];
 	if (ZoomLevel < 200) {
-		GraphConfig.showTopLabelsLimit = 6;
+		GraphConfig.showTopLabelsLimit = 2000;
 	} else if (ZoomLevel > 200 && ZoomLevel < 600) {
-		GraphConfig.showTopLabelsLimit = Math.floor(ZoomLevel / 10);
+		GraphConfig.showTopLabelsLimit = 5000;
 	} else if (ZoomLevel > 600) {
 		GraphConfig.showTopLabelsLimit = get(allClusters).length;
 	}
@@ -237,7 +264,7 @@ async function getVisibleLabels(ZoomLevel,minLabels,maxLabels,zoomFactor) {
 export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	//backgroundColor: '#151515',
 	backgroundColor: '#ffffff',
-	nodeGreyoutOpacity: 0.05,
+	nodeGreyoutOpacity: 0.005,
 	//showFPSMonitor: true, /* shows performance monitor on the top right */
 	nodeSize: (node: Node) => 0.05,
 	nodeColor: (node: Node) => node.color,
@@ -254,11 +281,12 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	disableSimulation: true,
 	renderLinks: false,
 	scaleNodesOnZoom: true,
-	fitViewByNodesInRect: INITIAL_FITVIEW,
+	// fitViewByNodesInRect: INITIAL_FITVIEW,
+	fitViewOnInit: true,
 	showDynamicLabels: false,
 	showHoveredNodeLabel: false,
 	showTopLabels: true,
-	showTopLabelsLimit: 10,
+	showTopLabelsLimit: 10000,
 	showTopLabelsValueKey: 'isClusterNode',
 
 	// Selection Event handled with button Click
@@ -266,7 +294,13 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 		handleNodeClick(clickedNode as Node);
 	},
 	onLabelClick(node) {
-		handleLabelClick(node);
+
+	if (!get(selectMultipleClusters)) {
+		handleLabelClickSingle(node);
+	} else {
+		handleLabelClickMultiple(node)
+	}
+		
 	},
 	// Scale node on hover
 	onNodeMouseOver(hoveredNode) {
@@ -396,10 +430,11 @@ export function toggleMultipleClustersMode() {
 	selectMultipleClusters.update((value) => !value);
 }
 export function toggleHierarchicalLabels() {
+		console.log("hierarchicalLables",hierarchicalLabels)
 	if (get(hierarchicalLabels)) {
 		GraphConfig.showTopLabels = true;
 		GraphConfig.showLabelsFor = undefined;
-		GraphConfig.showTopLabelsLimit = 10;
+		GraphConfig.showTopLabelsLimit = 10000;
 		GraphConfig.showTopLabelsValueKey = 'isClusterNode';
 		GraphConfig.nodeLabelClassName = (node: Node) =>
 			node.isClusterNode ? 'cosmograph-cluster-label' : 'cosmograph-node-label';
@@ -475,7 +510,7 @@ export function unselectNodes() {
  * @todo very slow for 5M Nodes, need another way.
  */
 
-export function getSelectedNodes() {
+export function getSelectedNodes(): Node[] {
 	return get(selectedNodes);
 }
 
