@@ -9,8 +9,13 @@
 		allClusters,
 		ClustersTree,
 		selectedClustersCount,
-		isSelectionActive
+		isSelectionActive,
+
+		searchInProgress
+
 	} from '$lib/stores/nodeStore';
+
+	import { Jumper } from 'svelte-loading-spinners';
 
 	import { ChevronRight, ChevronLeft, X, ExternalLink } from 'lucide-svelte';
 	import { get, writable } from 'svelte/store';
@@ -258,6 +263,14 @@
 				<span class="info-field-title">Keywords</span>
 				<div class="info-field-content">{$currentInfoPanel.keywords}</div>
 			</div>
+		
+		{:else if $searchInProgress}
+			<div class="loading-container">
+			<Jumper size="60" color="#007BFF" unit="px" duration="1s" />
+			<p class="loading-text">
+				search in progress...
+			</p>
+		</div>
 		{/if}
 	</div>
 </div>
@@ -393,4 +406,19 @@
 		content: '••• '; /* Add bullet manually */
 		color: darkred; /* Adjust color as you like */
 	}
+	  
+	.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+	/* justify-content: center; 
+	height: 100vh; */
+	position: relative;
+  }
+
+  .loading-text {
+    margin-top: 12px;
+    font-size: 16px;
+    color: var(--text-2-light);
+  }
 </style>

@@ -28,9 +28,9 @@ export async function GET({ params }) {
 						}
 					}
 				},
-				_source: {
-					includes: [params.search_accessor]
-				},
+				// _source: {
+				// 	includes: [params.search_accessor]
+				// },
 				size: 10000
 			}
 		});

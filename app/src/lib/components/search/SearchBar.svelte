@@ -9,11 +9,13 @@
 		conditionalSelectNodes,
 		unselectNodes
 	} from '$lib/graph';
-	import { SelectedSearchQuery, selectedNodes } from '$lib/stores/nodeStore';
+	import { SelectedSearchQuery, searchInProgress, selectedNodes } from '$lib/stores/nodeStore';
 	import { document_specific } from '$lib/stores/uiStore';
 	import type { Node } from '$lib/types';
 	import { getClusterNodes, setSelectedNodesOnGraph } from '$lib/graph';
 	import { writable } from 'svelte/store';
+	import { addToast } from '$lib/stores/toastStore';
+	import { timeout } from 'd3';
 
 	let checked_1 = writable<boolean>(false);
 	// let checked_2=writable<boolean>(false)
@@ -41,53 +43,61 @@
 		const search_bar_input = document.getElementById('search-bar-input') as HTMLInputElement;
 		search_bar_input.value = '';
 		SelectedSearchQuery.set('');
+		unselectNodes()
 	}
+
 	async function handleSearch(event: Event) {
-		if (document_specific) {
+		if ($document_specific) {
 			const form = event.currentTarget as HTMLFormElement;
 			const formData = new FormData(form);
 
 			const searchQuery = formData.get('search-query') as string;
 			const searchType = formData.get('search-type') as string;
 			const searchAccessor = formData.get('search-accessor') as string;
-			// console.dir([...formData.entries()])
-
-			/** different index based on lexical or semantic*/
 
 			if (!searchQuery || !searchType) return;
 			if ($SelectedSearchQuery != '') unselectNodes();
 
 			SelectedSearchQuery.set(searchQuery);
 
-			// send to opensearch and get the top 10k
+			searchInProgress.set(true)
 			const data = await fetchSearchQueryAnswer(searchType, searchAccessor, searchQuery);
-			if(searchType === "semantic") console.dir("Data from Semantic Search:",data)
-			if (Array.isArray(data)) {
-				const nodeIdsToSelect: Set<string> = new Set(data.map((item) => item._id));
-				if (getSelectedNodes()?.length === 0 && getSelectedNodes() != undefined) {
-					// get all nodes with these ids
-					const nodesToSelect: Node[] = getRenderedNodes().filter((node) =>
-						nodeIdsToSelect.has(node.id)
-					);
-					selectedNodes.set(nodesToSelect);
-					const graphNodesToSelect = nodesToSelect.concat(getClusterNodes());
-					setSelectedNodesOnGraph(graphNodesToSelect);
-				} else if (
-					getSelectedNodes() != undefined &&
-					getSelectedNodes() != null &&
-					getSelectedNodes()?.length != 0
-				) {
-					// TODO
-					const nodesToSelect: Node[] = getSelectedNodes().filter((node) =>
-						nodeIdsToSelect.has(node.id)
-					);
-					selectedNodes.set(nodesToSelect);
-					const nodesToShowonGraph = nodesToSelect.concat(getClusterNodes());
-					setSelectedNodesOnGraph(nodesToShowonGraph);
-				}
+			console.dir(`Data from ${searchType} Search:`,data)
+			if (Array.isArray(data) && data.length > 0) {
+				await formatSearchData(data,searchType)
+			} else {
+				addToast({message:"No Search Results!", type:"error", dismissable:true, timeout:3000})
 			}
+			searchInProgress.set(false)
 		} else {
-			alert('Change to Document Specific!');
+			addToast({message:"Change to Docuemnt Specific!", type:"error", dismissable:true, timeout:3000})
+		}
+	}
+
+	async function formatSearchData(data:any[],searchType:string){
+		const nodeIdsToSelect: Set<string> = searchType==="lexical" ? new Set(data.map((item:any) => item._id)) : new Set(data.map((item:any) => item._source["documentID"]));
+		console.log("nodeIdsToSelect:",nodeIdsToSelect)
+		const theCurrentlySelectedNodes = getSelectedNodes()
+		console.log("getSelectedNodes():",theCurrentlySelectedNodes.length)
+		if (theCurrentlySelectedNodes?.length === 0 && theCurrentlySelectedNodes !== undefined) {
+			// get all nodes with these ids
+			const nodesToSelect: Node[] = getRenderedNodes().filter((node) =>
+				nodeIdsToSelect.has(node.id)
+			);
+			selectedNodes.set(nodesToSelect);
+			const graphNodesToSelect = nodesToSelect.concat(getClusterNodes());
+			setSelectedNodesOnGraph(graphNodesToSelect);
+		} else if (
+			theCurrentlySelectedNodes !== undefined &&
+			theCurrentlySelectedNodes !== null &&
+			theCurrentlySelectedNodes?.length !== 0
+		) {
+			const nodesToSelect: Node[] = theCurrentlySelectedNodes.filter((node) =>
+				nodeIdsToSelect.has(node.id)
+			);
+			selectedNodes.set(nodesToSelect);
+			const nodesToShowonGraph = nodesToSelect.concat(getClusterNodes());
+			setSelectedNodesOnGraph(nodesToShowonGraph);
 		}
 	}
 </script>
@@ -131,46 +141,6 @@
 				{/if}
 			</select>
 		</div>
-
-		<!-- Toggle Buttons -->
-
-		<!-- <div class="search-options-part"> -->
-
-		<!-- {#if !$checked_1}
-
-			<input class="toggle-btns" form=search-form type="hidden" name=search-metadata value={$checked_2 ? "Abstract" : "Title" }/>
-			<input type="checkbox" id="toggle-2" class="toggleCheckbox" bind:checked={$checked_2}
-			/>
-			<label for="toggle-2" class='toggleContainer'>
-			<div>Title</div>   
-			<div>Abstract</div>
-			</label>
-
-			{:else}
-			<input class="toggle-btns" form=search-form type="hidden" name=search-metadata value="Abstract"/>
-			<input type="checkbox" id="toggle-2" class="toggleCheckbox" checked disabled
-			/>
-			<label for="toggle-2" class='toggleContainer'>
-			<div>Title</div>   
-			<div>Abstract</div>
-			</label>
-			{/if} -->
-
-		<!-- <Toggle
-			form="search-form"
-			name="search-type"
-			button_id="semantic-lexical-btn"
-			label_1="Semantic"
-			label_2="Lexical"		
-			/>
-			<Toggle
-			form="search-form"
-			name="search-metadata"
-			button_id="abstract-title-btn"
-			label_1="Abstract"
-			label_2="Title"
-			/> -->
-		<!-- </div> -->
 	</div>
 </form>
 

@@ -41,11 +41,10 @@ export async function GET({ params }) {
 						pubmed_bert_vector: {
 							vector: embedding,
 							k: 1000
-							// TODO: change to threshold
 						}
 					}
 				},
-				_source: ['documentID', 'title', 'abstract_chunk']
+				_source: ['documentID']
 			}
 		});
 

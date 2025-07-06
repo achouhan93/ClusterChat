@@ -19,6 +19,7 @@
 	import { hierarchicalLabels } from '$lib/stores/uiStore';
 	import { selectMultipleClusters, dataloaded } from '$lib/stores/nodeStore';
 	import { onMount } from 'svelte';
+	import { Circle } from 'svelte-loading-spinners';
 
 	let sideCollapsed = false;
 
@@ -149,13 +150,14 @@
 	import Toasts from '$lib/components/ui/Toasts.svelte';
 	import { addToast } from '$lib/stores/toastStore';
 
-	let message = "Multiple Cluster Selection is Active";
-	let type = "success";
-	let dismissible = true;
-	let timeout = 3000;
-
+	
 </script>
-<div id="paper-title">ClusterChat: Multi-Feature Search for Corpus Exploration</div>
+<div id="paper-title">
+	<div class="title-text">ClusterChat: Multi-Feature Search for Corpus Exploration</div>
+	<div class="qrcode">
+            <img src="/imgs/qr-code1.jpeg" alt="QR Code 1">
+    </div>
+</div>
 <main
 	id="main-frame"
 	style="
@@ -167,7 +169,7 @@
 	"
 >
 	{#if !$dataloaded}
-		<div class="loader"><LoaderCircle size="48" /></div>
+		<div class="loader"><Circle size="60" color="#007BFF" unit="px" duration="1s" /></div>
 	{:else}
 				
 		<div id="main-graph">
@@ -265,10 +267,21 @@
 
 <style>
 	#paper-title {
-	color: white;
-	font-family: var(--font-system-ui);
-	font-weight: var(--font-weight-7);
-
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.title-text {
+		color: white;
+		font-family: var(--font-system-ui);
+		font-weight: var(--font-weight-7);
+	}
+	.qrcode {
+		text-align: right;
+	}
+	.qrcode img {
+		width: 50px;
+		height: 50px;
 	}
 	#main-graph,
 	#main-frame {
@@ -318,10 +331,10 @@
 		transition: width 0.5s var(--ease-5);
 	}
 	.loader {
-		animation: var(--animation-spin);
+		/* animation: var(--animation-spin);
 		animation-duration: 2s;
 		animation-timing-function: linear;
-		animation-iteration-count: infinite;
+		animation-iteration-count: infinite; */
 		position: fixed;
 		top: 0;
 		right: 0;
