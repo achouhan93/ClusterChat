@@ -6,10 +6,9 @@ from torch import cuda
 from tqdm import tqdm
 from transformers import AutoTokenizer
 from langchain_huggingface.llms.huggingface_endpoint import HuggingFaceEndpoint
-from langchain_core.prompts import PromptTemplate
-
-# When OpenAI model is used
+# from langchain_huggingface import HuggingFaceEndpoint
 from langchain_openai import OpenAI
+from langchain_core.prompts import PromptTemplate
 
 CONFIG: Dict[str, Any] = utils.load_config_from_env()
 logger = logging.getLogger(__name__)
@@ -60,13 +59,23 @@ class RagChat:
         self.hf_auth = CONFIG["HUGGINGFACE_AUTH_KEY"]
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
 
-        self.llm = HuggingFaceEndpoint(
-            repo_id=self.model_id,
-            max_new_tokens=self.max_generated_token,
-            temperature=model_config.get("temperature", 0.1),
-            huggingfacehub_api_token=self.hf_auth,
-            repetition_penalty=model_config.get("repetition_penalty", 1.2),
-            stop_sequences=model_config.get("stop_sequences", ["</s>"]),
+        #!! Initialize HuggingFace Model
+        # self.llm = HuggingFaceEndpoint(
+        #     repo_id=self.model_id,
+        #     provider="hf-inference",
+        #     max_new_tokens=self.max_generated_token,
+        #     temperature=model_config.get("temperature", 0.1),
+        #     repetition_penalty=model_config.get("repetition_penalty", 1.2),
+        #     stop_sequences=model_config.get("stop_sequences", ["</s>"]),
+        #     huggingfacehub_api_token=self.hf_auth
+        # )
+        
+        #!! Initialize using OpenAI
+        openai_api_key = CONFIG["OPENAI_API_KEY"]
+        self.llm = OpenAI(
+            api_key=openai_api_key,
+            temperature=0.2,
+            model="gpt-4o-mini-2024-07-18"
         )
 
         self.llama_prompt = PromptTemplate(

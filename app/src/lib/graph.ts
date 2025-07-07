@@ -286,7 +286,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	showDynamicLabels: false,
 	showHoveredNodeLabel: false,
 	showTopLabels: true,
-	showTopLabelsLimit: 10000,
+	showTopLabelsLimit: 10,
 	showTopLabelsValueKey: 'isClusterNode',
 
 	// Selection Event handled with button Click
@@ -434,7 +434,7 @@ export function toggleHierarchicalLabels() {
 	if (get(hierarchicalLabels)) {
 		GraphConfig.showTopLabels = true;
 		GraphConfig.showLabelsFor = undefined;
-		GraphConfig.showTopLabelsLimit = 10000;
+		GraphConfig.showTopLabelsLimit = 10;
 		GraphConfig.showTopLabelsValueKey = 'isClusterNode';
 		GraphConfig.nodeLabelClassName = (node: Node) =>
 			node.isClusterNode ? 'cosmograph-cluster-label' : 'cosmograph-node-label';

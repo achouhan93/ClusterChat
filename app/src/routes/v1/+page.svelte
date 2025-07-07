@@ -152,12 +152,33 @@
 
 	
 </script>
-<div id="paper-title">
+<!-- <div id="paper-title">
 	<div class="title-text">ClusterChat: Multi-Feature Search for Corpus Exploration</div>
 	<div class="qrcode">
             <img src="/imgs/qr-code1.jpeg" alt="QR Code 1">
     </div>
+</div> -->
+
+<div id="paper-title">
+	<div class="qrcode-container">
+		<img src="/imgs/github-qr-code.jpeg" alt="GitHub QR Code" class="qr-code" />
+		<div class="qr-label">
+			<img src="/icons/github.png" alt="GitHub Icon" class="icon-label" />
+			<span>GitHub</span>
+		</div>
+	</div>
+
+	<div class="title-text">ClusterChat: Multi-Feature Search for Corpus Exploration</div>
+
+	<div class="qrcode-container">
+		<img src="/imgs/public-url-qr-code.jpeg" alt="Framework QR Code" class="qr-code" />
+		<div class="qr-label">
+			<img src="/icons/exploration.png" alt="Framework Icon" class="icon-label" />
+			<span>Framework</span>
+		</div>
+	</div>
 </div>
+
 <main
 	id="main-frame"
 	style="
@@ -270,19 +291,78 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		padding: 0.5rem 1rem;
+		width: 100%;
+		box-sizing: border-box;
+		background-color: #ecf2fa;
+		height: 80px;
 	}
+
 	.title-text {
-		color: white;
+		color: black;
 		font-family: var(--font-system-ui);
 		font-weight: var(--font-weight-7);
+		font-size: 28px;
+		text-align: center;
+		flex: 1;
+		padding: 0 1rem;
+		font-weight: 600;
 	}
-	.qrcode {
+	/* .qrcode {
 		text-align: right;
 	}
 	.qrcode img {
+		width: 80px;
+		height: 80px;
+		object-fit: contain;
+	} */
+
+	.qrcode-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		width: 100px;
+	}
+
+	/* .qrcode-left img,
+	.qrcode-right img {
+		width: 60px;
+		height: 60px;
+		object-fit: contain;
+	} */
+	.icon-label {
+		width: 16px;
+		height: 16px;
+		object-fit: contain;
+	}
+
+	.qr-code {
 		width: 50px;
 		height: 50px;
+		object-fit: contain;
 	}
+
+	.qr-label {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		font-size: 12px;
+		color: #333;
+		text-align: center;
+		font-family: var(--font-system-ui);
+		font-weight: 600;
+		margin-top: 2px;
+	}
+
+	/* .qr-code {
+		width: 50px;
+		height: 50px;
+		object-fit: contain;
+		margin-top: 2px;
+	} */
+
 	#main-graph,
 	#main-frame {
 		height: 100%;
@@ -290,6 +370,7 @@
 		position: absolute;
 		scroll-behavior: smooth;
 		background-color: #fff;
+		overflow: hidden;
 	}
 	/* #main-frame {
 		display: grid;
