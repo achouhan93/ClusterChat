@@ -6,8 +6,9 @@ from torch import cuda
 from tqdm import tqdm
 from transformers import AutoTokenizer
 from langchain_huggingface.llms.huggingface_endpoint import HuggingFaceEndpoint
-# from langchain_huggingface import HuggingFaceEndpoint
+
 from langchain_openai import OpenAI
+import tiktoken
 from langchain_core.prompts import PromptTemplate
 
 CONFIG: Dict[str, Any] = utils.load_config_from_env()
@@ -52,14 +53,14 @@ class RagChat:
         self.embed_model = embedding_model
         self.prompt = prompt_object
 
-        self.max_context = model_config.get("n_ctx", 4096)  # Maximum number of tokens
         self.max_generated_token = model_config.get("max_tokens", 200)
 
-        self.model_id = model_config["huggingface_model"]
-        self.hf_auth = CONFIG["HUGGINGFACE_AUTH_KEY"]
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
-
         #!! Initialize HuggingFace Model
+        # self.max_context = model_config.get("n_ctx", 4096)  # Maximum number of tokens
+        # self.model_id = model_config["huggingface_model"]
+        # self.hf_auth = CONFIG["HUGGINGFACE_AUTH_KEY"]
+        # self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+        
         # self.llm = HuggingFaceEndpoint(
         #     repo_id=self.model_id,
         #     provider="hf-inference",
@@ -72,11 +73,16 @@ class RagChat:
         
         #!! Initialize using OpenAI
         openai_api_key = CONFIG["OPENAI_API_KEY"]
+        openai_model = "gpt-4o-mini-2024-07-18"
+
         self.llm = OpenAI(
             api_key=openai_api_key,
             temperature=0.2,
-            model="gpt-4o-mini-2024-07-18"
+            model=openai_model
         )
+
+        self.tokenizer = tiktoken.encoding_for_model(openai_model)
+        self.max_context = 128_000
 
         self.llama_prompt = PromptTemplate(
             template=self.prompt, input_variables=prompt_vars
