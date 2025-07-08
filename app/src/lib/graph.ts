@@ -36,6 +36,7 @@ import type { Node, Link, Cluster } from '$lib/types';
 //import { DragSelect } from '$lib/components/graph/DragSelect';
 // import { dragSelection } from './components/graph/D3DragSelection';
 import { get, derived } from 'svelte/store';
+import { range } from './utils';
 
 // Useful global variables
 let graph: Cosmograph<Node, Link>;
@@ -58,22 +59,6 @@ let lastSelected: Node[] = [];
 
 /* ====================================== Graph and Timeline Event Handlers ====================================== */
 
-const handleZoomEvent = async () => {
-	/* const from_value:number = get($batch_number)*BATCH_SIZE
-	console.log(`Current batch_number = ${get($batch_number)}`)
-	console.log(`Current from_value = ${from_value}`)
-		if(from_value < MAX_SIZE){
-			// const current = get($BATCH_SIZE); 
-			await load10k(from_value, BATCH_SIZE); // Await loading 10k nodes
-			// $counter.update(currentValue => currentValue + 5000); 
-			$batch_number.update(n => n+1);
-			const nodenumber:number = get(nodes).length
-			if(Math.floor(nodenumber/35000) > get($update_number)){
-				updateGraphData();
-				$update_number.update(n => n+1);
-			}
-		} */
-};
 
 /**
  * Handles click events on individual graph nodes.
@@ -89,7 +74,7 @@ const handleZoomEvent = async () => {
  * @param {Node} clickedNode - The node that was clicked. Can be null or undefined if no node was selected.
  */
 const handleNodeClick = async (clickedNode: Node) => {
-	if (clickedNode && !get(isSelectionActive) && get(document_specific)) {
+	if (clickedNode && !get(isSelectionActive) && get(document_specific) && !clickedNode.isClusterNode) {
 		showLabelsfor([clickedNode] as Node[]);
 		graph.selectNode(clickedNode);
 		setSelectedNodes([clickedNode]);
@@ -216,39 +201,49 @@ const handleTimelineSelection = async (selection: [Date, Date] | [number, number
 const handleOnZoomStartHierarchical = async () => {
 	const ZoomLevel: number = graph.getZoomLevel() || 10;
 	let ClusterLabelsToShow: string[] = [];
-	if (ZoomLevel < 30) {
-		ClusterLabelsToShow = [7, 8].map((index) => get(ClustersTree)[index]).flat();
-	} else if (ZoomLevel > 30 && ZoomLevel < 150) {
-		ClusterLabelsToShow = [6, 7].map((index) => get(ClustersTree)[index]).flat();
-	} else if (ZoomLevel > 150 && ZoomLevel < 200) {
-		ClusterLabelsToShow = [4, 5, 6, 7].map((index) => get(ClustersTree)[index]).flat();
-	} else if (ZoomLevel > 200 && ZoomLevel < 600) {
-		ClusterLabelsToShow = [3, 4, 5, 6].map((index) => get(ClustersTree)[index]).flat();
-	} else if (ZoomLevel > 600) {
-		ClusterLabelsToShow = [0, 1, 2, 3, 4, 5, 6].map((index) => get(ClustersTree)[index]).flat();
+	if (ZoomLevel < 50) {
+		ClusterLabelsToShow = range(19,20).map((index) => get(ClustersTree)[index]).flat();
+	} else if (ZoomLevel > 50 && ZoomLevel < 100) {
+		ClusterLabelsToShow = range(17,18).map((index) => get(ClustersTree)[index]).flat();
+	} else if (ZoomLevel > 100 && ZoomLevel < 150) {
+		ClusterLabelsToShow = range(14,16).map((index) => get(ClustersTree)[index]).flat();
+	} else if (ZoomLevel > 150 && ZoomLevel < 200){
+		ClusterLabelsToShow = range(11,14).map((index) => get(ClustersTree)[index]).flat();
+	} else if (ZoomLevel > 200 && ZoomLevel < 500) {
+		ClusterLabelsToShow = range(5,10).map((index) => get(ClustersTree)[index]).flat();
+	} else if (ZoomLevel > 500) {
+		ClusterLabelsToShow = range(0,10).map((index) => get(ClustersTree)[index]).flat();
 	}
 	GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
 	updateGraphConfig(GraphConfig);
 	console.log(ZoomLevel);
 };
 
+
+
 const handleOnZoomStartTopLabel = () => {
 
 	const ZoomLevel: number = graph.getZoomLevel() || 10;
-	console.log("ZoomLevel: ",ZoomLevel)
 	let ClusterLabelsToShow: string[] = [];
-	if (ZoomLevel < 200) {
-		GraphConfig.showTopLabelsLimit = 2000;
-	} else if (ZoomLevel > 200 && ZoomLevel < 600) {
-		GraphConfig.showTopLabelsLimit = 5000;
-	} else if (ZoomLevel > 600) {
+	if (ZoomLevel < 50) {
+		GraphConfig.showTopLabelsLimit = 10;
+	} else if( ZoomLevel > 50 && ZoomLevel < 100) {
+		GraphConfig.showTopLabelsLimit = 40
+	} else if (ZoomLevel > 100 && ZoomLevel < 200) {
+		GraphConfig.showTopLabelsLimit = 100
+	} else if (ZoomLevel > 200 && ZoomLevel < 500) {
+		GraphConfig.showTopLabelsLimit = Math.floor(ZoomLevel*10);
+	} else if (ZoomLevel > 500) {
 		GraphConfig.showTopLabelsLimit = get(allClusters).length;
 	}
 	GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
 	updateGraphConfig(GraphConfig);
-	console.log(ZoomLevel)
+
+
+	console.log(`ZoomLevel: ${ZoomLevel}, Label Limit: ${GraphConfig.showTopLabelsLimit}`);
 	
 };
+
 async function getVisibleLabels(ZoomLevel,minLabels,maxLabels,zoomFactor) {
 // Logarithmic scaling (smooth increase)
 	const visibleLabels = Math.min(
@@ -268,7 +263,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	//showFPSMonitor: true, /* shows performance monitor on the top right */
 	nodeSize: (node: Node) => 0.05,
 	nodeColor: (node: Node) => node.color,
-	nodeLabelAccessor: (node: Node) => node.title,
+	nodeLabelAccessor: (node: Node) => node.isClusterNode? node.title: '',
 	//nodeLabelClassName: (node: Node) => node.isClusterNode ? `cosmograph-cluster-label-${node.date}` : 'cosmograph-node-label', // getNodeLabelClassName
 	nodeLabelClassName: (node: Node) =>
 		node.isClusterNode ? 'cosmograph-cluster-label' : 'cosmograph-node-label',
@@ -281,15 +276,12 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	disableSimulation: true,
 	renderLinks: false,
 	scaleNodesOnZoom: true,
-	// fitViewByNodesInRect: INITIAL_FITVIEW,
 	fitViewOnInit: true,
 	showDynamicLabels: false,
 	showHoveredNodeLabel: false,
 	showTopLabels: true,
-	showTopLabelsLimit: 10,
 	showTopLabelsValueKey: 'isClusterNode',
 
-	// Selection Event handled with button Click
 	onClick(clickedNode) {
 		handleNodeClick(clickedNode as Node);
 	},
@@ -343,46 +335,7 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 	// 	}
 	// },
 	onZoomStart(e, userDriven) {
-		// const ZoomLevel:number = graph.getZoomLevel() || 10
-		// let ClusterLabelsToShow:string[]=[]
-		// if (ZoomLevel < 150){
-		// 	ClusterLabelsToShow =  [4,5,6,7].map(index => get(ClustersTree)[index]).flat();
-		// } else if(ZoomLevel > 150 && ZoomLevel < 250) {
-		// 	ClusterLabelsToShow =  [5,6,7].map(index => get(ClustersTree)[index]).flat();
-		// } else if (ZoomLevel > 250 && ZoomLevel < 600) {
-		// 	ClusterLabelsToShow =  [3,4,5].map(index => get(ClustersTree)[index]).flat();
-		// } else if (ZoomLevel > 600) {
-		// 	ClusterLabelsToShow =  [1,2,3].map(index => get(ClustersTree)[index]).flat();
-		// }
-		// GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow)
-		// updateGraphConfig(GraphConfig)
-		// console.log(ZoomLevel)
-
-		// const ZoomLevel: number = graph.getZoomLevel() || 10;
-		// let ClusterLabelsToShow: string[] = [];
-		// if (ZoomLevel < 50) {
-		// 	GraphConfig.showTopLabelsLimit = 6;
-		// } else if (ZoomLevel > 200 && ZoomLevel < 600) {
-		// 	GraphConfig.showTopLabelsLimit = Math.floor(ZoomLevel / 10);
-		// } else if (ZoomLevel > 400) {
-		// 	GraphConfig.showTopLabelsLimit = get(allClusters).length;
-		// }
-		// GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
-		// updateGraphConfig(GraphConfig);
-		// console.log(ZoomLevel);
-
-		// handleOnZoomStartTopLabel()
-		const ZoomLevel: number = graph.getZoomLevel() || 10;
-		const maxLabels = get(allClusters).length; // Total available labels
-		const minLabels = 30;    // Minimum labels to show (zoomed out)
-		const zoomFactor = 1.05; // Adjust for sensitivity (higher = faster label increase)
-		getVisibleLabels(ZoomLevel,minLabels,maxLabels,zoomFactor)
-
-
-		// change all
-		/* 		if(userDriven && e.sourceEvent.type != "mousedown"){		
-			handleZoomEvent()
-		} */
+		handleOnZoomStartTopLabel()
 	},
 	onNodesFiltered(filteredNodes) {
 		// console.log("Filtered Nodes: ")
@@ -391,8 +344,18 @@ export const GraphConfig: CosmographInputConfig<Node, Link> = {
 };
 
 const TimelineConfig: CosmographTimelineInputConfig<Node> = {
-	accessor: (d) => (d.date ? new Date(d.date) : new Date('2024-01-01')),
-	tickStep: 15_778_560_000, // 6 montsh
+	// accessor: (d) => (d.date ? new Date(d.date) : new Date('2024-01-01')),
+	accessor: (d) => {
+  if (!d.date) return new Date('2024-01-01');
+
+  // If timestamp is in seconds, convert to ms:
+  const timestamp = typeof d.date === 'number' && d.date < 10 ** 12
+    ? d.date * 1000
+    : d.date;
+
+  return new Date(timestamp);
+},
+	tickStep: 15_778_560_000, // 6 months
 	//axisTickHeight: 30,
 	filterType: 'nodes',
 	formatter(d) {
@@ -434,7 +397,7 @@ export function toggleHierarchicalLabels() {
 	if (get(hierarchicalLabels)) {
 		GraphConfig.showTopLabels = true;
 		GraphConfig.showLabelsFor = undefined;
-		GraphConfig.showTopLabelsLimit = 10;
+		// GraphConfig.showTopLabelsLimit = 10;
 		GraphConfig.showTopLabelsValueKey = 'isClusterNode';
 		GraphConfig.nodeLabelClassName = (node: Node) =>
 			node.isClusterNode ? 'cosmograph-cluster-label' : 'cosmograph-node-label';

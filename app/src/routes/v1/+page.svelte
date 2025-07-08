@@ -24,11 +24,13 @@
 	let sideCollapsed = false;
 
 	$: gridTemplateAreas = sideCollapsed
-		? `'control-btns . . search-bar'
+		? `'title title title title'
+		'control-btns . . search-bar'
 		'. '
 		'.'
 		'timeline'`
-		: `'chat control-btns . search-bar'
+		: `'title title title title'
+		'chat control-btns . search-bar'
 		'chat . . .'
 		'info . . .'
 		'info timeline timeline timeline'`;
@@ -159,40 +161,39 @@
     </div>
 </div> -->
 
-<div id="paper-title">
-	<div class="qrcode-container">
-		<img src="/imgs/github-qr-code.jpeg" alt="GitHub QR Code" class="qr-code" />
-		<div class="qr-label">
-			<img src="/icons/github.png" alt="GitHub Icon" class="icon-label" />
-			<span>GitHub</span>
-		</div>
-	</div>
-
-	<div class="title-text">ClusterChat: Multi-Feature Search for Corpus Exploration</div>
-
-	<div class="qrcode-container">
-		<img src="/imgs/public-url-qr-code.jpeg" alt="Framework QR Code" class="qr-code" />
-		<div class="qr-label">
-			<img src="/icons/exploration.png" alt="Framework Icon" class="icon-label" />
-			<span>Framework</span>
-		</div>
-	</div>
-</div>
-
 <main
 	id="main-frame"
 	style="
 		display: grid;
 		grid-template-areas: {gridTemplateAreas};
 		grid-template-columns: {gridTemplateColumns};
-		grid-template-rows: 15% var(--info-height, 40%) 1fr max(10%);
+		grid-template-rows: 80px 10% var(--info-height, 40%) 1fr max(10%);
 		transition: grid-template-columns 700ms var(--ease-5);
 	"
 >
 	{#if !$dataloaded}
 		<div class="loader"><Circle size="60" color="#007BFF" unit="px" duration="1s" /></div>
 	{:else}
-				
+		<div id="paper-title">
+			<div class="qrcode-container">
+				<img src="/imgs/github-qr-code.jpeg" alt="GitHub QR Code" class="qr-code" />
+				<div class="qr-label">
+					<img src="/icons/github.png" alt="GitHub Icon" class="icon-label" />
+					<span>GitHub</span>
+				</div>
+			</div>
+
+			<div class="title-text">ClusterChat: Multi-Feature Search for Corpus Exploration</div>
+
+			<div class="qrcode-container">
+				<img src="/imgs/public-url-qr-code.jpeg" alt="Framework QR Code" class="qr-code" />
+				<div class="qr-label">
+					<img src="/icons/exploration.png" alt="Framework Icon" class="icon-label" />
+					<span>Framework</span>
+				</div>
+			</div>
+		</div>
+
 		<div id="main-graph">
 			<svg id="selection-svg" />
 		</div>
@@ -294,8 +295,10 @@
 		padding: 0.5rem 1rem;
 		width: 100%;
 		box-sizing: border-box;
-		background-color: #ecf2fa;
-		height: 80px;
+		background-color: var(--surface-1-light);
+		height: 100%;
+		grid-area: title;
+		z-index: 1;
 	}
 
 	.title-text {
@@ -308,15 +311,6 @@
 		padding: 0 1rem;
 		font-weight: 600;
 	}
-	/* .qrcode {
-		text-align: right;
-	}
-	.qrcode img {
-		width: 80px;
-		height: 80px;
-		object-fit: contain;
-	} */
-
 	.qrcode-container {
 		display: flex;
 		flex-direction: column;
@@ -324,13 +318,6 @@
 		justify-content: center;
 		width: 100px;
 	}
-
-	/* .qrcode-left img,
-	.qrcode-right img {
-		width: 60px;
-		height: 60px;
-		object-fit: contain;
-	} */
 	.icon-label {
 		width: 16px;
 		height: 16px;
@@ -355,14 +342,6 @@
 		font-weight: 600;
 		margin-top: 2px;
 	}
-
-	/* .qr-code {
-		width: 50px;
-		height: 50px;
-		object-fit: contain;
-		margin-top: 2px;
-	} */
-
 	#main-graph,
 	#main-frame {
 		height: 100%;
@@ -412,10 +391,6 @@
 		transition: width 0.5s var(--ease-5);
 	}
 	.loader {
-		/* animation: var(--animation-spin);
-		animation-duration: 2s;
-		animation-timing-function: linear;
-		animation-iteration-count: infinite; */
 		position: fixed;
 		top: 0;
 		right: 0;
@@ -499,17 +474,6 @@
 		background-color: var(--red-7);
 	}
 
-	/* Resize Handles */
-	/* .resize-handle-vertical {
-        grid-column: 2;
-        cursor: col-resize;
-        background-color: #ccc;
-        width: 5px;
-        height: 100%;
-        z-index: 3;
-		position: absolute;
-    } */
-
 	.resize-handle-horizontal {
 		grid-row: 3;
 		cursor: row-resize;
@@ -519,8 +483,4 @@
 		z-index: 3;
 
 	}
-	/* .smooth-resize {
-        transition: none;
-    } */
-
 </style>

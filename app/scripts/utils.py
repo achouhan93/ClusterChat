@@ -51,18 +51,20 @@ def updateCols(filename):
 
     date_index = table.schema.get_field_index("date")
     cluster_id_index = table.schema.get_field_index("cluster_id")
-    title_index = table.schema.get_field_index("title")
+    # title_index = table.schema.get_field_index("title")
     id_index = table.schema.get_field_index("id")
+    idx_index = table.schema.get_field_index("idx")
     
     # parsed_cluster_ids = pc.dictionary_encode(table.column(cluster_id_index))
-    parsed_cluster_ids = pc.cast(table["cluster_id"],pa.uint32())
+    # parsed_cluster_ids = pc.cast(table["cluster_id"],pa.uint32())
     parsed_ids = pc.cast(table["id"], pa.uint32())
     parsed_dates = pc.strptime(table["date"], format="%Y-%m-%d", unit="s")
 
     table = table.set_column(date_index, "date", parsed_dates)
-    table = table.set_column(cluster_id_index, "cluster_id", parsed_cluster_ids)
+    # table = table.set_column(cluster_id_index, "cluster_id", parsed_cluster_ids)
     table = table.set_column(id_index, "id", parsed_ids)
-    table = table.remove_column(title_index)
+    # table = table.remove_column(title_index)
+    table = table.remove_column(idx_index)
 
     output_path = os.path.join(script_dir, '../static/data', 'updated-' + filename)
     output_path = os.path.normpath(output_path)
@@ -109,6 +111,5 @@ def splitTable(filename):
 
 if __name__ == "__main__":
     # combineFiles('../static/data')
-    updateCols('cosmograph-points-combined.arrow')
-    splitTable('updated-cosmograph-points-combined.arrow')
-
+    updateCols('nodes-1.2M.arrow')
+    # splitTable('updated-cosmograph-points-combined.arrow')

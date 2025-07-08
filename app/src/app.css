@@ -53,56 +53,54 @@ body {
 }
 
 /* Label sizes for different depths from smallest to largest */
-.cosmograph-cluster-label-0 {
-	background-color: rgba(255, 255, 255, 0.2);
-	font-size: 8px !important;
-	max-width: 30ch;
-}
 
-
-
-
-.cosmograph-cluster-label-1 {
+.cosmograph-cluster-label-0, .cosmograph-cluster-label-1, .cosmograph-cluster-label-2 {
 	background-color: rgba(255, 255, 255, 0.2);
 	font-size: 10px !important;
 	max-width: 30ch;
 }
-
-.cosmograph-cluster-label-2 {
+.cosmograph-cluster-label-3, .cosmograph-cluster-label-4{
 	background-color: rgba(255, 255, 255, 0.2);
 	font-size: 12px !important;
 	max-width: 30ch;
 }
-.cosmograph-cluster-label-3 {
-	background-color: rgba(255, 255, 255, 0.2);
-	font-size: 14px !important;
-	max-width: 30ch;
-}
-.cosmograph-cluster-label-4 {
+.cosmograph-cluster-label-5, .cosmograph-cluster-label-6 {
 	background-color: rgba(255, 255, 255, 0.2);
 	font-size: 16px !important;
 	max-width: 30ch;
 }
-.cosmograph-cluster-label-5 {
-	background-color: rgba(255, 255, 255, 0.2);
-	font-size: 18px !important;
-	max-width: 30ch;
-}
-.cosmograph-cluster-label-6 {
+.cosmograph-cluster-label-7, .cosmograph-cluster-label-8 {
 	background-color: rgba(255, 255, 255, 0.2);
 	font-size: 20px !important;
 	max-width: 30ch;
 }
-.cosmograph-cluster-label-7 {
-	background-color: rgba(255, 255, 255, 0.2);
-	font-size: 22px !important;
-	max-width: 30ch;
-}
-.cosmograph-cluster-label-8 {
+.cosmograph-cluster-label-9, .cosmograph-cluster-label-10 {
 	background-color: rgba(255, 255, 255, 0.2);
 	font-size: 24px !important;
 	max-width: 30ch;
 }
+.cosmograph-cluster-label-11, .cosmograph-cluster-label-12 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: 28px !important;
+	max-width: 30ch;
+}
+.cosmograph-cluster-label-13, .cosmograph-cluster-label-14, .cosmograph-cluster-label-15 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: 32px !important;
+	max-width: 30ch;
+}
+.cosmograph-cluster-label-16, .cosmograph-cluster-label-17{
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: 36px !important;
+	max-width: 30ch;
+}
+
+ .cosmograph-cluster-label-18 , .cosmograph-cluster-label-19, .cosmograph-cluster-label-20 {
+	background-color: rgba(255, 255, 255, 0.2);
+	font-size: 40px !important;
+	max-width: 30ch;
+}
+
 
 .cosmograph-timeline {
 	--cosmograph-timeline-axis-color: var(--gray-8);

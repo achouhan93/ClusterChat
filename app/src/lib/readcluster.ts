@@ -282,7 +282,7 @@ async function extractPointsFromTable(table:Table){
 	const numRows = table.numRows;
 	const startTime = Date.now();
 	const idVec = table.getChild("id");
-	const titleVec = table.getChild("title");
+	const titleVec = null//table.getChild("title");
 	const xVec = table.getChild("x");
 	const yVec = table.getChild("y");
 	const clusterIdVec = table.getChild("cluster_id");
@@ -297,7 +297,7 @@ async function extractPointsFromTable(table:Table){
 
 		newNodes[i] = {
 			id: idVec?.get(i),
-			title: titleVec?.get(i),
+			title: '',//titleVec?.get(i),
 			x: xVec?.get(i),
 			y: yVec?.get(i),
 			isClusterNode: false,
@@ -473,13 +473,13 @@ async function LoadNodesByCluster(cluster_ids: string[]) {
 
 async function load10k(from: number, size: number) {
 	// await getNodesfromOpenSearch(from, size);
-	const filename="/data/cosmograph-points-batch-1.arrow"
+	const filename="/data/nodes.arrow"
 	await fetchPointsfromArrow(filename)
 }
 
 async function loadLabels() {
 	// await getLabelsfromOpenSearch();
-	const filename="/data/cosmograph-clusters.arrow"
+	const filename="/data/clusters.arrow"
 	await fetchLabelsfromArrow(filename)
 }
 

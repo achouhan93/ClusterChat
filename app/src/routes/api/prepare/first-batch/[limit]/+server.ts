@@ -41,9 +41,18 @@ export async function GET({ params }) {
                 scroll: scrollTime,
                 size: batchSize,
                 body: {
-                    query: { match_all: {} },
+                    query: { 
+                        "range": {
+                    "date": {
+                        "gte": "2022-01-01",
+                        "lte": "2022-12-31",
+                        "format": "yyyy-MM-dd"
+                    }
+                    }
+                
+                },
                     _source: {
-                        includes: ['document_id', 'x', 'y', 'title', 'date', 'cluster_id']
+                        includes: ['document_id', 'x', 'y', 'date', 'cluster_id']
                     }
                 }
             });
