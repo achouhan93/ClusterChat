@@ -202,7 +202,15 @@
 				</div>
 			{/if}
 
-			<div class="info-field">
+			{#if $searchInProgress}
+						<div class="loading-container">
+			<Jumper size="60" color="#007BFF" unit="px" duration="1s" />
+			<p class="loading-text">
+				search in progress...
+			</p>
+		</div>
+			{:else}
+						<div class="info-field">
 				<span class="info-field-title">Pubmed ID</span>
 				<div class="info-field-content">
 					<a
@@ -263,6 +271,8 @@
 				<span class="info-field-title">Keywords</span>
 				<div class="info-field-content">{$currentInfoPanel.keywords}</div>
 			</div>
+			{/if}
+
 		
 		{:else if $searchInProgress}
 			<div class="loading-container">
