@@ -26,7 +26,6 @@
 	let pageCount = writable<number>(0);
 	let currentInfoPanel = writable<InfoPanel>([]);
 
-	let showMoreCluster: boolean = false;
 	let showMoreAbstract: boolean = false;
 
 	// Toggle function to show/hide content
@@ -189,10 +188,10 @@
 					{#if $SelectedClusters.length !== 0}
 						<div class="selected-cluster">
 							{#if $SelectedClusters.length === 1}
-								<span><b>Cluster:</b> {getClusterLabelById($SelectedClusters[0])}</span>
+								<span><b>Cluster: </b>{getClusterLabelById($SelectedClusters[0])}</span>
 							{:else}
 								<span
-									><b>Clusters:</b>{$SelectedClusters.map(getClusterLabelById).join(', ')}</span
+									><b>Clusters: </b>{$SelectedClusters.map(getClusterLabelById).join(', ')}</span
 								>
 							{/if}
 						</div>
@@ -230,7 +229,7 @@
 			<div class="info-field">
 				<span class="info-field-title">Abstract</span>
 				<div class="info-field-content {showMoreAbstract ? '' : 'collapsed'}">
-					{$currentInfoPanel.abstract}
+					{$currentInfoPanel?.abstract}
 				</div>
 				<button class="toggle-button" on:click={toggleShowMoreAbstract}>
 					{showMoreAbstract ? 'Read Less' : 'Read More'}

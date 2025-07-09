@@ -48,8 +48,8 @@ body {
 	max-width: 30ch; */
 	  /* font-family: Georgia, serif; */
 
-	background-color: rgba(233, 236, 239, 0.6);
-	font-size: var(--size-5);
+	background-color: rgba(233, 236, 239, 0.4);
+	font-size: var(--size-4) !important;
 }
 
 /* Label sizes for different depths from smallest to largest */

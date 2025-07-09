@@ -167,7 +167,7 @@
 		display: grid;
 		grid-template-areas: {gridTemplateAreas};
 		grid-template-columns: {gridTemplateColumns};
-		grid-template-rows: 80px 10% var(--info-height, 40%) 1fr max(10%);
+		grid-template-rows: 80px 15% var(--info-height, 40%) 1fr max(10%);
 		transition: grid-template-columns 700ms var(--ease-5);
 	"
 >

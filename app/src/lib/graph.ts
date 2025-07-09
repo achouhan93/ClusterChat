@@ -4,8 +4,8 @@ import type { CosmographInputConfig, CosmographTimelineInputConfig } from '@cosm
 import { type CosmosInputNode, type CosmosInputLink, Graph } from '@cosmograph/cosmos';
 import { Cosmograph, CosmographTimeline } from '@cosmograph/cosmograph';
 import {
-	load10k,
 	loadLabels,
+	loadNodes,
 	getNodeColor,
 	getAssociatedLeafs,
 	LoadNodesByCluster
@@ -135,7 +135,7 @@ const handleLabelClickSingle = async (node: Node) => {
 const handleLabelClickMultiple = async(node: Node) => {
 	if (node.isClusterNode && node.id !== '') {
 		SelectedClusters.update((clusters) => [...clusters, node.id]);
-		
+		console.log("handling Label Click...",node)
 		const cluster_id: string[] = getAssociatedLeafs(node.id, node.title);
 		LoadNodesByCluster(cluster_id);
 
@@ -177,11 +177,12 @@ const handleTimelineSelection = async (selection: [Date, Date] | [number, number
 				new Date(node.date) <= selection[1]
 		);
 
-		if (getSelectedNodes().length == 0) {
+		if (!get(isSelectionActive)) {
 			//setSelectedNodes(nodesToSelect)
 			selectedNodes.set(nodesToSelect);
 			const graphNodesToSelect = nodesToSelect.concat(get(allClusterNodes));
 			graph.selectNodes(graphNodesToSelect);
+			isSelectionActive.set(true)
 		} else {
 			// TODO
 			const nodesToSelectSet = new Set(nodesToSelect.map((node) => node.id));
@@ -216,7 +217,7 @@ const handleOnZoomStartHierarchical = async () => {
 	}
 	GraphConfig.showLabelsFor = getClusterNodesByClusterIds(ClusterLabelsToShow);
 	updateGraphConfig(GraphConfig);
-	console.log(ZoomLevel);
+	// console.log(ZoomLevel);
 };
 
 
@@ -240,7 +241,7 @@ const handleOnZoomStartTopLabel = () => {
 	updateGraphConfig(GraphConfig);
 
 
-	console.log(`ZoomLevel: ${ZoomLevel}, Label Limit: ${GraphConfig.showTopLabelsLimit}`);
+	// console.log(`ZoomLevel: ${ZoomLevel}, Label Limit: ${GraphConfig.showTopLabelsLimit}`);
 	
 };
 
@@ -418,7 +419,7 @@ export function toggleHierarchicalLabels() {
 
 async function initializeGraph() {
 	await loadLabels();
-	await load10k(0, INITIAL_BATCH_SIZE);
+	await loadNodes();
 	graph.setData(get(nodes), get(links));
 }
 
@@ -547,7 +548,7 @@ function showLabelsfor(nodes: Node[]) {
 
 // export let isSelectionActive = derived(selectedNodesCount, ($count) => $count !== 0);
 isSelectionActive.subscribe((active) => {
-	console.log(`isSelectionActive?: ${active}`)
+	// console.log(`isSelectionActive?: ${active}`)
 	if(!active) selectedNodesCount.set(0)
 })
 

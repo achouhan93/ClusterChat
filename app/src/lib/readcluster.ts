@@ -246,11 +246,11 @@ async function extractClustersFromTable(table:Table){
 async function fetchLabelsfromArrow(filename:string){
 	const response = await fetch(filename);
 	const table: Table = await tableFromIPC(await response.arrayBuffer());
-	console.log("Table Schema",table.schema)
+	// console.log("Table Schema",table.schema)
 	if(table) {
 
 		const {newClusters, clusterLabelNodes} = await extractClustersFromTable(table)
-		console.log(newClusters[0])
+		// console.log(newClusters[0])
 		allClusters.update((existingClusters) => {
 			return [...existingClusters, ...newClusters];
 		});
@@ -471,16 +471,16 @@ async function LoadNodesByCluster(cluster_ids: string[]) {
 	await fetchDocumentIds(cluster_ids);
 }
 
-async function load10k(from: number, size: number) {
-	// await getNodesfromOpenSearch(from, size);
+async function loadNodes() {
+
 	const filename="/data/nodes.arrow"
 	await fetchPointsfromArrow(filename)
 }
 
 async function loadLabels() {
-	// await getLabelsfromOpenSearch();
+
 	const filename="/data/clusters.arrow"
 	await fetchLabelsfromArrow(filename)
 }
 
-export { load10k, loadLabels, LoadNodesByCluster };
+export { loadNodes, loadLabels, LoadNodesByCluster };
