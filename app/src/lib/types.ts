@@ -10,7 +10,7 @@
 // };
 
 export type Node = {
-	id: number;
+	id: number | string;
 	title: string | 'No Title';
 	cluster: string;
 	isClusterNode: boolean | false;

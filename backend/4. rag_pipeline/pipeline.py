@@ -75,58 +75,58 @@ class Processor:
         """Initializes LangChain prompt chains for parsing and answering."""
 
         #!! Prompt when OpenAI is used
-        parse_query_template = """
-        You are an assistant that parses user queries into structured intents for querying a corpus.
-
-        Given the following user query, extract the intent and relevant parameters in JSON format ONLY. Do not include any additional text or comments.
-
-        Supported intents:
-        1. list_topics_in_cluster
-        2. list_questions_in_cluster
-        3. get_corpus_info
-
-        User Query: "{user_query}"
-
-        Output JSON ONLY in the following format without any additional text:
-        {{
-            "intent": "<intent_name>",
-            "parameters": {{
-                // parameters based on intent
-            }}
-        }}
-        """
-
-        #! Prompt when Model from HuggingFace is Used
         # parse_query_template = """
         # You are an assistant that parses user queries into structured intents for querying a corpus.
 
         # Given the following user query, extract the intent and relevant parameters in JSON format ONLY. Do not include any additional text or comments.
 
-        # Supported intents and their expected parameters:
+        # Supported intents:
+        # 1. list_topics_in_cluster
+        # 2. list_questions_in_cluster
+        # 3. get_corpus_info
 
-        # 1. **list_topics_in_cluster**
-        # - **Description:** Lists all topics within a specified cluster.
-        # - **Parameters:**
-        #     - **cluster** *(string)*: The name of the cluster from which to list topics.
+        # User Query: "{user_query}"
 
-        # 2. **list_questions_in_cluster**
-        # - **Description:** Lists all questions associated with a specified cluster.
-        # - **Parameters:**
-        #     - **cluster** *(string)*: The name of the cluster from which to list questions.
-
-        # 3. **get_corpus_info**
-        # - **Description:** Retrieves general information about the corpus, such as statistics or metadata.
-        # - **Parameters:**
-        #     - **none**: This intent does not require any parameters.
-
-        # **User Query:** "{user_query}"
-
-        # **Output JSON ONLY in the following format without any additional text:**
+        # Output JSON ONLY in the following format without any additional text:
         # {{
         #     "intent": "<intent_name>",
-        #     "parameters": {{}}
+        #     "parameters": {{
+        #         // parameters based on intent
+        #     }}
         # }}
         # """
+
+        # #! Prompt when Model from HuggingFace/Ollama is Used
+        parse_query_template = """
+        You are an assistant that parses user queries into structured intents for querying a corpus.
+
+        Given the following user query, extract the intent and relevant parameters in JSON format ONLY. Do not include any additional text or comments.
+
+        Supported intents and their expected parameters:
+
+        1. **list_topics_in_cluster**
+        - **Description:** Lists all topics within a specified cluster.
+        - **Parameters:**
+            - **cluster** *(string)*: The name of the cluster from which to list topics.
+
+        2. **list_questions_in_cluster**
+        - **Description:** Lists all questions associated with a specified cluster.
+        - **Parameters:**
+            - **cluster** *(string)*: The name of the cluster from which to list questions.
+
+        3. **get_corpus_info**
+        - **Description:** Retrieves general information about the corpus, such as statistics or metadata.
+        - **Parameters:**
+            - **none**: This intent does not require any parameters.
+
+        **User Query:** "{user_query}"
+
+        **Output JSON ONLY in the following format without any additional text:**
+        {{
+            "intent": "<intent_name>",
+            "parameters": {{}}
+        }}
+        """
 
         parse_query_prompt = PromptTemplate(
             input_variables=["user_query"], template=parse_query_template

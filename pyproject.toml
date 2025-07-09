@@ -30,6 +30,7 @@ uvicorn = "^0.32.0"
 opensearch-py = "^2.7.1"
 langchain-openai = "^0.2.3"
 lark = "^1.2.2"
+langchain-ollama = "^0.3.4"
 
 
 [build-system]

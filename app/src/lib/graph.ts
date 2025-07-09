@@ -112,7 +112,7 @@ const handleLabelClickSingle = async (node: Node) => {
 
 		SelectedClusters.set([node.id]);
 		const cluster_id: string[] = getAssociatedLeafs(node.id, node.title);
-		LoadNodesByCluster(cluster_id);
+		await LoadNodesByCluster(cluster_id);
 
 		const set_cluster_id = new Set(cluster_id);
 		const filteredNodes = getRenderedNodes().filter((node) => set_cluster_id.has(node.cluster));

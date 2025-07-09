@@ -23,6 +23,7 @@
 	// svelte
 	import { get, writable } from 'svelte/store';
 	import { afterUpdate } from 'svelte';
+	import type { integer } from '@opensearch-project/opensearch/api/types';
 
 	// env
 	//import { API_URL } from '$env/static/public';
@@ -138,7 +139,7 @@
 			question: InputMessage,
 			question_type: $document_specific ? 'document-specific' : 'corpus-specific', // TODO: make it dropdown list of options
 			supporting_information: selectedNodes.map((node) =>
-				node.isClusterNode ? '' : (node.id as string)
+				node.isClusterNode ? '' : (node.id)
 			)
 		};
 

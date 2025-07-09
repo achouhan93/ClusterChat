@@ -1,13 +1,13 @@
 import json
 import logging
 import os
-from typing import List
+from typing import List, Union
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 import utils
 from tasks.database import database_connection
@@ -75,7 +75,11 @@ app.add_middleware(
 class QuestionRequest(BaseModel):
     question: str
     question_type: str  # 'corpus-based' or 'document-specific'
-    supporting_information: List[str] = []
+    supporting_information: List[Union[str, int]] = []
+
+    @field_validator("supporting_information", mode='before')
+    def convert_all_to_str(cls, v):
+        return [str(item) for item in v]
 
 
 class AnswerResponse(BaseModel):

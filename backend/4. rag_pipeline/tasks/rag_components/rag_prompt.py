@@ -43,7 +43,7 @@ class RagPrompt:
         - If no context is provided, always respond with I do not know.
         - Avoid adding QUESTION in the answer.
 
-        REMEMBER: Stick to the context. If uncertain, respond with I do not know.
+        REMEMBER: Stick to the context.
         <question>
         QUESTION: {question}
         <question>
