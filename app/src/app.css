@@ -37,7 +37,6 @@ body {
 	font-weight: var(--font-weight-200);
 	border-size: var(--border-size-4);
 
-	//opacity: 0.9;
 	text-align: center;
 	border-radius: var(--radius-drawn-1);
 }
@@ -48,7 +47,7 @@ body {
 	max-width: 30ch; */
 	  /* font-family: Georgia, serif; */
 
-	background-color: rgba(233, 236, 239, 0.4);
+	background-color: rgba(233, 236, 239, 0.4) !important;
 	font-size: var(--size-4) !important;
 }
 
