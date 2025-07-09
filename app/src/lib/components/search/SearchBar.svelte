@@ -7,9 +7,12 @@
 		updateGraphData,
 		updateNodes,
 		conditionalSelectNodes,
-		unselectNodes
+		unselectNodes,
+
+		isSelectedNode
+
 	} from '$lib/graph';
-	import { SelectedSearchQuery, searchInProgress, selectedNodes } from '$lib/stores/nodeStore';
+	import { SelectedSearchQuery, isSelectionActive, searchInProgress, selectedNodes } from '$lib/stores/nodeStore';
 	import { document_specific } from '$lib/stores/uiStore';
 	import type { Node } from '$lib/types';
 	import { getClusterNodes, setSelectedNodesOnGraph } from '$lib/graph';
@@ -75,18 +78,23 @@
 	}
 
 	async function formatSearchData(data:any[],searchType:string){
-		const nodeIdsToSelect: Set<string> = searchType==="lexical" ? new Set(data.map((item:any) => item._id)) : new Set(data.map((item:any) => item._source["documentID"]));
+		console.log("searchType:",searchType)
+		const nodeIdsToSelect: Set<number> = searchType === "lexical"
+		? new Set(data.map((item: any) => Number(item._id)))
+		: new Set(data.map((item: any) => Number(item._source["documentID"])));
 		console.log("nodeIdsToSelect:",nodeIdsToSelect)
 		const theCurrentlySelectedNodes = getSelectedNodes()
 		console.log("getSelectedNodes():",theCurrentlySelectedNodes.length)
 		if (theCurrentlySelectedNodes?.length === 0 && theCurrentlySelectedNodes !== undefined) {
 			// get all nodes with these ids
-			const nodesToSelect: Node[] = getRenderedNodes().filter((node) =>
+			const nodesToSelect: Node[] = getRenderedNodes().filter((node) =>	
 				nodeIdsToSelect.has(node.id)
 			);
+			console.log("nodeIdsToSelect",nodeIdsToSelect)
 			selectedNodes.set(nodesToSelect);
 			const graphNodesToSelect = nodesToSelect.concat(getClusterNodes());
 			setSelectedNodesOnGraph(graphNodesToSelect);
+			isSelectionActive.set(true)
 		} else if (
 			theCurrentlySelectedNodes !== undefined &&
 			theCurrentlySelectedNodes !== null &&
@@ -98,6 +106,8 @@
 			selectedNodes.set(nodesToSelect);
 			const nodesToShowonGraph = nodesToSelect.concat(getClusterNodes());
 			setSelectedNodesOnGraph(nodesToShowonGraph);
+			isSelectionActive.set(true)
+			console.log("I am here")
 		}
 	}
 </script>
