@@ -5,7 +5,8 @@ import {
 	OPENSEARCH_PASSWORD,
 	OPENSEARCH_NODE,
 	CLUSTER_CHAT_DOCUMENT_INFORMATION_INDEX,
-	CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_COMPLETE
+	CLUSTER_CHAT_OPENSEARCH_TARGET_INDEX_COMPLETE,
+	BACKEND_URL
 } from '$env/static/private';
 
 const client = new Client({
@@ -21,7 +22,7 @@ export async function GET({ params }) {
 		const searchQuery = params.search_query;
 
 		// Step 1: Call FastAPI to get embedding
-		const embeddingResponse = await fetch('http://localhost:8100/embed', {
+		const embeddingResponse = await fetch(`${BACKEND_URL}/embed`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'

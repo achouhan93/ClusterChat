@@ -1,0 +1,23 @@
+FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy only requirements first to install dependencies early (layer caching)
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy contents of the backend/4. rag_pipeline directory into /app
+COPY backend/rag_pipeline/ .
+
+
+COPY .env .
+
+# Expose FastAPI port
+EXPOSE 8100
+
+# Start FastAPI server
+CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8100"]
+

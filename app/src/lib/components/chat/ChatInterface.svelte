@@ -54,32 +54,36 @@
 		currentFoundSources.set(foundSources);
 	}
 
-	async function fetchChatAnswerWithTimeout(payload: ChatQuestion, timeout = 15000) {
-		// Timeout promise that rejects after the specified time
-		const timeoutPromise = new Promise<null>((_, reject) =>
-			setTimeout(() => reject(new Error('Request timed out after 15 seconds')), timeout)
-		);
 
-		// Fetch request with a timeout
-		const fetchPromise = (async () => {
-			try {
-				const response = await fetch('http://localhost:8100/ask', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify(payload)
-				});
-				return response.ok ? response : null;
-			} catch (error) {
-				console.error('Error fetching chat completion: ', error);
-				return null;
+
+		async function fetchChatAnswerWithTimeout(payload: ChatQuestion, timeout = 15000) {
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), timeout);
+		let payloadRequest = payload
+		payloadRequest.supporting_information=  payload.supporting_information.map(item => String(item));
+		try {
+			const response = await fetch('/api/ask', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload),
+			});
+
+			clearTimeout(timeoutId);
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.message || `Request failed with status ${response.status}`);
 			}
-		})();
 
-		// Race the fetchPromise against the timeoutPromise
-		return Promise.race([fetchPromise, timeoutPromise]);
-	}
+			return response
+    } catch (error:any) {
+        clearTimeout(timeoutId);
+        console.error('API request error:', error);
+        throw error;
+    }
+}
+
+
 
 	function scrollToBottom(scrollArea: HTMLDivElement) {
 		// Scroll to the bottom of the message container

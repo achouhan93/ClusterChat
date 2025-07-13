@@ -3,5 +3,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [sveltekit()],
-	assetsInclude: ['**/*.csv']
+	assetsInclude: ['**/*.csv'],
+	server:{
+	allowedHosts: ['clusterchat.ifi.uni-heidelberg.de']
+	}
 });
