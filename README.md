@@ -78,7 +78,7 @@ The $\textit{ClusterChat}$ framework provides a web-based tool for exploring [Pu
 
 2. **Topic Modeling and Clustering Information** (`2.topic_modelling` and `3. cluster_information`): Abstracts are embedded with [NeuML/pubmedbert-base-embeddings](https://huggingface.co/NeuML/pubmedbert-base-embeddings), reduced in dimensionality via UMAP, and clustered using HDBSCAN. Keywords and labels for each cluster are generated using BM25 and GPT-4o-mini, and stored in OpenSearch.
 
-3. **RAG Pipeline** (`4.rag_pipeline`): For question answering, abstracts are segmented into sentences, creating around $46$ million sentence embeddings indexed in OpenSearch. Document-level queries retrieve contextually relevant sentence chunks, which are then processed with [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1) or OpenAI to generate precise answers with citations pointing to respective PubMed Abstract.
+3. **RAG Pipeline** (`rag_pipeline`): For question answering, abstracts are segmented into sentences, creating around $46$ million sentence embeddings indexed in OpenSearch. Document-level queries retrieve contextually relevant sentence chunks, which are then processed with [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1) or OpenAI to generate precise answers with citations pointing to respective PubMed Abstract.
 
 ### Frontend
 
@@ -171,7 +171,7 @@ OPENSEARCH_NODE="https://your-opensearch-hostname:your-opensearch-port"
 
 5. Start the backend server:
    ```sh
-   cd backend/4.\ rag_pipeline
+   cd backend/rag_pipeline
    uvicorn main:app --reload --port 8100
    ```
 
