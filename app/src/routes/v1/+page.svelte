@@ -176,7 +176,7 @@
 	{:else}
 		<div id="paper-title">
 			<div class="qrcode-container">
-				<img src="/imgs/github-qr-code.jpeg" alt="GitHub QR Code" class="qr-code" />
+				<img src="/imgs/github-qr-code.png" alt="GitHub QR Code" class="qr-code" />
 				<div class="qr-label">
 					<img src="/icons/github.png" alt="GitHub Icon" class="icon-label" />
 					<span>GitHub</span>
@@ -186,7 +186,7 @@
 			<div class="title-text">ClusterChat: Multi-Feature Search for Corpus Exploration</div>
 
 			<div class="qrcode-container">
-				<img src="/imgs/public-url-qr-code.jpeg" alt="Framework QR Code" class="qr-code" />
+				<img src="/imgs/public-url-qr-code.png" alt="Framework QR Code" class="qr-code" />
 				<div class="qr-label">
 					<img src="/icons/exploration.png" alt="Framework Icon" class="icon-label" />
 					<span>Framework</span>
