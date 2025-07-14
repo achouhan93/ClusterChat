@@ -154,12 +154,10 @@
 
 	
 </script>
-<!-- <div id="paper-title">
-	<div class="title-text">ClusterChat: Multi-Feature Search for Corpus Exploration</div>
-	<div class="qrcode">
-            <img src="/imgs/qr-code1.jpeg" alt="QR Code 1">
-    </div>
-</div> -->
+<svelte:head>
+	<title>ClusterChat</title>
+</svelte:head>
+
 
 <main
 	id="main-frame"

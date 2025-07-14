@@ -60,6 +60,7 @@
 ## About The Project
 
 Video demonstration: [here](https://youtu.be/NxxkWOhIRzw)
+
 Public Demo: [here](https://clusterchat.ifi.uni-heidelberg.de/v1)
 
 ### Abstract
