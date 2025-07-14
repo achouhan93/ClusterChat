@@ -100,7 +100,13 @@ class Processor:
         parse_query_template = """
         You are an assistant that parses user queries into structured intents for querying a corpus.
 
-        Given the following user query, extract the intent and relevant parameters in JSON format ONLY. Do not include any additional text or comments.
+        Given the user query
+        <user query>
+        **User Query:** "{user_query}"
+        <user query>
+
+        Extract the intent and relevant parameters in JSON format ONLY. 
+        Do not include any additional text or comments.
 
         Supported intents and their expected parameters:
 
@@ -118,8 +124,6 @@ class Processor:
         - **Description:** Retrieves general information about the corpus, such as statistics or metadata.
         - **Parameters:**
             - **none**: This intent does not require any parameters.
-
-        **User Query:** "{user_query}"
 
         **Output JSON ONLY in the following format without any additional text:**
         {{
