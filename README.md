@@ -63,6 +63,8 @@ Video demonstration: [here](https://youtu.be/NxxkWOhIRzw)
 
 Public Demo: [here](https://clusterchat.ifi.uni-heidelberg.de/v1)
 
+Paper Link: [ACM](https://dl.acm.org/doi/10.1145/3726302.3730137), [arXiv](https://arxiv.org/pdf/2412.14533)
+
 ### Abstract
 Exploring large-scale text corpora presents a significant challenge in biomedical, finance, and legal domains, where vast amounts of documents are continuously published. Traditional search methods, such as keyword-based search, often retrieve documents in isolation, limiting the user's ability to easily inspect corpus-wide trends and relationships. We present $\textit{ClusterChat}$ (The demo video and source code are available at: https://github.com/achouhan93/ClusterChat), an open-source system for corpus exploration that integrates cluster-based organization of documents using textual embeddings with lexical and semantic search, timeline-driven exploration, and corpus and document-level question answering (QA) as multi-feature search capabilities. We validate the system with two case studies on a four million abstract PubMed dataset, demonstrating that $\textit{ClusterChat}$ enhances corpus exploration by delivering context-aware insights while maintaining scalability and responsiveness on large-scale document collections.
 
@@ -197,18 +199,22 @@ Execute the below steps to setup frontend:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- ## Usage
-
-- **Embedding Data Storage**: Converts PubMed abstracts into embeddings using `--chunking` options for sentence or full-abstract level.
-- **Topic Modeling**: Generates BERTopic models in federated learning intervals, using UMAP and HDBSCAN.
-- **RAG Pipeline**: Allows question answering based on document- or corpus-level queries. Document-specific answers use metadata-enhanced vector search, while corpus-specific queries analyze clusters and intents.
-- **Cluster Information**: Consolidates topics from different BERTopic models, creating a hierarchical topic structure stored in OpenSearch.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p> -->
-
 ## Cite our work
-
-No current information
+```
+@inproceedings{chouhan-et-al-2025-clusterchat,
+author = {Chouhan, Ashish and Mandour, Saifeldin and Gertz, Michael},
+title = {ClusterChat: Multi-Feature Search for Corpus Exploration},
+year = {2025},
+publisher = {Association for Computing Machinery},
+url = {https://doi.org/10.1145/3726302.3730137},
+doi = {10.1145/3726302.3730137},
+booktitle = {Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval},
+pages = {4081–4085},
+numpages = {5},
+location = {Padua, Italy},
+series = {SIGIR '25}
+}
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
