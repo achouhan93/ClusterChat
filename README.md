@@ -170,6 +170,7 @@ MODEL_PATH = "./intermediate_results/"
 
 # Required for frontend
 APP_URL="http://localhost:5173"
+BACKEND_URL="http://localhost:8100"
 OPENSEARCH_NODE="https://your-opensearch-hostname:your-opensearch-port"
 ```
 

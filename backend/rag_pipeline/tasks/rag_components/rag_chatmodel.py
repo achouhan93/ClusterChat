@@ -10,12 +10,12 @@ from tqdm import tqdm
 # from langchain_huggingface.llms.huggingface_endpoint import HuggingFaceEndpoint
 
 #!! OpenAI Implementation
-from langchain_openai import OpenAI
-import tiktoken
+# from langchain_openai import OpenAI
+# import tiktoken
 
 #!! Ollama Implementation
-# from transformers import AutoTokenizer
-# from langchain_ollama import OllamaLLM
+from transformers import AutoTokenizer
+from langchain_ollama import OllamaLLM
 
 from langchain_core.prompts import PromptTemplate
 
@@ -80,37 +80,37 @@ class RagChat:
         # )
         
         #!! OpenAI Implementation
-        openai_api_key = CONFIG["OPENAI_API_KEY"]
-        openai_model = "gpt-4o-mini-2024-07-18"
+        # openai_api_key = CONFIG["OPENAI_API_KEY"]
+        # openai_model = "gpt-4o-mini-2024-07-18"
 
-        self.llm = OpenAI(
-            api_key=openai_api_key,
-            temperature=0.2,
-            model=openai_model
-        )
+        # self.llm = OpenAI(
+        #     api_key=openai_api_key,
+        #     temperature=0.2,
+        #     model=openai_model
+        # )
 
-        self.tokenizer = tiktoken.encoding_for_model(openai_model)
-        self.max_context = 128_000
+        # self.tokenizer = tiktoken.encoding_for_model(openai_model)
+        # self.max_context = 128_000
 
         #!! Ollama Implementation
-        # self.model_id = model_config["huggingface_model"]
-        # self.hf_auth = CONFIG["HUGGINGFACE_AUTH_KEY"]
-        # self.tokenizer = AutoTokenizer.from_pretrained(
-        #     self.model_id,
-        #     use_auth_token=self.hf_auth
-        # )
+        self.model_id = model_config["huggingface_model"]
+        self.hf_auth = CONFIG["HUGGINGFACE_AUTH_KEY"]
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_id,
+            use_auth_token=self.hf_auth
+        )
 
-        # self.max_context = model_config.get("n_ctx", 4096)  # Maximum number of tokens
-        # self.ollama_model_id = model_config["ollama"]
+        self.max_context = model_config.get("n_ctx", 4096)  # Maximum number of tokens
+        self.ollama_model_id = model_config["ollama"]
         
-        # self.llm = OllamaLLM(
-        #     model=self.ollama_model_id,
-        #     cache=False,
-        #     num_predict=self.max_generated_token,
-        #     temperature=model_config.get("temperature", 0.1),
-        #     repetition_penalty=model_config.get("repetition_penalty", 1.2),
-        #     stops=model_config.get("stop_sequences", ["</s>"]),
-        # )
+        self.llm = OllamaLLM(
+            model=self.ollama_model_id,
+            cache=False,
+            num_predict=self.max_generated_token,
+            temperature=model_config.get("temperature", 0.1),
+            repetition_penalty=model_config.get("repetition_penalty", 1.2),
+            stops=model_config.get("stop_sequences", ["</s>"]),
+        )
 
         self.llama_prompt = PromptTemplate(
             template=self.prompt, input_variables=prompt_vars
