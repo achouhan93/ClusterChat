@@ -105,6 +105,7 @@ class RagChat:
         
         self.llm = OllamaLLM(
             model=self.ollama_model_id,
+            base_url="http://host.docker.internal:11434", 
             cache=False,
             num_predict=self.max_generated_token,
             temperature=model_config.get("temperature", 0.1),
