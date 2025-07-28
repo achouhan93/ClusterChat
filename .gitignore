@@ -29,6 +29,4 @@ __pycache__/
 *.lock
 *intermediate_results/
 *paper
-
-# virtual env
-ecir/
+docker-compose-original.yml
